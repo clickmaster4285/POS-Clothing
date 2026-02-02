@@ -3,17 +3,24 @@ import { Routes, Route } from "react-router-dom";
 import Auth from "../pages/Auth";
 import Dashboard from "../pages/Dashboard";
 import Branches from "../pages/Branches";
+import Products from "../pages/Inventory/Products";
+import CategoriesBrandsPage from "../pages/Inventory/Category";
+import BarcodeManagementPage from "../pages/Inventory/Barcodes";
+import PurchaseOrdersPage from "../pages/Inventory/PurchaseOrder";
+import StockAuditPage from "../pages/Inventory/StockAudit";
+import StockManagementPage from "../pages/Inventory/StockManagement";
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
+
 
 const AppRoutes = () => {
     return (
         <Routes>
             {/* Public routes */}
             <Route
-                path="/login"
+                path="/"
                 element={
                     <AuthLayout>
                         <Auth />
@@ -39,6 +46,72 @@ const AppRoutes = () => {
                     <ProtectedRoute>
                         <MainLayout>
                             <Branches />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/products"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <Products />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/categories"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CategoriesBrandsPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/barcode-management"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <BarcodeManagementPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/purchase-orders"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <PurchaseOrdersPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/stock-audit"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <StockAuditPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/inventory/stock"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <StockManagementPage />
                         </MainLayout>
                     </ProtectedRoute>
                 }

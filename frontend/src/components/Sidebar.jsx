@@ -38,7 +38,10 @@ const navItems = [
         children: [
             { title: "Products", href: "/inventory/products" },
             { title: "Stock Management", href: "/inventory/stock" },
-            { title: "Categories", href: "/inventory/categories" },
+            { title: "Purchase Orders", href: "/inventory/purchase-orders" },
+            { title: "Stock Audit", href: "/inventory/stock-audit" },
+            { title: "Barcode Management", href: "/inventory/barcode-management" },
+            { title: "Categories & Brands", href: "/inventory/categories" },
         ],
     },
     {

@@ -14,7 +14,6 @@ export const getBranchById = async (id) => {
 
 // CREATE branch
 export const createBranch = async (data) => {
-    console.log("Creating branch with data:", data);
   const res = await api.post("/branches", data);
   return res.data;
 };

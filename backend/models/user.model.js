@@ -1,57 +1,75 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    email: {
+    userId: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
+      immutable: true,
     },
-
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+      maxlength: [50, 'First name cannot be more than 50 characters'],
+    },
+    lastName: {
+      type: String,
+      // required: [true, 'Last name is required'],
+      trim: true,
+      maxlength: [50, 'Last name cannot be more than 50 characters'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        'Please enter a valid email address',
+      ],
+    },
     password: {
       type: String,
-      required: true,
-      minlength: 6,
-      select: false, // 🔒 never send password by default
+      required: [true, 'Password is required'],
+      select: false, // Do not return password by default
     },
-
     role: {
       type: String,
-      enum: ["admin", "manager", "cashier"],
-      default: "cashier",
+      required: true,
+      default: 'customer',
     },
-
+    permissions: {
+      type: [String],
+      default: [],
+    },
     isActive: {
       type: Boolean,
       default: true,
     },
+    lastLogin: {
+      type: Date,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-//
-// 🔐 Hash password before save
-//
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
-
-  this.password = await bcrypt.hash(this.password, 10);
-});
-
-
-//
-// 🔍 Compare password method
-//
-userSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model('User', userSchema);

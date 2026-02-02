@@ -1,39 +1,93 @@
-require("dotenv").config();
-const http = require("http");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-const app = require("./app");
-const connectDB = require("./config/db");
-const initializeAdmin = require("./utils/initializeAdmin");
+const { connectDatabase } = require('./config/db');
+const errorHandler = require('./middlewares/errorHandler');
+const indexRoutes = require('./routes/index.routes');
+const { initializeAdminAccount } = require('./config/bootstrap');
 
-const HOST = process.env.HOST || "localhost";
+const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Create HTTP server
-const server = http.createServer(app);
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
 
-const startServer = async () => {
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true, 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}
+
+));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+);
+
+app.use("/uploads", express.static("uploads"));
+// app.use(limiter);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// API Routes
+app.use('/', indexRoutes);
+
+// 404 handler
+app.use('/<any_path>', (req, res) => {    // or /*anything, /*splat, /*_, etc.
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+// Global error handler
+app.use(errorHandler);
+
+// Start server
+async function startServer() {
   try {
-    await connectDB();
-      await initializeAdmin();
-      
-      
-    server.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running at http://${HOST}:${PORT}`);
-      console.log("✅ MongoDB connected (pos-clothing)");
+    await connectDatabase();
+    await initializeAdminAccount(); 
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📊 Health check available at http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
-};
+}
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
 
 startServer();
-
-// Server-level errors
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE") {
-    console.error(`❌ Port ${PORT} already in use`);
-    process.exit(1);
-  }
-  console.error("❌ Server error:", error);
-});

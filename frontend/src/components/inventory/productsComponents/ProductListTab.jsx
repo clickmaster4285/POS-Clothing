@@ -244,7 +244,7 @@ export default function ProductListTab({
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[50px]">Image</TableHead>
+                               
                                 <TableHead>Product Name</TableHead>
                                 <TableHead>SKU</TableHead>
                                 <TableHead>Category</TableHead>
@@ -258,17 +258,7 @@ export default function ProductListTab({
                         <TableBody>
                             {filteredProducts.map((product) => (
                                 <TableRow key={product._id}>
-                                    <TableCell>
-                                        {product.primaryImage ? (
-                                            <div className="h-10 w-10 rounded-lg bg-muted overflow-hidden">
-                                                <img src={product.primaryImage} alt={product.productName} className="h-full w-full object-cover" />
-                                            </div>
-                                        ) : (
-                                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                                                <ImageIcon className="h-5 w-5" />
-                                            </div>
-                                        )}
-                                    </TableCell>
+                                   
                                     <TableCell className="font-medium">{product.productName}</TableCell>
                                     <TableCell className="text-muted-foreground">{product.sku}</TableCell>
                                     <TableCell>{product.category?.categoryName || "N/A"}</TableCell>

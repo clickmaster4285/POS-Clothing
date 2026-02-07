@@ -9,6 +9,8 @@ import BarcodeManagementPage from "../pages/Inventory/Barcodes";
 import PurchaseOrdersPage from "../pages/Inventory/PurchaseOrder";
 import StockAuditPage from "../pages/Inventory/StockAudit";
 import StockManagementPage from "../pages/Inventory/StockManagement";
+import SupplierPage from '../pages/Suppliers';
+
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -50,7 +52,16 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
-
+            <Route
+                path="/supplier"
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <SupplierPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
             <Route
                 path="/inventory/products"
                 element={

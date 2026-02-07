@@ -12,26 +12,18 @@ const productSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  barcode: String,
+
   brand: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Brand',
-    required: true
+    //required: true
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    required: true
+  //  required: true
   },
-  subCategory: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category'
-  },
-  department: {
-    type: String,
-    enum: ['Men', 'Women', 'Kids', 'Unisex'],
-    required: true
-  },
+
   season: String,
   collection: String,
   description: String,
@@ -45,7 +37,9 @@ const productSchema = new mongoose.Schema({
     enum: ['Male', 'Female', 'Unisex']
   },
   styleType: String,
-  occasion: String,
+
+
+
   variants: [{
     size: String,
     color: String,
@@ -56,51 +50,43 @@ const productSchema = new mongoose.Schema({
       type: String,
       unique: true
     },
-    variantBarcode: String,
     images: [String],
     price: {
       costPrice: Number,
       retailPrice: Number,
-      wholesalePrice: Number,
-      memberPrice: Number,
-      salePrice: Number,
-      minimumPrice: Number,
-      maxDiscountPercent: Number
     },
-    pricingTiers: [{
-      minQuantity: Number,
-      price: Number
-    }],
-    priceHistory: [{
+quantity:String,
+   priceHistory: [{
       date: Date,
-      price: Number,
+      price: {
+        costPrice: Number,
+        retailPrice: Number
+      },
       type: String,
       changedBy: String
     }],
+   
+    stockHistory: [{ 
+      date: Date,
+      quantityChange: Number,
+      reason: String, 
+      changedBy: String
+    }],
+
     competitorPrice: Number,
     isActive: {
       type: Boolean,
       default: true
     }
   }],
-  primaryImage: String,
-  images: [{
-    url: String,
-    type: {
-      type: String,
-      enum: ['front', 'back', 'side', 'detail']
-    },
-    order: Number
-  }],
+
+
   supplierInfo: {
     supplier: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Supplier'
     },
-    supplierCode: String,
-    leadTime: Number, // in days
-    minOrderQuantity: Number,
-    reorderLevel: Number
+    
   },
   tags: [String],
   isActive: {
@@ -134,6 +120,9 @@ productSchema.index({ department: 1, isActive: 1 });
 //   this.updatedAt = new Date();
 //   next();
 // });
+
+
+
 
 const Product = mongoose.model('Product', productSchema);
 module.exports = Product;

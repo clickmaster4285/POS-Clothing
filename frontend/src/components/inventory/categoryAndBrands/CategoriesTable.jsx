@@ -24,7 +24,7 @@ export function CategoriesTable({
                     <TableHead>Image</TableHead>
                     <TableHead>Category Name</TableHead>
                     <TableHead>Code</TableHead>
-                    <TableHead>Parent Category</TableHead>
+                   
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -51,10 +51,10 @@ export function CategoriesTable({
                         </TableCell>
                         <TableCell>
                             <div className="flex items-center gap-2">
-                                {category.parentCategory && (
+                                {/* {category.parentCategory && (
                                     <span className="text-muted-foreground">└</span>
-                                )}
-                                <span className="font-medium">{category.categoryName}</span>
+                                )} */}
+                                <span className="font-medium px-2 ">{category.categoryName}</span>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -62,9 +62,7 @@ export function CategoriesTable({
                                 {category.categoryCode}
                             </code>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                            {category.parentCategory?.categoryName || "--"}
-                        </TableCell>
+                       
                         <TableCell>
                             <div className="flex items-center gap-2">
                                 {/* <Switch

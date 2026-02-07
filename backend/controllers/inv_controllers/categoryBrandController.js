@@ -8,25 +8,18 @@ const Product = require('../../models/inv_model/product.model');
 // Category Controllers
 exports.createCategory = async (req, res) => {
   try {
-    // ✅ Parse JSON fields from FormData
-    const attributes = req.body.attributes
-      ? JSON.parse(req.body.attributes)
-      : [];
-
-    const seo = req.body.seo
-      ? JSON.parse(req.body.seo)
-      : {};
+ 
+  
 
     const categoryData = {
       categoryName: req.body.categoryName,
       categoryCode: req.body.categoryCode,
-      parentCategory: req.body.parentCategory || null,
+    
       description: req.body.description,
       department: req.body.department,
-      displayOrder: Number(req.body.displayOrder || 0),
+   
       isActive: req.body.isActive === "true",
-      attributes,
-      seo,
+     
       image: req.file
         ? `/uploads/${req.file.filename}`
         : null,
@@ -53,18 +46,14 @@ exports.createCategory = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
   try {
-    const { department, parentCategory, includeProducts } = req.query;
+    const { department, includeProducts } = req.query;
     
     let query = { isActive: true };
     if (department) query.department = department;
-    if (parentCategory) {
-      query.parentCategory = parentCategory;
-    } else if (parentCategory === null) {
-      query.parentCategory = { $exists: false };
-    }
+    
     
     const categories = await Category.find(query)
-      .populate('parentCategory', 'categoryName')
+    
       .populate('createdBy', 'name')
      
     
@@ -88,28 +77,18 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
 
     // Parse JSON fields (same as create)
-    const attributes = req.body.attributes
-      ? JSON.parse(req.body.attributes)
-      : undefined;
-
-    const seo = req.body.seo
-      ? JSON.parse(req.body.seo)
-      : undefined;
-
+  
     const updateData = {
       categoryName: req.body.categoryName,
       categoryCode: req.body.categoryCode,
-      parentCategory: req.body.parentCategory || null,
+     
       description: req.body.description,
       department: req.body.department,
-      displayOrder: req.body.displayOrder !== undefined
-        ? Number(req.body.displayOrder)
-        : undefined,
+    
       isActive: req.body.isActive !== undefined
         ? req.body.isActive === "true"
         : undefined,
-      attributes,
-      seo
+ 
     };
 
     // If new image uploaded, replace image
@@ -122,13 +101,7 @@ exports.updateCategory = async (req, res) => {
       key => updateData[key] === undefined && delete updateData[key]
     );
 
-    // Prevent circular reference
-    if (updateData.parentCategory === id) {
-      return res.status(400).json({
-        success: false,
-        message: "Category cannot be its own parent"
-      });
-    }
+
 
     const category = await Category.findByIdAndUpdate(
       id,
@@ -170,14 +143,7 @@ exports.deleteCategory = async (req, res) => {
       });
     }
     
-    // Check if category has sub-categories
-    const subCategories = await Category.countDocuments({ parentCategory: id });
-    if (subCategories > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot delete category with sub-categories'
-      });
-    }
+ 
     
     // Check if category has products
     const productCount = await Product.countDocuments({ category: id });
@@ -215,12 +181,10 @@ exports.createBrand = async (req, res) => {
       description: req.body.description,
       website: req.body.website,
       countryOfOrigin: req.body.countryOfOrigin,
-      categories: req.body.categories
-        ? JSON.parse(req.body.categories)
-        : [],
+     
       isActive: req.body.isActive === "true",
       logo: req.file ? `/uploads/${req.file.filename}` : "",
-      seo: req.body.seo ? JSON.parse(req.body.seo) : {},
+     
     });
 
     await brand.save();
@@ -249,7 +213,7 @@ exports.getBrands = async (req, res) => {
     
     const brands = await Brand.find(query)
      
-      .populate('categories', 'categoryName')
+      
       .populate('createdBy', 'name')
       .sort({ brandName: 1 });
     
@@ -289,12 +253,8 @@ exports.updateBrand = async (req, res) => {
       isActive: req.body.isActive !== undefined
         ? req.body.isActive === "true"
         : undefined,
-      categories: req.body.categories
-        ? JSON.parse(req.body.categories)
-        : undefined,
-      seo: req.body.seo
-        ? JSON.parse(req.body.seo)
-        : undefined,
+     
+
     };
 
     // If new logo uploaded
@@ -372,145 +332,7 @@ exports.deleteBrand = async (req, res) => {
   }
 };
 
-// Tag Controllers
-exports.createTag = async (req, res) => {
-  try {
-    const tag = new Tag({
-      ...req.body,
-      createdBy: req.user.id
-    });
-    
-    await tag.save();
-    
-    res.status(201).json({
-      success: true,
-      data: tag
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
 
-exports.getTags = async (req, res) => {
-  try {
-    const { tagType, activeOnly } = req.query;
-    
-    let query = {};
-    if (tagType) query.tagType = tagType;
-    if (activeOnly === 'true') query.isActive = true;
-    
-    const tags = await Tag.find(query)
-      .populate('createdBy', 'name')
-      .sort({ tagType: 1, tagName: 1 });
-    
-    // Add product counts
-    for (let tag of tags) {
-      const productCount = tag.appliedToProducts ? tag.appliedToProducts.length : 0;
-      tag.productCount = productCount;
-    }
-    
-    res.json({
-      success: true,
-      data: tags
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-exports.applyTagToProduct = async (req, res) => {
-  try {
-    const { tagId, productId } = req.params;
-    
-    const tag = await Tag.findById(tagId);
-    if (!tag) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tag not found'
-      });
-    }
-    
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-    
-    // Check if tag already applied
-    if (tag.appliedToProducts.includes(productId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tag already applied to this product'
-      });
-    }
-    
-    tag.appliedToProducts.push(productId);
-    await tag.save();
-    
-    // Add tag to product if not already present
-    if (!product.tags.includes(tag.tagName)) {
-      product.tags.push(tag.tagName);
-      await product.save();
-    }
-    
-    res.json({
-      success: true,
-      message: 'Tag applied successfully'
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-exports.removeTagFromProduct = async (req, res) => {
-  try {
-    const { tagId, productId } = req.params;
-    
-    const tag = await Tag.findById(tagId);
-    if (!tag) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tag not found'
-      });
-    }
-    
-    // Remove product from tag
-    tag.appliedToProducts = tag.appliedToProducts.filter(
-      id => id.toString() !== productId
-    );
-    await tag.save();
-    
-    // Remove tag from product
-    const product = await Product.findById(productId);
-    if (product) {
-      product.tags = product.tags.filter(
-        tagName => tagName !== tag.tagName
-      );
-      await product.save();
-    }
-    
-    res.json({
-      success: true,
-      message: 'Tag removed successfully'
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
 
 exports.getCategoryBrandAnalytics = async (req, res) => {
   try {

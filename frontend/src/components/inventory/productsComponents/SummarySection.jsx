@@ -8,6 +8,9 @@ export default function SummarySection({
     formSummary,
     showVariantSection
 }) {
+
+    console.log("formSummary", formSummary)
+    console.log("showVariantSection", showVariantSection)
     return (
         <Card className="border-border/50">
             <CardHeader>

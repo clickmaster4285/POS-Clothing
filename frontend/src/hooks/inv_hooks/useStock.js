@@ -7,11 +7,15 @@ import {
 import {
   getStockByBranch,
   adjustStock,
+  recieveStock,
   transferStock,
   receiveTransfer,
   getLowStockAlerts,
   getStockHistory,
-} from "../api/stock.api";
+  getAllStock,
+  getAdjustments,
+  getTransfers
+} from "../../api/inv_api/stock.api";
 
 /* =======================
    QUERY KEYS
@@ -33,6 +37,33 @@ export const stockKeys = {
 /* =======================
    QUERIES
 ======================= */
+
+
+export const useStock = () => {
+  return useQuery({
+    queryKey: ["stock"],
+    queryFn: getAllStock,
+  });
+};
+
+
+export const useAdjustments = () => {
+  return useQuery({
+    queryKey: ["adjustment"],
+    queryFn: getAdjustments,
+  });
+};
+
+
+
+export const useTransfers = () => {
+  return useQuery({
+    queryKey: ["transfer"],
+    queryFn: getTransfers,
+  });
+};
+
+
 
 // GET stock by branch
 export const useStockByBranch = (branchId, params) =>
@@ -63,11 +94,11 @@ export const useStockHistory = (params) =>
 ======================= */
 
 // ADJUST stock
-export const useAdjustStock = () => {
+export const useRecieveStock = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: adjustStock,
+    mutationFn: recieveStock,
     onSuccess: (_, { branchId }) => {
       queryClient.invalidateQueries({ queryKey: stockKeys.branch(branchId) });
       queryClient.invalidateQueries({ queryKey: stockKeys.lowStock(branchId) });
@@ -75,6 +106,31 @@ export const useAdjustStock = () => {
   });
 };
 
+
+
+
+// ADJUST stock
+export const useAdjustStock = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: adjustStock,
+
+    onSuccess: (_, variables) => {
+      const { branchId } = variables;
+
+  
+      queryClient.invalidateQueries({ queryKey: stockKeys.branch(branchId) });
+      queryClient.invalidateQueries({ queryKey: stockKeys.lowStock(branchId) });
+
+
+      queryClient.invalidateQueries({ queryKey: ["stock"] });
+
+      queryClient.invalidateQueries({ queryKey: ["adjustment"] });
+    },
+
+  });
+};
 // TRANSFER stock
 export const useTransferStock = () => {
   const queryClient = useQueryClient();

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,10 +21,10 @@ import {
     CheckCircle,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useCreateProduct } from "@/hooks/inv_hooks/useProducts"
+import { useCreateProduct, useUpdateProduct } from "@/hooks/inv_hooks/useProducts"
 import BasicInformation from "./BasicInformation"
 import AdditionalInformation from "./AdditionalInformation"
-import ImagesSection from "./ImagesSection"
+
 import VariantInformation from "./VariantInformation"
 import SupplierInformation from "./SupplierInformation"
 import TagsSection from "./TagsSection"
@@ -36,7 +36,10 @@ export default function AddProductTab({
     brands,
     suppliers,
     refetchProducts,
-    onTabChange
+    onTabChange,
+    productToEdit = null,
+    onSuccess,
+    onClose,
 }) {
     const { toast } = useToast()
     const [imagePreviews, setImagePreviews] = useState([])
@@ -44,11 +47,21 @@ export default function AddProductTab({
     const [tagInput, setTagInput] = useState("")
 
     const createProductMutation = useCreateProduct()
+    const updateProductMutation = useUpdateProduct()
+
+   
+    const isEdit = !!productToEdit
+    const mutation = isEdit ? updateProductMutation : createProductMutation
+
+
+
+    const [step, setStep] = useState(1)
+    const totalSteps = 5
 
     const [formData, setFormData] = useState({
         productName: "",
         sku: "",
-        barcode: "",
+      //  barcode: "",
         brand: "",
         category: "",
         subCategory: "",
@@ -56,43 +69,97 @@ export default function AddProductTab({
         season: "",
         collection: "",
         description: "",
-        longDescription: "",
+       // longDescription: "",
         careInstructions: "",
         material: "",
         countryOfOrigin: "",
         ageGroup: "",
         gender: "",
         styleType: "",
-        occasion: "",
-        primaryImage: "",
+       
+       
         tags: [],
         supplier: {
             supplier: "",
-            supplierCode: "",
-            leadTime: "",
-            minOrderQuantity: "",
-            reorderLevel: ""
+            
         },
-        variant: {
-            size: "",
-            color: "",
-            style: "",
-            fitType: "",
-            length: "",
-            variantSku: "",
-            variantBarcode: "",
-            costPrice: "",
-            retailPrice: "",
-            wholesalePrice: "",
-            memberPrice: "",
-            salePrice: "",
-            minimumPrice: "",
-            maxDiscountPercent: "",
-            images: []
-        },
-        pricingTiers: [{ minQuantity: "", price: "" }],
+        variant: [],
+      
         isActive: true
     })
+
+
+    useEffect(() => {
+        if (!productToEdit) {
+            resetForm(); // clear when switching back to add mode
+            return;
+        }
+
+        // 1. Basic + common fields
+        setFormData(prev => ({
+            ...prev,
+            productName: productToEdit.productName || "",
+            sku: productToEdit.sku || "",
+            barcode: productToEdit.barcode || "",
+            brand: productToEdit.brand?._id || productToEdit.brand || "",
+            category: productToEdit.category?._id || productToEdit.category || "",
+            subCategory: productToEdit.subCategory?._id || productToEdit.subCategory || "",
+            department: productToEdit.department || "Unisex",
+            season: productToEdit.season || "",
+            collection: productToEdit.collection || "",
+            description: productToEdit.description || "",
+            longDescription: productToEdit.longDescription || "",
+            careInstructions: productToEdit.careInstructions || "",
+            material: productToEdit.material || "",
+            countryOfOrigin: productToEdit.countryOfOrigin || "",
+            ageGroup: productToEdit.ageGroup || "",
+            gender: productToEdit.gender || "",
+            styleType: productToEdit.styleType || "",
+            occasion: productToEdit.occasion || "",
+            primaryImage: productToEdit.primaryImage || "",
+            tags: productToEdit.tags || [],
+            isActive: productToEdit.isActive ?? true,
+
+            // 2. Supplier – use correct nested key (supplierInfo)
+            supplier: {
+                supplier: productToEdit.supplierInfo?.supplier?._id || "",
+                supplierCode: productToEdit.supplierInfo?.supplierCode || "",
+                leadTime: productToEdit.supplierInfo?.leadTime?.toString() || "",
+                minOrderQuantity: productToEdit.supplierInfo?.minOrderQuantity?.toString() || "",
+                reorderLevel: productToEdit.supplierInfo?.reorderLevel?.toString() || "",
+            },
+
+            // 3. Variants – use plural "variants" and map each one properly
+            variants: (productToEdit.variants || []).map(v => ({
+                size: v.size || "",
+                color: v.color || "",
+                style: v.style || "",
+                fitType: v.fitType || "",
+                length: v.length || "",
+                variantSku: v.variantSku || "",
+                variantBarcode: v.variantBarcode || "",
+                costPrice: v.price?.costPrice?.toString() || "",
+                retailPrice: v.price?.retailPrice?.toString() || "",
+                quantity: v.price?.quantity?.toString() || "",
+                images: [],
+             
+            })),
+
+        
+        }));
+
+        
+        setImagePreviews(
+            productToEdit?.images?.map(img => img.url || img) || []
+        );
+
+        
+        if (productToEdit?.variants?.length > 0) {
+            setShowVariantSection(true);
+        }
+
+    }, [productToEdit]);
+
 
     const resetForm = () => {
         setFormData({
@@ -123,76 +190,18 @@ export default function AddProductTab({
                 minOrderQuantity: "",
                 reorderLevel: ""
             },
-            variant: {
-                size: "",
-                color: "",
-                style: "",
-                fitType: "",
-                length: "",
-                variantSku: "",
-                variantBarcode: "",
-                costPrice: "",
-                retailPrice: "",
-                wholesalePrice: "",
-                memberPrice: "",
-                salePrice: "",
-                minimumPrice: "",
-                maxDiscountPercent: "",
-                images: []
-            },
+            variants: [],                // make sure this is plural and empty
             pricingTiers: [{ minQuantity: "", price: "" }],
             isActive: true
         })
         setImagePreviews([])
         setTagInput("")
         setShowVariantSection(false)
+        setStep(1)                    // ← go back to step 1
     }
 
-    const handleImageUpload = (e, isVariant) => {
-        const files = e.target.files
-        if (!files) return
 
-        const newPreviews = []
-        const newFiles = []
-
-        Array.from(files).forEach(file => {
-            const previewUrl = URL.createObjectURL(file)
-            newPreviews.push(previewUrl)
-            newFiles.push(file)
-        })
-
-        if (isVariant) {
-            setFormData(prev => ({
-                ...prev,
-                variant: {
-                    ...prev.variant,
-                    images: [...prev.variant.images, ...newFiles]
-                }
-            }))
-            setImagePreviews(prev => [...prev, ...newPreviews])
-        } else {
-            // For primary image
-            if (newFiles[0]) {
-                setFormData(prev => ({ ...prev, primaryImage: newFiles[0].name }))
-            }
-        }
-    }
-
-    const removeImage = (index) => {
-        const newImages = [...formData.variant.images]
-        const newPreviews = [...imagePreviews]
-
-        URL.revokeObjectURL(newPreviews[index])
-        newImages.splice(index, 1)
-        newPreviews.splice(index, 1)
-
-        setFormData(prev => ({
-            ...prev,
-            variant: { ...prev.variant, images: newImages }
-        }))
-        setImagePreviews(newPreviews)
-    }
-
+ 
     const addTag = () => {
         if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
             setFormData(prev => ({
@@ -231,168 +240,276 @@ export default function AddProductTab({
         setFormData(prev => ({ ...prev, pricingTiers: newTiers }))
     }
 
-    const handleAddProduct = async () => {
+    const nextStep = () => {
+     
+
+        setStep(prev => Math.min(prev + 1, totalSteps))
+    }
+
+    const prevStep = () => setStep(prev => Math.max(prev - 1, 1))
+
+
+
+
+    const handleSubmit = async () => {
         try {
-            // Prepare product data based on model
+            // Prepare product data based on your backend model
             const productData = {
-                productName: formData.productName,
-                sku: formData.sku,
-                barcode: formData.barcode,
-                brand: formData.brand,
-                category: formData.category,
-                subCategory: formData.subCategory || undefined,
-                department: formData.department,
-                season: formData.season || undefined,
-                collection: formData.collection || undefined,
-                description: formData.description || undefined,
-                longDescription: formData.longDescription || undefined,
-                careInstructions: formData.careInstructions || undefined,
-                material: formData.material || undefined,
-                countryOfOrigin: formData.countryOfOrigin || undefined,
-                ageGroup: formData.ageGroup || undefined,
-                gender: formData.gender || undefined,
-                styleType: formData.styleType || undefined,
-                occasion: formData.occasion || undefined,
-                primaryImage: formData.primaryImage || undefined,
-                images: imagePreviews.map((preview, index) => ({
-                    url: preview, // In real app, upload to server first
-                    type: 'front',
-                    order: index
-                })),
+                productName: formData.productName.trim() || undefined,
+                sku: formData.sku.trim() || undefined,
+              //  barcode: formData.barcode.trim() || undefined,
+                brand: formData.brand || undefined,
+                category: formData.category || undefined,
+              //  subCategory: formData.subCategory?.trim() || undefined,
+                department: formData.department || "Unisex",
+                season: formData.season?.trim() || undefined,
+                collection: formData.collection?.trim() || undefined,
+                description: formData.description?.trim() || undefined,
+              //  longDescription: formData.longDescription?.trim() || undefined,
+                careInstructions: formData.careInstructions?.trim() || undefined,
+                material: formData.material?.trim() || undefined,
+                countryOfOrigin: formData.countryOfOrigin?.trim() || undefined,
+                ageGroup: formData.ageGroup?.trim() || undefined,
+                gender: formData.gender?.trim() || undefined,
+                styleType: formData.styleType?.trim() || undefined,
+           
+
+
                 tags: formData.tags.length > 0 ? formData.tags : undefined,
-                supplierInfo: formData.supplier.supplier ? {
-                    supplier: formData.supplier.supplier,
-                    supplierCode: formData.supplier.supplierCode || undefined,
-                    leadTime: parseInt(formData.supplier.leadTime) || undefined,
-                    minOrderQuantity: parseInt(formData.supplier.minOrderQuantity) || undefined,
-                    reorderLevel: parseInt(formData.supplier.reorderLevel) || undefined
-                } : undefined,
-                variants: showVariantSection ? [{
-                    size: formData.variant.size || undefined,
-                    color: formData.variant.color || undefined,
-                    style: formData.variant.style || undefined,
-                    fitType: formData.variant.fitType || undefined,
-                    length: formData.variant.length || undefined,
-                    variantSku: formData.variant.variantSku || undefined,
-                    variantBarcode: formData.variant.variantBarcode || undefined,
-                    images: formData.variant.images.map(file => file.name), // Upload to server first
-                    price: {
-                        costPrice: parseFloat(formData.variant.costPrice) || 0,
-                        retailPrice: parseFloat(formData.variant.retailPrice) || 0,
-                        wholesalePrice: parseFloat(formData.variant.wholesalePrice) || undefined,
-                        memberPrice: parseFloat(formData.variant.memberPrice) || undefined,
-                        salePrice: parseFloat(formData.variant.salePrice) || undefined,
-                        minimumPrice: parseFloat(formData.variant.minimumPrice) || undefined,
-                        maxDiscountPercent: parseFloat(formData.variant.maxDiscountPercent) || undefined
-                    },
-                    pricingTiers: formData.pricingTiers
-                        .filter(tier => tier.minQuantity && tier.price)
-                        .map(tier => ({
-                            minQuantity: parseInt(tier.minQuantity),
-                            price: parseFloat(tier.price)
-                        })),
-                    isActive: true
-                }] : [],
-                isActive: formData.isActive
+
+                supplierInfo: formData.supplier.supplier
+                    ? {
+                        supplier: formData.supplier.supplier,
+                       
+                    }
+                    : undefined,
+
+                // ────────────────────────────────────────────────
+                //           MULTI-VARIANT SECTION
+                // ────────────────────────────────────────────────
+                variants: formData.variants
+                    .filter(v => v.costPrice && v.retailPrice) // only send variants with required prices
+                    .map((v) => ({
+                        size: v.size?.trim() || undefined,
+                        color: v.color?.trim() || undefined,
+                        style: v.style?.trim() || undefined,
+                        fitType: v.fitType?.trim() || undefined,
+                        length: v.length?.trim() || undefined,
+                        quantity: v.quantity?.trim()|| '',
+                        // variantSku: v.variantSku?.trim() || undefined,
+                        // variantBarcode: v.variantBarcode?.trim() || undefined,
+
+                        // Variant-specific images (if you support them)
+                        images: v.images?.map(file => file.name) || [], // ← should be real URLs after upload
+
+                        price: {
+                            costPrice: Number(v.costPrice) || 0,
+                            retailPrice: Number(v.retailPrice) || 0,
+                           
+                        },
+
+                      
+                        isActive: true
+                    })),
+
+                isActive: formData.isActive ?? true
+            };
+
+            if (isEdit) {
+                await mutation.mutateAsync({
+                    id: productToEdit._id,
+                    data: productData   // or however your hook expects it
+                })
+                toast({
+                    title: "Success",
+                    description: "Product updated successfully",
+                })
+                resetForm()
+                setStep(1)
+                onSuccess?.()      
+                onClose?.()
+            } else {
+                await mutation.mutateAsync(productData)
+                toast({
+                    title: "Success",
+                    description: "Product created successfully",
+                })
+                resetForm()
             }
 
-            await createProductMutation.mutateAsync(productData)
-
-            toast({
-                title: "Success",
-                description: "Product created successfully",
-            })
-
-            resetForm()
-            onTabChange("product-list")
+            onTabChange("overview")
             refetchProducts()
         } catch (error) {
             toast({
                 title: "Error",
-                description: "Failed to create product",
+                description: "Operation failed",
                 variant: "destructive",
             })
         }
-    }
+    };
+
+
+
 
     const formSummary = {
         category: categories.find((c) => c._id === formData.category)?.categoryName || "Not selected",
         brand: brands.find((b) => b._id === formData.brand)?.brandName || "Not selected",
-        margin: formData.variant.costPrice && formData.variant.retailPrice
-            ? (((parseFloat(formData.variant.retailPrice) - parseFloat(formData.variant.costPrice)) / parseFloat(formData.variant.retailPrice)) * 100).toFixed(1)
+        margin: formData.variant?.costPrice && formData.variant.retailPrice
+            ? (((parseFloat(formData.variant.retailPrice) - parseFloat(formData.variant?.costPrice)) / parseFloat(formData.variant.retailPrice)) * 100).toFixed(1)
             : "0",
         isValid: formData.productName && formData.sku && formData.category && formData.brand,
     }
 
+    const renderStepContent = () => {
+        switch (step) {
+            // case 1:
+            //     return (
+            //         <ImagesSection
+            //             formData={formData}
+            //             setFormData={setFormData}
+            //             imagePreviews={imagePreviews}
+            //             onImageUpload={handleImageUpload}
+            //             onRemoveImage={removeImage}
+            //         />
+            //     )
+
+            case 1:
+                return (
+                    <BasicInformation
+                        formData={formData}
+                        setFormData={setFormData}
+                        categories={categories}
+                        brands={brands}
+                    />
+                )
+
+            case 2:
+                return <AdditionalInformation formData={formData} setFormData={setFormData} />
+
+            case 3:
+                return (
+                    <VariantInformation
+                        showVariantSection={showVariantSection}
+                        setShowVariantSection={setShowVariantSection}
+                        formData={formData}
+                        setFormData={setFormData}
+                        pricingTiers={formData.pricingTiers}
+                        onAddPricingTier={addPricingTier}
+                        onRemovePricingTier={removePricingTier}
+                        onUpdatePricingTier={updatePricingTier}
+                    />
+                )
+
+            case 4:
+                return (
+                    <>
+                        <SupplierInformation formData={formData} setFormData={setFormData} suppliers={suppliers} />
+                        <TagsSection
+                            formData={formData}
+                            tagInput={tagInput}
+                            setTagInput={setTagInput}
+                            onAddTag={addTag}
+                            onRemoveTag={removeTag}
+                        />
+                    </>
+                )
+
+            case 5:
+                return <SummarySection formSummary={formSummary} showVariantSection={showVariantSection} />
+
+            default:
+                return null
+        }
+    }
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form Section */}
-            <div className="lg:col-span-2 space-y-6">
-                <ImagesSection
-                    formData={formData}
-                    setFormData={setFormData}
-                    imagePreviews={imagePreviews}
-                    onImageUpload={handleImageUpload}
-                    onRemoveImage={removeImage}
-                />
-                <BasicInformation
-                    formData={formData}
-                    setFormData={setFormData}
-                    categories={categories}
-                    brands={brands}
-                />
+        <div className="space-y-8">
+            {/* Progress / Stepper bar */}
+            <div className="flex items-center justify-between mb-8 px-4">
+                {Array.from({ length: totalSteps }).map((_, i) => {
+                    const isActive = i + 1 === step
+                    const isCompleted = i + 1 < step
+                    return (
+                        <div key={i} className="flex items-center flex-1">
+                            {/* Circle */}
+                            <div
+                                className={`
+                        relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all
+                        ${isActive
+                                        ? "bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/30"
+                                        : isCompleted
+                                            ? "bg-primary/80 text-primary-foreground"
+                                            : "bg-muted text-muted-foreground border-2 border-muted-foreground/30"
+                                    }
+                    `}
+                            >
+                                {isCompleted ? (
+                                    <CheckCircle className="h-5 w-5" />
+                                ) : (
+                                    i + 1
+                                )}
+                            </div>
 
-                <AdditionalInformation
-                    formData={formData}
-                    setFormData={setFormData}
-                />
+                            {/* Connecting line (except last) */}
+                            {i < totalSteps - 1 && (
+                                <div
+                                    className={`
+                            h-[2px] flex-1 mx-2 transition-all
+                            ${isCompleted || isActive ? "bg-primary" : "bg-muted"}
+                        `}
+                                />
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
 
-              
+            {/* Card wrapper for better look */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        {
+                           step === 1 ? "Basic Information"
+                                : step === 2 ? "Additional Details"
+                                    : step === 3 ? "Variants & Pricing"
+                                        : step === 4 ? "Supplier & Tags"
+                                            : "Review & Save"}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {renderStepContent()}
+                </CardContent>
+            </Card>
 
-                <VariantInformation
-                    showVariantSection={showVariantSection}
-                    setShowVariantSection={setShowVariantSection}
-                    formData={formData}
-                    setFormData={setFormData}
-                    pricingTiers={formData.pricingTiers}
-                    onAddPricingTier={addPricingTier}
-                    onRemovePricingTier={removePricingTier}
-                    onUpdatePricingTier={updatePricingTier}
-                />
-
-                <SupplierInformation
-                    formData={formData}
-                    setFormData={setFormData}
-                    suppliers={suppliers}
-                />
-
-                <TagsSection
-                    formData={formData}
-                    tagInput={tagInput}
-                    setTagInput={setTagInput}
-                    onAddTag={addTag}
-                    onRemoveTag={removeTag}
-                />
-
+            {/* Navigation */}
+            <div className="flex justify-between pt-6 border-t">
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={resetForm} className="bg-transparent">
+                    <Button variant="outline" onClick={resetForm}>
                         Clear Form
                     </Button>
+                    <Button variant="outline" onClick={onClose}>
+                        Cancel
+                    </Button>
+
+                    {step > 1 && (
+                        <Button variant="outline" onClick={prevStep}>
+                            Back
+                        </Button>
+                    )}
+                </div>
+
+                {step < totalSteps ? (
+                    <Button onClick={nextStep}>
+                        Next
+                    </Button>
+                ) : (
                     <Button
-                        onClick={handleAddProduct}
+                        onClick={handleSubmit}
                         disabled={!formSummary.isValid || createProductMutation.isLoading}
                     >
                         {createProductMutation.isLoading ? "Saving..." : "Save Product"}
                     </Button>
-                </div>
-            </div>
-
-            {/* Summary Section */}
-            <div className="space-y-4">
-                <SummarySection
-                    formSummary={formSummary}
-                    showVariantSection={showVariantSection}
-                />
+                )}
             </div>
         </div>
     )

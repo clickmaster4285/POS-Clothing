@@ -5,20 +5,17 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
-  getSupplierDashboard,
 } from "@/api/supplier.api";
 
-/* ===================== QUERIES ===================== */
-
-// 🔹 All suppliers
-export const useSuppliers = (params) => {
+// 🔹 Fetch all suppliers
+export const useSuppliers = () => {
   return useQuery({
-    queryKey: ["suppliers", params],
-    queryFn: () => getSuppliers(params),
+    queryKey: ["suppliers"],
+    queryFn: getSuppliers,
   });
 };
 
-// 🔹 Single supplier
+// 🔹 Fetch single supplier
 export const useSupplier = (id) => {
   return useQuery({
     queryKey: ["supplier", id],
@@ -27,18 +24,7 @@ export const useSupplier = (id) => {
   });
 };
 
-// 🔹 Supplier dashboard
-export const useSupplierDashboard = (id) => {
-  return useQuery({
-    queryKey: ["supplier-dashboard", id],
-    queryFn: () => getSupplierDashboard(id),
-    enabled: !!id,
-  });
-};
-
-/* ===================== MUTATIONS ===================== */
-
-// 🔹 Create supplier
+// 🔹 Create supplier (MUTATION)
 export const useCreateSupplier = () => {
   const queryClient = useQueryClient();
 
@@ -50,20 +36,19 @@ export const useCreateSupplier = () => {
   });
 };
 
-// 🔹 Update supplier
+// 🔹 Update supplier (MUTATION)
 export const useUpdateSupplier = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateSupplier,
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      queryClient.invalidateQueries({ queryKey: ["supplier", id] });
     },
   });
 };
 
-// 🔹 Delete (Deactivate) supplier
+// 🔹 Delete supplier (MUTATION)
 export const useDeleteSupplier = () => {
   const queryClient = useQueryClient();
 

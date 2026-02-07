@@ -14,10 +14,5 @@ router.delete('/:id', auth, categoryBrandController.deleteCategory);
 
 
 
-router.post('/tags', auth, categoryBrandController.createTag);
-router.get('/tags', auth, categoryBrandController.getTags);
-router.post('/tags/:tagId/products/:productId', auth, categoryBrandController.applyTagToProduct);
-router.delete('/tags/:tagId/products/:productId', auth, categoryBrandController.removeTagFromProduct);
-router.get('/analytics/category-brand', auth, categoryBrandController.getCategoryBrandAnalytics);
 
 module.exports = router;

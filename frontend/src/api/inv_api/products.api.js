@@ -17,12 +17,14 @@ export const getProductById = async (id, includeStock = false) => {
 };
 
 export const createProduct = async (data) => {
-
+console.log("data",data)
   const res = await api.post("/products", data);
   return res.data;
 };
 
 export const updateProduct = async ({ id, data }) => {
+  console.log("id", id)
+  console.log("data in payload" , data)
   const res = await api.put(`/products/${id}`, data);
   return res.data;
 };

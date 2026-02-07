@@ -23,6 +23,37 @@ export function BrandFormDialog({
     handleBrandLogoUpload
 }) {
     const brandLogoRef = useRef(null)
+    const generateBrandCode = () => {
+        if (!brandForm.brandName) return
+
+        const name = brandForm.brandName
+            .replace(/[^a-zA-Z0-9 ]/g, "")
+            .trim()
+
+        const words = name.split(" ").filter(Boolean)
+
+        let code = ""
+
+        if (words.length === 1) {
+            // Single word brand: NIKE → NIKE, SAMSUNG → SAMSU
+            code = words[0].substring(0, 5)
+        } else {
+            // Multi-word brand: Puma Sports → PS
+            code = words.map(w => w[0]).join("")
+        }
+
+        // If brand name already contains numbers (3M, B2B)
+        if (/\d/.test(name)) {
+            const letters = code.replace(/\d/g, "")
+            const nums = name.match(/\d+/g)?.join("") || ""
+            code = (letters + nums).substring(0, 5)
+        }
+
+        setBrandForm({
+            ...brandForm,
+            brandCode: code.toUpperCase(),
+        })
+    }
 
     return (
         <Dialog
@@ -106,15 +137,35 @@ export function BrandFormDialog({
                         </div>
                         <div className="space-y-2">
                             <Label>Brand Code *</Label>
-                            <Input
-                                value={brandForm.brandCode}
-                                onChange={(e) =>
-                                    setBrandForm({ ...brandForm, brandCode: e.target.value.toUpperCase() })
-                                }
-                                placeholder="e.g., NK"
-                                maxLength={5}
-                            />
+
+                            <div className="flex gap-2">
+                                <Input
+                                    value={brandForm.brandCode}
+                                    onChange={(e) =>
+                                        setBrandForm({
+                                            ...brandForm,
+                                            brandCode: e.target.value.toUpperCase(),
+                                        })
+                                    }
+                                    placeholder="e.g., NK"
+                                    maxLength={5}
+                                />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={generateBrandCode}
+                                    disabled={!brandForm.brandName}
+                                >
+                                    Auto
+                                </Button>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                                Auto-generated from brand name (max 5 characters)
+                            </p>
                         </div>
+
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -141,31 +192,6 @@ export function BrandFormDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Categories</Label>
-                        <Select
-                            value={brandForm.categories[0] || "none"}
-                            onValueChange={(value) =>
-                                setBrandForm(prev => ({
-                                    ...prev,
-                                    categories: value && value !== "none" ? [value] : []
-                                }))
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
-                                        {cat.categoryName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
                         <Label>Description</Label>
                         <Textarea
                             value={brandForm.description}
@@ -183,50 +209,7 @@ export function BrandFormDialog({
                         />
                     </div> */}
 
-                    {/* SEO Section */}
-                    <div className="space-y-4 border-t pt-4">
-                        <Label className="text-lg">SEO Settings</Label>
-                        <div className="space-y-2">
-                            <Label>Meta Title</Label>
-                            <Input
-                                value={brandForm.seo.metaTitle}
-                                onChange={(e) =>
-                                    setBrandForm({
-                                        ...brandForm,
-                                        seo: { ...brandForm.seo, metaTitle: e.target.value }
-                                    })
-                                }
-                                placeholder="Meta title for SEO"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Meta Description</Label>
-                            <Textarea
-                                value={brandForm.seo.metaDescription}
-                                onChange={(e) =>
-                                    setBrandForm({
-                                        ...brandForm,
-                                        seo: { ...brandForm.seo, metaDescription: e.target.value }
-                                    })
-                                }
-                                placeholder="Meta description for SEO"
-                                rows={2}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Slug</Label>
-                            <Input
-                                value={brandForm.seo.slug}
-                                onChange={(e) =>
-                                    setBrandForm({
-                                        ...brandForm,
-                                        seo: { ...brandForm.seo, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }
-                                    })
-                                }
-                                placeholder="URL-friendly slug"
-                            />
-                        </div>
-                    </div>
+                
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>

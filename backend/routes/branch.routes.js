@@ -14,6 +14,7 @@ const {
   toggleBranchStatus
 } = require("../controllers/branch.controller");
 
+const csc = require("country-state-city").default;
 
 router.post("/", auth,checkPermission(PERMISSIONS.BRANCHES.CREATE), createBranch);
 
@@ -24,5 +25,6 @@ router.get("/:id", checkPermission(PERMISSIONS.BRANCHES.READ),auth, getBranchByI
 router.put("/:id", auth, checkPermission(PERMISSIONS.BRANCHES.UPDATE), updateBranch);
 
 router.delete("/:id", auth, checkPermission(PERMISSIONS.BRANCHES.DELETE), toggleBranchStatus);
+
 
 module.exports = router;

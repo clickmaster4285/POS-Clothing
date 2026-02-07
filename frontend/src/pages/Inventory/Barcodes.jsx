@@ -46,97 +46,9 @@ import {
     Copy,
 } from "lucide-react"
 
-export const dummyCategories= [
-    { id: "1", categoryName: "Clothing", categoryCode: "CLT", isActive: true },
-    { id: "2", categoryName: "Footwear", categoryCode: "FTW", isActive: true },
-    { id: "3", categoryName: "Accessories", categoryCode: "ACC", isActive: true },
-]
+import { useProducts } from "@/hooks/inv_hooks/useProducts"
 
-export const dummyBrands = [
-    { id: "1", brandName: "Nike", brandCode: "NK", isActive: true },
-    { id: "2", brandName: "Adidas", brandCode: "AD", isActive: true },
-    { id: "3", brandName: "Puma", brandCode: "PM", isActive: true },
-]
-export const dummyProducts = [
-    {
-        id: "1",
-        productName: "Classic Cotton T-Shirt",
-        sku: "TSH-001",
-        barcode: "8901234567890",
-        brand: dummyBrands[0],
-        category: dummyCategories[0],
-        department: "Men",
-        primaryImage: "/products/tshirt.jpg",
-        isActive: true,
-        variants: [
-            { id: "1a", size: "S", color: "Black", variantSku: "TSH-001-BLK-S", price: { costPrice: 15, retailPrice: 29.99 }, isActive: true },
-            { id: "1b", size: "M", color: "Black", variantSku: "TSH-001-BLK-M", price: { costPrice: 15, retailPrice: 29.99 }, isActive: true },
-            { id: "1c", size: "L", color: "Black", variantSku: "TSH-001-BLK-L", price: { costPrice: 15, retailPrice: 29.99 }, isActive: true },
-            { id: "1d", size: "M", color: "White", variantSku: "TSH-001-WHT-M", price: { costPrice: 15, retailPrice: 29.99 }, isActive: true },
-        ],
-    },
-    {
-        id: "2",
-        productName: "Running Sneakers Pro",
-        sku: "SHO-001",
-        barcode: "8901234567891",
-        brand: dummyBrands[0],
-        category: dummyCategories[1],
-        department: "Unisex",
-        primaryImage: "/products/sneakers.jpg",
-        isActive: true,
-        variants: [
-            { id: "2a", size: "40", color: "Red/Black", variantSku: "SHO-001-RB-40", price: { costPrice: 60, retailPrice: 129.99 }, isActive: true },
-            { id: "2b", size: "42", color: "Red/Black", variantSku: "SHO-001-RB-42", price: { costPrice: 60, retailPrice: 129.99 }, isActive: true },
-            { id: "2c", size: "44", color: "Red/Black", variantSku: "SHO-001-RB-44", price: { costPrice: 60, retailPrice: 129.99 }, isActive: true },
-        ],
-    },
-    {
-        id: "3",
-        productName: "Leather Belt Premium",
-        sku: "ACC-001",
-        barcode: "8901234567892",
-        brand: dummyBrands[1],
-        category: dummyCategories[2],
-        department: "Men",
-        primaryImage: "/products/belt.jpg",
-        isActive: true,
-        variants: [
-            { id: "3a", size: "32", color: "Brown", variantSku: "ACC-001-BRN-32", price: { costPrice: 25, retailPrice: 59.99 }, isActive: true },
-            { id: "3b", size: "34", color: "Brown", variantSku: "ACC-001-BRN-34", price: { costPrice: 25, retailPrice: 59.99 }, isActive: true },
-            { id: "3c", size: "34", color: "Black", variantSku: "ACC-001-BLK-34", price: { costPrice: 25, retailPrice: 59.99 }, isActive: true },
-        ],
-    },
-    {
-        id: "4",
-        productName: "Sports Jacket Elite",
-        sku: "JKT-001",
-        barcode: "8901234567893",
-        brand: dummyBrands[2],
-        category: dummyCategories[0],
-        department: "Men",
-        primaryImage: "/products/jacket.jpg",
-        isActive: true,
-        variants: [
-            { id: "4a", size: "M", color: "Navy", variantSku: "JKT-001-NVY-M", price: { costPrice: 80, retailPrice: 179.99 }, isActive: true },
-            { id: "4b", size: "L", color: "Navy", variantSku: "JKT-001-NVY-L", price: { costPrice: 80, retailPrice: 179.99 }, isActive: true },
-        ],
-    },
-    {
-        id: "5",
-        productName: "Fresh Milk 1L",
-        sku: "DRY-001",
-        barcode: "8901234567894",
-        brand: dummyBrands[0],
-        category: dummyCategories[0],
-        department: "Unisex",
-        primaryImage: "/products/milk.jpg",
-        isActive: true,
-        variants: [
-            { id: "5a", variantSku: "DRY-001-1L", price: { costPrice: 2, retailPrice: 3.25 }, isActive: true },
-        ],
-    },
-]
+
 
 export default function BarcodeManagementPage() {
     const [activeTab, setActiveTab] = useState("generate")
@@ -146,19 +58,45 @@ export default function BarcodeManagementPage() {
     const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState("standard")
 
+    const { data: productsData } = useProducts()
+
+
+    const products = productsData?.data || []
+
+    console.log("products", products)
+
+    // Fallback when both variantBarcode and variantSku are missing/empty
+    function generateFallbackBarcode(product, variant) {
+        const prefix = product.sku?.slice(0, 8) || "PRODXXXX";
+        const sizePart = variant.size ? variant.size.substring(0, 2).toUpperCase() : "XX";
+        const colorPart = variant.color ? variant.color.substring(0, 3).toUpperCase() : "XXX";
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `${prefix}-${sizePart}-${colorPart}-${random}`;
+    }
+
+    // Optional: cleaner regenerate function that follows same logic
+    const handleRegenerateBarcode = (index) => {
+        setBarcodeItems(prev =>
+            prev.map((item, i) =>
+                filteredItems[index] === item
+                    ? { ...item, barcode: item.variant.variantSku || generateFallbackBarcode(item.product, item.variant) }
+                    : item
+            )
+        );
+    };
+
     // Generate barcode items from products
     const [barcodeItems, setBarcodeItems] = useState(
-        dummyProducts.flatMap((product) =>
+        products.flatMap((product) =>
             product.variants.map((variant) => ({
                 product,
                 variant,
-                barcode: variant.variantBarcode || product.barcode || generateBarcode(),
+                barcode: variant.variantBarcode || variant.variantSku || generateFallbackBarcode(product, variant),
                 selected: false,
                 printQuantity: 1,
             }))
         )
     )
-
     const [templates] = useState([
         {
             id: "standard",
@@ -239,20 +177,120 @@ export default function BarcodeManagementPage() {
         )
     }
 
-    const handleRegenerateBarcode = (index) => {
-        setBarcodeItems(
-            barcodeItems.map((item, i) =>
-                filteredItems[index] === item ? { ...item, barcode: generateBarcode() } : item
-            )
-        )
-    }
+
 
     const handlePrint = () => {
-        // In real app, this would trigger print
-        setIsPrintDialogOpen(false)
-        alert(`Printing ${totalLabels} labels...`)
-    }
+        if (selectedItems.length === 0) return;
 
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Please allow popups for this site to print labels');
+            return;
+        }
+
+        let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Print Barcode Labels</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <style>
+            body {
+                margin: 0;
+                padding: 12mm;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+            .labels-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(85mm, 1fr));
+                gap: 10mm 8mm;
+            }
+            .label {
+                border: 1px solid #ddd;
+                padding: 6mm;
+                text-align: center;
+                background: white;
+                box-sizing: border-box;
+                height: 50mm;
+                width: 90mm;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                font-size: 10pt;
+                page-break-inside: avoid;
+            }
+            .label-sku {
+                font-size: 10pt;
+                font-family: monospace;
+                margin: 3mm 0 4mm 0;
+            }
+            svg.barcode {
+                width: 100%;
+                height: 34mm;
+                margin: 4mm 0;
+            }
+            .label-price {
+                font-weight: bold;
+                font-size: 13pt;
+            }
+            @media print {
+                body { padding: 0; margin: 0; }
+                .labels-grid { gap: 0; }
+                .label { border: none; }
+                @page { size: A4 portrait; margin: 10mm; }
+            }
+        </style>
+    </head>
+    <body onload="setTimeout(() => window.print(), 1000)">
+        <div class="labels-grid">
+    `;
+
+        selectedItems.forEach(item => {
+            const qty = Number(item.printQuantity) || 1;
+
+            // Safe string values - prevents [object Object]
+            const sku = String(item.variant?.variantSku || '-');
+            const price = Number(item.variant?.price?.retailPrice || 0).toFixed(0);
+            const barcodeValue = String(item.barcode || sku || 'NO-BARCODE');
+
+            for (let i = 0; i < qty; i++) {
+                html += `
+            <div class="label">
+              
+                <svg class="barcode" data-barcode="${barcodeValue}"></svg>
+                <div class="label-price">Rs. ${price}</div>
+            </div>
+            `;
+            }
+        });
+
+        html += `
+        </div>
+
+        <script>
+            document.querySelectorAll('.barcode').forEach(el => {
+                const value = el.getAttribute('data-barcode') || 'ERROR';
+                JsBarcode(el, value, {
+                    format: "CODE128",
+                    width: 2.3,
+                    height: 100,
+                    displayValue: true,
+                    fontSize: 14,
+                    margin: 8,
+                    lineColor: "#000000"
+                });
+            });
+        </script>
+    </body>
+    </html>
+    `;
+
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+    };
+    
     const handleCopyBarcode = (barcode) => {
         navigator.clipboard.writeText(barcode)
     }
@@ -265,6 +303,23 @@ export default function BarcodeManagementPage() {
     }
 
     const currentTemplate = templates.find((t) => t.id === selectedTemplate)
+    const handleQuickPrint = (index) => {
+        const itemToPrint = filteredItems[index];
+        if (!itemToPrint) return;
+
+        // 1. Select this item
+        setBarcodeItems(prevItems =>
+            prevItems.map(item =>
+                item === itemToPrint
+                    ? { ...item, selected: true, printQuantity: Math.max(1, item.printQuantity) }
+                    : item
+            )
+        );
+
+        // 2. Switch to print-queue tab
+        setActiveTab("print-queue");
+    };
+
 
     return (
         <>
@@ -396,7 +451,7 @@ export default function BarcodeManagementPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {filteredItems.map((item, index) => (
-                                        <TableRow key={`${item.product.id}-${item.variant.id}`}>
+                                        <TableRow key={`${item.product._id}-${item.variant._id}`}>
                                             <TableCell>
                                                 <Checkbox
                                                     checked={item.selected}
@@ -427,7 +482,7 @@ export default function BarcodeManagementPage() {
                                                     </Button>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>${item.variant.price.retailPrice.toFixed(2)}</TableCell>
+                                            <TableCell>${item.variant.price?.retailPrice?.toFixed(2)}</TableCell>
                                             <TableCell>
                                                 <Input
                                                     type="number"
@@ -444,13 +499,12 @@ export default function BarcodeManagementPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleRegenerateBarcode(index)}
+                                                        title="Select & Print this barcode"
+                                                        onClick={() => handleQuickPrint(index)}
                                                     >
-                                                        <Barcode className="h-4 w-4" />
+                                                        <Barcode className="h-4 w-4 text-primary" />  {/* optional: make it stand out */}
                                                     </Button>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
+                                                   
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -500,7 +554,7 @@ export default function BarcodeManagementPage() {
                                                 </div>
                                                 <div className="mt-3 text-sm">
                                                     <p>SKU: {item.variant.variantSku}</p>
-                                                    <p className="font-bold">${item.variant.price.retailPrice.toFixed(2)}</p>
+                                                    <p className="font-bold">${item.variant.price?.retailPrice?.toFixed(2)}</p>
                                                 </div>
                                             </CardContent>
                                         </Card>

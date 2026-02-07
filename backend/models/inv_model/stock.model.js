@@ -17,7 +17,7 @@ const stockSchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    enum: ['warehouse', 'store', 'showroom'],
+  
     required: true
   },
   storageDetails: {
@@ -185,9 +185,13 @@ const stockTransferSchema = new mongoose.Schema({
 });
 
 
-const Stock = mongoose.model('Stock', stockSchema);
-module.exports = Stock;
+
 const StockAdjustment = mongoose.model('StockAdjustment', stockAdjustmentSchema);
 module.exports.StockAdjustment = StockAdjustment;
+
 const StockTransfer = mongoose.model('StockTransfer', stockTransferSchema);
 module.exports.StockTransfer = StockTransfer;
+
+
+const Stock = mongoose.model('Stock', stockSchema);
+module.exports.Stock = Stock;

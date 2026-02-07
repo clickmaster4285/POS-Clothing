@@ -1,57 +1,98 @@
 const Product = require('../../models/inv_model/product.model');
-const Stock = require('../../models/inv_model/stock.model');
+const { Stock } = require('../../models/inv_model/stock.model');
+const {Supplier} = require('../../models/supplier.model')
 // const Category = require('../models/Category');
 // const Brand = require('../models/Brand');
 
 exports.createProduct = async (req, res) => {
+  console.log('req.body' , req.body)
   try {
-    const productData = req.body;
-    
-    // Generate SKU if not provided
+    const productData = { ...req.body }; // avoid mutating req.body directly
+
+    // 1. Generate main product SKU if missing
     if (!productData.sku) {
       const count = await Product.countDocuments();
       productData.sku = `PROD${String(count + 1).padStart(6, '0')}`;
     }
-    
-    // Generate variant SKUs
-    if (productData.variants && productData.variants.length > 0) {
+
+    // Clean / normalize base SKU (recommended)
+    const baseSku = (productData.sku || "").trim().toUpperCase();
+
+    // 2. Generate variant SKUs – only if variants exist
+    if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
       productData.variants = productData.variants.map((variant, index) => {
-        const variantCode = variant.size ? variant.size.substring(0, 2) : 'VR';
-        const colorCode = variant.color ? variant.color.substring(0, 3) : 'DEF';
-        variant.variantSku = `${productData.sku}-${colorCode}-${variantCode}-${String(index + 1).padStart(2, '0')}`;
+        // Skip generation if user already provided a variantSku
+        if (variant.variantSku) {
+          return variant;
+        }
+
+        // Size code: first 2 uppercase letters or fallback
+        let sizeCode = "XX";
+        if (variant.size && typeof variant.size === "string" && variant.size.trim()) {
+          sizeCode = variant.size.trim().toUpperCase().substring(0, 2);
+        }
+
+        // Color code: first 3 uppercase letters or fallback
+        let colorCode = "XXX";
+        if (variant.color && typeof variant.color === "string" && variant.color.trim()) {
+          colorCode = variant.color.trim().toUpperCase().substring(0, 3);
+        }
+
+        // Final format: [product-sku]-[size]-[color]
+        // Example: TSHIRT001-M-BLK
+        variant.variantSku = `${baseSku}-${sizeCode}-${colorCode}`;
+
+        // Optional: add index if you have many similar variants
+        // variant.variantSku += `-${String(index + 1).padStart(2, '0')}`;
+
         return variant;
       });
     }
-    
+
+    // 3. Create the document
     const product = new Product(productData);
+
+    // Optional: basic validation before save
+    // You can add more checks here if you want to enforce rules
+    if (product.variants?.length > 0) {
+      const hasDuplicateSkus = new Set(
+        product.variants.map(v => v.variantSku)
+      ).size !== product.variants.length;
+
+      if (hasDuplicateSkus) {
+        throw new Error("Generated variant SKUs contain duplicates – please review sizes/colors");
+      }
+    }
+
     await product.save();
-    
-    // Create initial stock records for each branch
+
+    // 4. Create stock records (your existing logic – unchanged)
     if (req.body.branches && req.body.branches.length > 0) {
-      const stockPromises = req.body.branches.map(branchId => {
-        return product.variants.map(async variant => {
+      const stockPromises = req.body.branches.flatMap(branchId =>
+        product.variants.map(async (variant) => {
           const stock = new Stock({
             product: product._id,
-            variantId: variant._id,
+            variantId: variant._id,          
             branch: branchId,
-            location: 'warehouse',
+            location: "warehouse",
             currentStock: 0,
             availableStock: 0
           });
           await stock.save();
-        });
-      });
-      await Promise.all(stockPromises.flat());
+        })
+      );
+      await Promise.all(stockPromises);
     }
-    
-    res.status(201).json({
+
+    return res.status(201).json({
       success: true,
       data: product
     });
   } catch (error) {
-    res.status(400).json({
+    console.error("Product creation error:", error);
+    return res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message || "Failed to create product"
     });
   }
 };
@@ -77,7 +118,10 @@ exports.getProducts = async (req, res) => {
     const products = await Product.find(query)
       .populate('category', 'categoryName')
       .populate('brand', 'brandName')
-      .populate('supplierInfo.supplier', 'supplierName')
+     .populate({
+        path: 'supplierInfo.supplier',
+        select: 'company_name'   // ← correct field name
+      })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
@@ -160,6 +204,7 @@ exports.getProductById = async (req, res) => {
 };
 
 exports.updateProduct = async (req, res) => {
+  console.log('req.body' , req.body)
   try {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
@@ -224,6 +269,8 @@ exports.deleteProduct = async (req, res) => {
     });
   }
 };
+
+
 
 exports.addProductVariant = async (req, res) => {
   try {
@@ -329,3 +376,4 @@ exports.updateVariantPrice = async (req, res) => {
     });
   }
 };
+

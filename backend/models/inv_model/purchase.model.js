@@ -72,67 +72,8 @@ const purchaseOrderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Goods Receipt Note Schema
-const goodsReceiptSchema = new mongoose.Schema({
-  grnNumber: {
-    type: String,
-    unique: true,
-    required: true
-  },
-  purchaseOrder: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PurchaseOrder',
-    required: true
-  },
-  branch: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branch',
-    required: true
-  },
-  receiptDate: {
-    type: Date,
-    default: Date.now
-  },
-  items: [{
-    product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product'
-    },
-    variantId: mongoose.Schema.Types.ObjectId,
-    orderedQuantity: Number,
-    receivedQuantity: Number,
-    acceptedQuantity: Number,
-    rejectedQuantity: Number,
-    rejectionReason: String,
-    qualityStatus: {
-      type: String,
-      enum: ['pending', 'passed', 'failed']
-    },
-    remarks: String
-  }],
-  receivedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  checkedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  status: {
-    type: String,
-    enum: ['draft', 'in-progress', 'completed'],
-    default: 'draft'
-  },
-  notes: String,
-  storageLocation: String
-}, {
-  timestamps: true
-});
+
 
 const PurchaseOrder = mongoose.model('PurchaseOrder', purchaseOrderSchema);
-const GoodsReceipt = mongoose.model('GoodsReceipt', goodsReceiptSchema);
 
-module.exports = {
-  PurchaseOrder,
-  GoodsReceipt
-};
+module.exports = { PurchaseOrder };

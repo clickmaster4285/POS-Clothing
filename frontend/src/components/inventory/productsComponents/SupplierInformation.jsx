@@ -16,6 +16,7 @@ export default function SupplierInformation({
     setFormData,
     suppliers
 }) {
+    console.log("suppliers", suppliers)
     return (
         <Card className="border-border/50">
             <CardHeader>
@@ -44,62 +45,9 @@ export default function SupplierInformation({
                     </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="supplierCode">Supplier Code</Label>
-                        <Input
-                            id="supplierCode"
-                            value={formData.supplier.supplierCode}
-                            onChange={(e) => setFormData({
-                                ...formData,
-                                supplier: { ...formData.supplier, supplierCode: e.target.value }
-                            })}
-                            placeholder="Supplier code"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="leadTime">Lead Time (days)</Label>
-                        <Input
-                            id="leadTime"
-                            type="number"
-                            value={formData.supplier.leadTime}
-                            onChange={(e) => setFormData({
-                                ...formData,
-                                supplier: { ...formData.supplier, leadTime: e.target.value }
-                            })}
-                            placeholder="Days"
-                        />
-                    </div>
-                </div>
+       
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="minOrderQuantity">Min Order Quantity</Label>
-                        <Input
-                            id="minOrderQuantity"
-                            type="number"
-                            value={formData.supplier.minOrderQuantity}
-                            onChange={(e) => setFormData({
-                                ...formData,
-                                supplier: { ...formData.supplier, minOrderQuantity: e.target.value }
-                            })}
-                            placeholder="Minimum quantity"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="reorderLevel">Reorder Level</Label>
-                        <Input
-                            id="reorderLevel"
-                            type="number"
-                            value={formData.supplier.reorderLevel}
-                            onChange={(e) => setFormData({
-                                ...formData,
-                                supplier: { ...formData.supplier, reorderLevel: e.target.value }
-                            })}
-                            placeholder="Reorder level"
-                        />
-                    </div>
-                </div>
+             
             </CardContent>
         </Card>
     )

@@ -9,8 +9,9 @@ const upload = require('../../middlewares/upload');
 
 
 router.post('/', auth, upload.single("logo"), categoryBrandController.createBrand);
+
 router.get('/', auth, categoryBrandController.getBrands);
-router.put('/:id', auth,upload.single("image"), categoryBrandController.updateBrand);
+router.put('/:id', auth,upload.single("logo"), categoryBrandController.updateBrand);
 router.delete('/:id', auth, categoryBrandController.deleteBrand);
 
 

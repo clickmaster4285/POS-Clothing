@@ -99,7 +99,7 @@ export default function BranchesTable({ branches,
                                     className={
                                         branch.status === "ACTIVE"
                                             ? "bg-success/10 text-success hover:bg-success/20 border-success/20"
-                                            : "bg-muted text-muted-foreground"
+                                            : "bg-destructive/80 text-card"
                                     }
                                 >
                                     {branch.status === "ACTIVE" ? "Active" : "Inactive"}

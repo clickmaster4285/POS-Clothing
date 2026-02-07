@@ -6,12 +6,23 @@ const stockController = require('../../controllers/inv_controllers/stockControll
 const auth = require('../../middlewares/auth');
 
 
-router.get('/stock/branch/:branchId', auth, stockController.getStockByBranch);
-router.post('/stock/branch/:branchId/adjust', auth, stockController.adjustStock);
-router.post('/stock/transfer', auth, stockController.transferStock);
-router.post('/stock/transfer/:transferId/receive', auth, stockController.receiveTransfer);
-router.get('/stock/branch/:branchId/alerts', auth, stockController.getLowStockAlerts);
-router.get('/stock/history', auth, stockController.getStockHistory);
+router.get('/branch/:branchId', auth, stockController.getStockByBranch);
+
+router.get('/', auth, stockController.getAllStock);
+
+router.get('/adjust', auth, stockController.getStockAdjustments);
+router.get('/transfer', auth, stockController.getStockTransfers);
+
+router.post('/:branchId/recieve', auth, stockController.receiveStock);
+
+router.post('/:branchId/adjust', auth, stockController.adjustStock);
+
+router.post('/transfer', auth, stockController.transferStock);
+
+router.post('/:transferId/receive', auth, stockController.receiveTransfer);
+
+router.get('/:branchId/alerts', auth, stockController.getLowStockAlerts);
+router.get('/history', auth, stockController.getStockHistory);
 
 
 module.exports = router;

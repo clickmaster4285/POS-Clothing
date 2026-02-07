@@ -11,6 +11,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { getCountries, getStates, getCities } from "@/api/location.api";
+
 
 const initialFormData = {
     branch_name: "",
@@ -33,6 +35,56 @@ const BranchModal = ({
     mode,
 }) => {
     const [formData, setFormData] = useState(initialFormData);
+
+
+    const [countries, setCountries] = useState([]);
+    const [states, setStates] = useState([]);
+    const [cities, setCities] = useState([]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        getCountries()
+            .then(setCountries)
+            .catch(console.error);
+    }, [isOpen]);
+
+    const handleCountryChange = async (countryCode) => {
+        setFormData({
+            ...formData,
+            address: { country: countryCode, state: "", city: "" },
+        });
+
+        setStates([]);
+        setCities([]);
+
+        if (!countryCode) return;
+
+        const data = await getStates(countryCode);
+        setStates(data);
+    };
+
+    const handleStateChange = async (stateCode) => {
+        setFormData({
+            ...formData,
+            address: { ...formData.address, state: stateCode, city: "" },
+        });
+
+        setCities([]);
+
+        if (!stateCode) return;
+
+        const data = await getCities(formData.address.country, stateCode);
+        setCities(data);
+    };
+
+    const handleCityChange = (cityName) => {
+        setFormData({
+            ...formData,
+            address: { ...formData.address, city: cityName },
+        });
+    };
+
 
     useEffect(() => {
         if (branch && (mode === "edit" || mode === "view")) {
@@ -171,71 +223,72 @@ const BranchModal = ({
 
                     {/* Address Section */}
                     <div className="space-y-4">
-                        <Label className="text-sm font-medium text-foreground">
-                            Address
-                        </Label>
+                        <Label className="text-sm font-medium">Address</Label>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="city" className="text-xs text-muted-foreground">
-                                    City
-                                </Label>
-                                <Input
-                                    id="city"
-                                    value={formData.address.city}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            address: { ...formData.address, city: e.target.value },
-                                        })
-                                    }
-                                    placeholder="City"
-                                    disabled={isViewMode}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="state"
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    State
-                                </Label>
-                                <Input
-                                    id="state"
-                                    value={formData.address.state}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            address: { ...formData.address, state: e.target.value },
-                                        })
-                                    }
-                                    placeholder="State"
-                                    disabled={isViewMode}
-                                />
-                            </div>
+                        {/* Country */}
+                        <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">Country</Label>
+                            <Select
+                                value={formData.address.country}
+                                onValueChange={handleCountryChange}
+                                disabled={isViewMode}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {countries.map((c) => (
+                                        <SelectItem key={c.isoCode} value={c.isoCode}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
+                        {/* State */}
                         <div className="space-y-2">
-                            <Label
-                                htmlFor="country"
-                                className="text-xs text-muted-foreground"
+                            <Label className="text-xs text-muted-foreground">State</Label>
+                            <Select
+                                value={formData.address.state}
+                                onValueChange={handleStateChange}
+                                disabled={!formData.address.country || isViewMode}
                             >
-                                Country
-                            </Label>
-                            <Input
-                                id="country"
-                                value={formData.address.country}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        address: { ...formData.address, country: e.target.value },
-                                    })
-                                }
-                                placeholder="Country"
-                                disabled={isViewMode}
-                            />
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select state" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {states.map((s) => (
+                                        <SelectItem key={s.isoCode} value={s.isoCode}>
+                                            {s.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* City */}
+                        <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">City</Label>
+                            <Select
+                                value={formData.address.city}
+                                onValueChange={handleCityChange}
+                                disabled={!formData.address.state || isViewMode}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select city" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cities.map((city, index) => (
+                                        <SelectItem key={index} value={city.name}>
+                                            {city.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
+
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-4">

@@ -48,26 +48,14 @@ export default function CategoriesBrands() {
         id: "",
         categoryName: "",
         categoryCode: "",
-        parentCategory: "",
+       
         description: "",
         image: null,          // File
         imagePreview: "",  
-        displayOrder: 0,
+       
         department: "All",
         isActive: true,
-        attributes: [
-            {
-                name: "",
-                type: "text",
-                options: [],
-                isRequired: false,
-            },
-        ],
-        seo: {
-            metaTitle: "",
-            metaDescription: "",
-            slug: "",
-        },
+        
     });
 
     const [brandForm, setBrandForm] = useState({
@@ -78,14 +66,10 @@ export default function CategoriesBrands() {
         website: "",
         logo: null,          // File
         logoPreview: "", 
-        categories: [],
+       
         countryOfOrigin: "",
         isActive: true,
-        seo: {
-            metaTitle: "",
-            metaDescription: "",
-            slug: "",
-        },
+        
     })
 
     //----------create mutations
@@ -184,10 +168,10 @@ export default function CategoriesBrands() {
             // ===== BASIC FIELDS =====
             formData.append("categoryName", categoryForm.categoryName)
             formData.append("categoryCode", categoryForm.categoryCode)
-            formData.append("parentCategory", categoryForm.parentCategory || "")
+          
             formData.append("description", categoryForm.description || "")
             formData.append("department", categoryForm.department || "")
-            formData.append("displayOrder", categoryForm.displayOrder ?? "")
+        
             formData.append("isActive", categoryForm.isActive)
 
             // ===== IMAGE (THE KEY PART) =====
@@ -196,26 +180,8 @@ export default function CategoriesBrands() {
             }
 
             // ===== ARRAYS / OBJECTS (MUST BE STRINGIFIED) =====
-            formData.append(
-                "attributes",
-                JSON.stringify(categoryForm.attributes.filter(attr => attr.name))
-            )
-
-            formData.append(
-                "seo",
-                JSON.stringify({
-                    metaTitle:
-                        categoryForm.seo.metaTitle ||
-                        `${categoryForm.categoryName} | Category`,
-                    metaDescription:
-                        categoryForm.seo.metaDescription ||
-                        categoryForm.description ||
-                        "",
-                    slug:
-                        categoryForm.seo.slug ||
-                        categoryForm.categoryName.toLowerCase().replace(/\s+/g, "-"),
-                })
-            )
+         
+           
 
             // 🔍 DEBUG — YOU SHOULD SEE VALUES HERE
             for (let [key, value] of formData.entries()) {
@@ -257,24 +223,9 @@ export default function CategoriesBrands() {
             formData.append("countryOfOrigin", brandForm.countryOfOrigin || "");
             formData.append("isActive", brandForm.isActive);
 
-            formData.append(
-                "categories",
-                JSON.stringify(brandForm.categories || [])
-            );
+           
 
-            formData.append(
-                "seo",
-                JSON.stringify({
-                    metaTitle:
-                        brandForm.seo.metaTitle ||
-                        `${brandForm.brandName} | Brand`,
-                    metaDescription:
-                        brandForm.seo.metaDescription || brandForm.description || "",
-                    slug:
-                        brandForm.seo.slug ||
-                        brandForm.brandName.toLowerCase().replace(/\s+/g, "-"),
-                })
-            );
+           
 
             // 👇 FILE UPLOAD (THE KEY PART)
             if (brandForm.logo instanceof File) {
@@ -309,26 +260,14 @@ export default function CategoriesBrands() {
             id: category._id || category.id,
             categoryName: category.categoryName || "",
             categoryCode: category.categoryCode || "",
-            parentCategory: category.parentCategory?._id || "", // ✅ FIXED
+           
             description: category.description || "",
             image: null, // ✅ always null in edit
             imagePreview: category.image || "", // ✅ SHOW EXISTING IMAGE
-            displayOrder: category.displayOrder || 0,
+          
             department: category.department || "All",
             isActive: category.isActive ?? true,
-            attributes: category.attributes?.length
-                ? category.attributes
-                : [{
-                    name: "",
-                    type: "text",
-                    options: [],
-                    isRequired: false,
-                }],
-            seo: category.seo || {
-                metaTitle: "",
-                metaDescription: "",
-                slug: "",
-            },
+           
         });
 
         setIsEditMode(true);
@@ -345,14 +284,10 @@ export default function CategoriesBrands() {
             website: brand.website || "",
             logo: null,                      // ✅ null, not string
             logoPreview: brand.logo || "",   // ✅ preview
-            categories: brand.categories || [],
+           
             countryOfOrigin: brand.countryOfOrigin || "",
             isActive: brand.isActive ?? true,
-            seo: brand.seo || {
-                metaTitle: "",
-                metaDescription: "",
-                slug: "",
-            },
+           
         });
 
         setIsEditMode(true);
@@ -385,25 +320,14 @@ export default function CategoriesBrands() {
             id: "",
             categoryName: "",
             categoryCode: "",
-            parentCategory: "",
+           
             description: "",
             image: "",
-            displayOrder: 0,
+           
             department: "All",
             isActive: true,
-            attributes: [
-                {
-                    name: "",
-                    type: "text",
-                    options: [],
-                    isRequired: false,
-                },
-            ],
-            seo: {
-                metaTitle: "",
-                metaDescription: "",
-                slug: "",
-            },
+           
+           
         })
         setIsEditMode(false)
     }
@@ -416,14 +340,10 @@ export default function CategoriesBrands() {
             description: "",
             website: "",
             logo: "",
-            categories: [],
+          
             countryOfOrigin: "",
             isActive: true,
-            seo: {
-                metaTitle: "",
-                metaDescription: "",
-                slug: "",
-            },
+         
         })
         setIsEditMode(false)
     }

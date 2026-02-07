@@ -1,4 +1,4 @@
-import api from "./axios";
+import api from "../axios";
 
 // GET stock by branch
 export const getStockByBranch = async ({ branchId, params }) => {
@@ -6,9 +6,37 @@ export const getStockByBranch = async ({ branchId, params }) => {
   return res.data;
 };
 
+export const getAllStock = async () => {
+  const res = await api.get(`/stock`);
+  return res.data;
+};
+
+export const getAdjustments = async () => {
+  const res = await api.get(`/stock/adjust`);
+  return res.data;
+};
+
+
+export const getTransfers = async () => {
+  const res = await api.get(`/stock/transfer`);
+  return res.data;
+};
+
+
+//ADD stock
+export const recieveStock = async ({ branchId, data }) => {
+  const res = await api.post(`/stock/branch/${branchId}/recieve`, data);
+  return res.data;
+};
+
+
+
+
+
+
 // ADJUST stock
 export const adjustStock = async ({ branchId, data }) => {
-  const res = await api.post(`/stock/branch/${branchId}/adjust`, data);
+  const res = await api.post(`/stock/${branchId}/adjust`, data);
   return res.data;
 };
 

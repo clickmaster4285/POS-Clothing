@@ -85,6 +85,7 @@ const navItems = [
         ],
     },
     { title: "Branches", href: "/branches", icon: Building2 },
+    { title: "Supplier", href: "/supplier", icon: Building2 },
     {
         title: "Settings",
         icon: Settings,

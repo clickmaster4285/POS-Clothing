@@ -30,6 +30,30 @@ export function CategoryFormDialog({
 }) {
     const categoryImageRef = useRef(null)
 
+    const generateCategoryCode = () => {
+        if (!categoryForm.categoryName) return
+
+        const words = categoryForm.categoryName
+            .replace(/[^a-zA-Z ]/g, "")
+            .trim()
+            .split(" ")
+            .filter(Boolean)
+
+        let code = ""
+
+        if (words.length === 1) {
+            code = words[0].substring(0, 5)
+        } else {
+            code = words.map(w => w[0]).join("")
+        }
+
+        setCategoryForm({
+            ...categoryForm,
+            categoryCode: code.toUpperCase().slice(0, 5),
+        })
+    }
+
+
     return (
         <Dialog
             open={isOpen}
@@ -115,44 +139,39 @@ export function CategoryFormDialog({
                         </div>
                         <div className="space-y-2">
                             <Label>Category Code *</Label>
-                            <Input
-                                value={categoryForm.categoryCode}
-                                onChange={(e) =>
-                                    setCategoryForm({
-                                        ...categoryForm,
-                                        categoryCode: e.target.value.toUpperCase(),
-                                    })
-                                }
-                                placeholder="e.g., CLT"
-                                maxLength={5}
-                            />
+
+                            <div className="flex gap-2">
+                                <Input
+                                    value={categoryForm.categoryCode}
+                                    onChange={(e) =>
+                                        setCategoryForm({
+                                            ...categoryForm,
+                                            categoryCode: e.target.value.toUpperCase(),
+                                        })
+                                    }
+                                    placeholder="e.g., CLT"
+                                    maxLength={5}
+                                />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={generateCategoryCode}
+                                    disabled={!categoryForm.categoryName}
+                                >
+                                    Auto
+                                </Button>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                                Auto-generated from category name (max 5 characters)
+                            </p>
                         </div>
+
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Parent Category (Optional)</Label>
-                            <Select
-                                value={categoryForm.parentCategory}
-                                onValueChange={(value) =>
-                                    setCategoryForm({ ...categoryForm, parentCategory: value })
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select parent category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None (Top Level)</SelectItem>
-                                    {parentCategories
-                                        .filter((cat) => cat._id !== categoryForm.id && cat.id !== categoryForm.id)
-                                        .map((cat) => (
-                                            <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
-                                                {cat.categoryName}
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                      
                         <div className="space-y-2">
                             <Label>Department</Label>
                             <Select
@@ -171,172 +190,27 @@ export function CategoryFormDialog({
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Display Order</Label>
-                            <Input
-                                type="number"
-                                value={categoryForm.displayOrder}
-                                onChange={(e) =>
-                                    setCategoryForm({
-                                        ...categoryForm,
-                                        displayOrder: Number(e.target.value),
-                                    })
-                                }
-                                min="0"
-                            />
-                        </div>
-                       
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Textarea
-                            value={categoryForm.description}
-                            onChange={(e) =>
-                                setCategoryForm({ ...categoryForm, description: e.target.value })
-                            }
-                            placeholder="Enter category description"
-                            rows={3}
-                        />
-                    </div>
-
-                    {/* Attributes Section */}
-                    <div className="space-y-4 border-t pt-4">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-lg">Attributes</Label>
-                            <Button type="button" variant="outline" size="sm" onClick={handleAddAttribute}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Attribute
-                            </Button>
-                        </div>
-
-                        {categoryForm.attributes.map((attr, index) => (
-                            <div key={index} className="space-y-3 p-4 border rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <Label>Attribute #{index + 1}</Label>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleRemoveAttribute(index)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        placeholder="Attribute name"
-                                        value={attr.name}
-                                        onChange={(e) => handleAttributeChange(index, 'name', e.target.value)}
-                                    />
-                                    <Select
-                                        value={attr.type}
-                                        onValueChange={(value) => handleAttributeChange(index, 'type', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="text">Text</SelectItem>
-                                            <SelectItem value="number">Number</SelectItem>
-                                            <SelectItem value="select">Select</SelectItem>
-                                            <SelectItem value="multiselect">Multi-Select</SelectItem>
-                                            <SelectItem value="checkbox">Checkbox</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {(attr.type === 'select' || attr.type === 'multiselect') && (
-                                    <div className="space-y-2">
-                                        <Label>Options</Label>
-                                        {attr.options.map((option, optionIndex) => (
-                                            <div key={optionIndex} className="flex items-center gap-2">
-                                                <Input
-                                                    value={option}
-                                                    onChange={(e) => handleOptionChange(index, optionIndex, e.target.value)}
-                                                    placeholder={`Option ${optionIndex + 1}`}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleRemoveOption(index, optionIndex)}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleAddOption(index)}
-                                        >
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Add Option
-                                        </Button>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        checked={attr.isRequired}
-                                        onCheckedChange={(checked) => handleAttributeChange(index, 'isRequired', checked)}
-                                    />
-                                    <Label>Required Field</Label>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* SEO Section */}
-                    <div className="space-y-4 border-t pt-4">
-                        <Label className="text-lg">SEO Settings</Label>
-                        <div className="space-y-2">
-                            <Label>Meta Title</Label>
-                            <Input
-                                value={categoryForm.seo.metaTitle}
-                                onChange={(e) =>
-                                    setCategoryForm({
-                                        ...categoryForm,
-                                        seo: { ...categoryForm.seo, metaTitle: e.target.value }
-                                    })
-                                }
-                                placeholder="Meta title for SEO"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Meta Description</Label>
+                            <Label>Description</Label>
                             <Textarea
-                                value={categoryForm.seo.metaDescription}
+                                value={categoryForm.description}
                                 onChange={(e) =>
-                                    setCategoryForm({
-                                        ...categoryForm,
-                                        seo: { ...categoryForm.seo, metaDescription: e.target.value }
-                                    })
+                                    setCategoryForm({ ...categoryForm, description: e.target.value })
                                 }
-                                placeholder="Meta description for SEO"
-                                rows={2}
+                                placeholder="Enter category description"
+                                rows={3}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Slug</Label>
-                            <Input
-                                value={categoryForm.seo.slug}
-                                onChange={(e) =>
-                                    setCategoryForm({
-                                        ...categoryForm,
-                                        seo: { ...categoryForm.seo, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }
-                                    })
-                                }
-                                placeholder="URL-friendly slug"
-                            />
-                        </div>
+
+                        
                     </div>
+
+                
+
+                  
+                
+
+                 
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -9,7 +9,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Package } from "lucide-react"
+import { Package, RefreshCcw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 
 export default function BasicInformation({
@@ -18,6 +19,15 @@ export default function BasicInformation({
     categories,
     brands
 }) {
+
+    const handleAutoGenerateSKU = () => {
+        // Simple SKU pattern: PROD + random 6 digits
+        const randomNumber = Math.floor(100000 + Math.random() * 900000)
+        const sku = `PROD${randomNumber}`
+        setFormData({ ...formData, sku })
+    }
+
+
     return (
         <Card className="border-border/50">
             <CardHeader>
@@ -39,16 +49,28 @@ export default function BasicInformation({
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="sku">SKU *</Label>
-                        <Input
-                            id="sku"
-                            value={formData.sku}
-                            onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                            placeholder="Enter SKU"
-                        />
+                        <div className="flex gap-2">
+                            <Input
+                                id="sku"
+                                value={formData.sku}
+
+                                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                                placeholder="Enter SKU"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleAutoGenerateSKU}
+                                className="flex items-center gap-1"
+                            >
+                                <RefreshCcw className="h-4 w-4" />
+                                Auto
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="barcode">Barcode</Label>
                         <Input
@@ -75,7 +97,7 @@ export default function BasicInformation({
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -117,7 +139,7 @@ export default function BasicInformation({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                         <Label>Sub Category</Label>
                         <Select
                             value={formData.subCategory}
@@ -134,7 +156,7 @@ export default function BasicInformation({
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
+                    </div> */}
                     <div className="space-y-2">
                         <Label>Gender</Label>
                         <Select
@@ -164,7 +186,7 @@ export default function BasicInformation({
                     />
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                     <Label htmlFor="longDescription">Long Description</Label>
                     <Textarea
                         id="longDescription"
@@ -173,7 +195,7 @@ export default function BasicInformation({
                         placeholder="Enter detailed description"
                         rows={3}
                     />
-                </div>
+                </div> */}
             </CardContent>
         </Card>
     )

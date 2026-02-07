@@ -55,16 +55,21 @@ const productSchema = new mongoose.Schema({
       costPrice: Number,
       retailPrice: Number,
     },
-quantity:String,
-   priceHistory: [{
-      date: Date,
-      price: {
-        costPrice: Number,
-        retailPrice: Number
-      },
-      type: String,
-      changedBy: String
-    }],
+    quantity: String,
+
+   priceHistory: [
+  {
+    date: { type: Date },
+    price: {
+      costPrice: { type: Number },
+      retailPrice: { type: Number }
+    },
+    type: { type: String, enum: ["previous", "update"] },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  }
+]
+,
+   
    
     stockHistory: [{ 
       date: Date,

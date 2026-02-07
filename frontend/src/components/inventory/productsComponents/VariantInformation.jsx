@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react"
 export default function VariantInformation({
     formData,
     setFormData,
+    productToEdit
 }) {
     const variants = formData.variants || []
 
@@ -118,14 +119,7 @@ export default function VariantInformation({
 
                                 {/* SKU / Barcode */}
                                 {/* <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Variant SKU</Label>
-                                        <Input
-                                            value={variant.variantSku}
-                                            onChange={(e) => updateVariant(vIndex, "variantSku", e.target.value)}
-                                            placeholder="Auto-generated if empty"
-                                        />
-                                    </div>
+                               
                                     <div className="space-y-2">
                                         <Label>Variant Barcode</Label>
                                         <Input
@@ -141,6 +135,16 @@ export default function VariantInformation({
                                    
                                     <div className="grid grid-cols-3 md:grid-cols-2 gap-4">
 
+                                        {productToEdit &&   <div className="space-y-2">
+                                            <Label>Variant SKU</Label>
+                                            <Input
+                                                value={variant.variantSku}
+                                                onChange={(e) => updateVariant(vIndex, "variantSku", e.target.value)}
+                                                placeholder="Auto-generated if empty"
+                                            />
+                                        </div>}
+
+                                        
                                         <div className="space-y-2">
                                             <Label>Quantity</Label>
                                             <Input

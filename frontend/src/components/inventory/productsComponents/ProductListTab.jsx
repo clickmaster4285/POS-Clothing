@@ -259,11 +259,11 @@ export default function ProductListTab({
                             {filteredProducts.map((product) => (
                                 <TableRow key={product._id}>
                                    
-                                    <TableCell className="font-medium">{product.productName}</TableCell>
-                                    <TableCell className="text-muted-foreground">{product.sku}</TableCell>
-                                    <TableCell>{product.category?.categoryName || "N/A"}</TableCell>
-                                    <TableCell>{product.brand?.brandName || "N/A"}</TableCell>
-                                    <TableCell>{product.variants?.length || 0}</TableCell>
+                                    <TableCell onClick={() => onViewProduct(product)}  className="font-medium">{product.productName}</TableCell>
+                                    <TableCell onClick={() => onViewProduct(product)}  className="text-muted-foreground">{product.sku}</TableCell>
+                                    <TableCell onClick={() => onViewProduct(product)}>{product.category?.categoryName || "N/A"}</TableCell>
+                                    <TableCell onClick={() => onViewProduct(product)}>{product.brand?.brandName || "N/A"}</TableCell>
+                                    <TableCell onClick={() => onViewProduct(product)}>{product.variants?.length || 0}</TableCell>
                                     <TableCell>
                                         ${product.variants?.[0]?.price?.retailPrice?.toFixed(2) || "0.00"}
                                     </TableCell>

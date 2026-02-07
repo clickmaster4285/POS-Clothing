@@ -5,7 +5,7 @@ const {Supplier} = require('../../models/supplier.model')
 // const Brand = require('../models/Brand');
 
 exports.createProduct = async (req, res) => {
-  console.log('req.body' , req.body)
+
   try {
     const productData = { ...req.body }; // avoid mutating req.body directly
 
@@ -204,7 +204,7 @@ exports.getProductById = async (req, res) => {
 };
 
 exports.updateProduct = async (req, res) => {
-  console.log('req.body' , req.body)
+  
   try {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
@@ -275,26 +275,25 @@ exports.deleteProduct = async (req, res) => {
 exports.addProductVariant = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
-    
+
     const variantData = req.body;
     const variantCount = product.variants.length;
-    
-    // Generate variant SKU
-    const variantCode = variantData.size ? variantData.size.substring(0, 2) : 'VR';
-    const colorCode = variantData.color ? variantData.color.substring(0, 3) : 'DEF';
-    variantData.variantSku = `${product.sku}-${colorCode}-${variantCode}-${String(variantCount + 1).padStart(2, '0')}`;
-    
+
+    // ✅ Only generate SKU if missing
+    if (!variantData.variantSku) {
+      const variantCode = variantData.size ? variantData.size.substring(0, 2).toUpperCase() : 'VR';
+      const colorCode = variantData.color ? variantData.color.substring(0, 3).toUpperCase() : 'DEF';
+      variantData.variantSku = `${product.sku}-${colorCode}-${variantCode}-${String(variantCount + 1).padStart(2, '0')}`;
+    }
+
     product.variants.push(variantData);
     await product.save();
-    
-    // Create stock records for all branches
+
+    // ✅ Create stock records for branches if provided
     if (req.body.branches && req.body.branches.length > 0) {
       const newVariant = product.variants[product.variants.length - 1];
       const stockPromises = req.body.branches.map(async branchId => {
@@ -310,11 +309,14 @@ exports.addProductVariant = async (req, res) => {
       });
       await Promise.all(stockPromises);
     }
-    
+
+    // ✅ Return only the new variant
+    const newVariant = product.variants[product.variants.length - 1];
     res.status(201).json({
       success: true,
-      data: product
+      data: newVariant
     });
+
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -322,58 +324,83 @@ exports.addProductVariant = async (req, res) => {
     });
   }
 };
+
 
 exports.updateVariantPrice = async (req, res) => {
   try {
     const { productId, variantId } = req.params;
-    const priceData = req.body;
-    
+    const { costPrice, retailPrice } = req.body;
+
+    // Basic validation
+    if (
+      costPrice === undefined ||
+      retailPrice === undefined ||
+      isNaN(costPrice) ||
+      isNaN(retailPrice) ||
+      costPrice < 0 ||
+      retailPrice < 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid costPrice or retailPrice",
+      });
+    }
+
+    // Find product
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
-    
+
+    // Find variant
     const variant = product.variants.id(variantId);
     if (!variant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Variant not found'
-      });
+      return res.status(404).json({ success: false, message: "Variant not found" });
     }
-    
-    // Add to price history before updating
+
+    // Ensure priceHistory exists
     if (!variant.priceHistory) variant.priceHistory = [];
-    
+
+    // Push previous price to history
     variant.priceHistory.push({
       date: new Date(),
-      price: variant.price.retailPrice,
-      type: 'previous',
-      changedBy: req.user.id
+      price: {
+        costPrice: variant.price?.costPrice || 0,
+        retailPrice: variant.price?.retailPrice || 0,
+      },
+      type: "previous",
+      changedBy: req.user?.id || "system",
     });
-    
-    // Update price
-    variant.price = { ...variant.price, ...priceData };
+
+    // Update variant price
+    variant.price = {
+      costPrice: Number(costPrice),
+      retailPrice: Number(retailPrice),
+    };
+
+    // Push updated price to history
     variant.priceHistory.push({
       date: new Date(),
-      price: priceData.retailPrice || variant.price.retailPrice,
-      type: 'update',
-      changedBy: req.user.id
+      price: {
+        costPrice: Number(costPrice),
+        retailPrice: Number(retailPrice),
+      },
+      type: "update",
+      changedBy: req.user?.id || "system",
     });
-    
+
+    // Save product
     await product.save();
-    
+
     res.json({
       success: true,
-      data: variant
+      data: variant,
     });
   } catch (error) {
+    console.error("updateVariantPrice error:", error);
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
-

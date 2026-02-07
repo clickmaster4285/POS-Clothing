@@ -3,7 +3,7 @@ const Supplier = require('../models/supplier.model');
 
 // 1️⃣ Create a new supplier
 const createSupplier = async (req, res) => {
-    console.log("req.body" , req.body)
+    
     try {
         const supplier = new Supplier(req.body);
         await supplier.save();

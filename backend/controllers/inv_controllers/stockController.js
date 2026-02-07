@@ -523,7 +523,7 @@ exports.transferStock = async (req, res) => {
         branch: fromBranch
       });
       
-      console.log("sourceStock" , sourceStock)
+      
       if (!sourceStock || sourceStock.availableStock < item.quantity) {
         return res.status(400).json({
           success: false,

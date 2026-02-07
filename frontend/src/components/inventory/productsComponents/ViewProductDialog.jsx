@@ -74,6 +74,7 @@ export default function ProductDetailSheet({
             costPrice: '',
             retailPrice: '',
             variantSku: '',
+            quantity: '',
         });
     };
 
@@ -83,10 +84,10 @@ export default function ProductDetailSheet({
     };
 
     const handleAddVariantSubmit = () => {
-        const { size, color, costPrice, retailPrice, variantSku } = newVariant;
+        const { size, color, costPrice, retailPrice, variantSku, quantity } = newVariant;
 
         // Validation
-        if (!size.trim() || !color.trim() || !costPrice || !retailPrice) {
+        if (!size.trim() || !color.trim() || !costPrice || !retailPrice ) {
             toast.error("Size, Color, Cost Price and Retail Price are required.");
             return;
         }
@@ -110,6 +111,7 @@ export default function ProductDetailSheet({
                 retailPrice: retail,
             },
             variantSku: variantSku?.trim() || undefined,
+            quantity,
         };
 
 
@@ -138,41 +140,47 @@ export default function ProductDetailSheet({
         });
     };
 
+
+
     const handleUpdatePriceSubmit = () => {
         if (!editVariant?._id) return;
 
         const cost = Number(editPriceForm.costPrice);
         const retail = Number(editPriceForm.retailPrice);
 
+        // Validation
         if (isNaN(cost) || isNaN(retail) || cost < 0 || retail < 0) {
-            alert("Please enter valid non-negative prices.");
+            toast.error("Please enter valid non-negative prices.");
             return;
         }
 
+        // Payload for API
         const payload = {
-          
             costPrice: cost,
             retailPrice: retail,
-        }
-            
+        };
+
+        // Call API
         updatePrice(
             {
                 productId: product._id,
                 variantId: editVariant._id,
-           data:payload,
+                data: payload,  // ← send payload under `data`
             },
             {
                 onSuccess: () => {
+                    toast.success("Variant price updated successfully");
                     setEditVariant(null);
-                    // → invalidate / refetch product here too
+                    // Optionally refetch product here
                 },
                 onError: (err) => {
                     console.error("Failed to update variant price:", err);
-                    // → show error toast
+                    toast.error("Failed to update variant price");
                 },
             }
         );
     };
+
 
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -301,6 +309,7 @@ export default function ProductDetailSheet({
                                                     <TableHead className="w-[140px]">Variant SKU</TableHead>
                                                     <TableHead>Size</TableHead>
                                                     <TableHead>Color</TableHead>
+                                                    <TableHead>Quantity</TableHead>
                                                     <TableHead className="text-right">Cost Price</TableHead>
                                                     <TableHead className="text-right">Retail Price</TableHead>
                                                     <TableHead className="w-[80px]"></TableHead>
@@ -314,6 +323,7 @@ export default function ProductDetailSheet({
                                                         </TableCell>
                                                         <TableCell>{variant.size || "—"}</TableCell>
                                                         <TableCell>{variant.color || "—"}</TableCell>
+                                                        <TableCell>{variant.quantity || "—"}</TableCell>
                                                         <TableCell className="text-right">
                                                             ${variant.price?.costPrice?.toFixed(2) || "0.00"}
                                                         </TableCell>
@@ -480,6 +490,17 @@ export default function ProductDetailSheet({
                                         value={newVariant.retailPrice}
                                         onChange={(e) => setNewVariant((prev) => ({ ...prev, retailPrice: e.target.value }))}
                                         placeholder="0.00"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Quantity*</Label>
+                                    <Input
+                                        type="number"
+                                        step="1"
+                                        min="0"
+                                        value={newVariant.quantity}
+                                        onChange={(e) => setNewVariant((prev) => ({ ...prev, quantity: e.target.value }))}
+                                        placeholder="0"
                                     />
                                 </div>
                             </div>

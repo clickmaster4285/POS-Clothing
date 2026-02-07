@@ -88,7 +88,7 @@ export default function AddProductTab({
         isActive: true
     })
 
-
+    
     useEffect(() => {
         if (!productToEdit) {
             resetForm(); // clear when switching back to add mode
@@ -140,7 +140,7 @@ export default function AddProductTab({
                 variantBarcode: v.variantBarcode || "",
                 costPrice: v.price?.costPrice?.toString() || "",
                 retailPrice: v.price?.retailPrice?.toString() || "",
-                quantity: v.price?.quantity?.toString() || "",
+                quantity: v.quantity?.toString() || "",
                 images: [],
              
             })),
@@ -296,7 +296,7 @@ export default function AddProductTab({
                         fitType: v.fitType?.trim() || undefined,
                         length: v.length?.trim() || undefined,
                         quantity: v.quantity?.trim()|| '',
-                        // variantSku: v.variantSku?.trim() || undefined,
+                        variantSku: v.variantSku?.trim() || undefined,
                         // variantBarcode: v.variantBarcode?.trim() || undefined,
 
                         // Variant-specific images (if you support them)
@@ -335,6 +335,7 @@ export default function AddProductTab({
                     description: "Product created successfully",
                 })
                 resetForm()
+             
             }
 
             onTabChange("overview")
@@ -397,6 +398,7 @@ export default function AddProductTab({
                         onAddPricingTier={addPricingTier}
                         onRemovePricingTier={removePricingTier}
                         onUpdatePricingTier={updatePricingTier}
+                        productToEdit={productToEdit}
                     />
                 )
 

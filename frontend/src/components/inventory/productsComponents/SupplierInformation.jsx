@@ -16,7 +16,7 @@ export default function SupplierInformation({
     setFormData,
     suppliers
 }) {
-    console.log("suppliers", suppliers)
+ 
     return (
         <Card className="border-border/50">
             <CardHeader>

@@ -63,7 +63,6 @@ export default function BarcodeManagementPage() {
 
     const products = productsData?.data || []
 
-    console.log("products", products)
 
     // Fallback when both variantBarcode and variantSku are missing/empty
     function generateFallbackBarcode(product, variant) {

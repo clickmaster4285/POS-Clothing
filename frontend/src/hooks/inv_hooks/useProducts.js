@@ -105,8 +105,14 @@ export const useAddVariant = () => {
   return useMutation({
     mutationFn: addProductVariant,
     onSuccess: (_, { productId }) => {
+      // Refetch the single product detail
       queryClient.invalidateQueries({
         queryKey: productKeys.detail(productId),
+      });
+
+      // Refetch the products list so UI updates everywhere
+      queryClient.invalidateQueries({
+        queryKey: productKeys.lists(),
       });
     },
   });
@@ -118,8 +124,14 @@ export const useUpdateVariantPrice = () => {
   return useMutation({
     mutationFn: updateVariantPrice,
     onSuccess: (_, { productId }) => {
+      // Refetch the single product detail
       queryClient.invalidateQueries({
         queryKey: productKeys.detail(productId),
+      });
+
+      // Refetch the products list
+      queryClient.invalidateQueries({
+        queryKey: productKeys.lists(),
       });
     },
   });

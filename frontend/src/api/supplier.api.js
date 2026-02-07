@@ -14,7 +14,7 @@ export const getSupplierById = async (id) => {
 
 // CREATE supplier
 export const createSupplier = async (data) => {
-  console.log("data in api" , data)
+ 
   const res = await api.post("/suppliers", data);
   return res.data;
 };

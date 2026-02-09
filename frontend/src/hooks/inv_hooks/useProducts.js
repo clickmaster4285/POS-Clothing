@@ -12,6 +12,7 @@ import {
   deleteProduct,
   addProductVariant,
   updateVariantPrice,
+  addVariantQuantity
 } from "../../api/inv_api/products.api";
 
 /* =======================
@@ -130,6 +131,27 @@ export const useUpdateVariantPrice = () => {
       });
 
       // Refetch the products list
+      queryClient.invalidateQueries({
+        queryKey: productKeys.lists(),
+      });
+    },
+  });
+};
+
+
+// ─── Update Variant Quantity Hook ───
+export const useAddVariantQuantity = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addVariantQuantity, // <-- your API function
+    onSuccess: (_, { productId }) => {
+      // Refetch the single product detail to see updated quantity
+      queryClient.invalidateQueries({
+        queryKey: productKeys.detail(productId),
+      });
+
+      // Optionally refetch the products list so UI updates everywhere
       queryClient.invalidateQueries({
         queryKey: productKeys.lists(),
       });

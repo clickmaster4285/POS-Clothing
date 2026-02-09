@@ -48,3 +48,9 @@ export const updateVariantPrice = async ({ productId, variantId, data }) => {
   );
   return res.data;
 };
+
+
+export const addVariantQuantity = async ({productId, variantId, data }) => {
+  const res = await api.patch(`/products/${productId}/${variantId}`, data);
+  return res.data;
+};

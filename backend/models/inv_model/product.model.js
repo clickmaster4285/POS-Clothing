@@ -42,7 +42,9 @@ const productSchema = new mongoose.Schema({
 
   variants: [{
     size: String,
-    color: String,
+    // color: String,
+    // quantity: String,
+    
     style: String,
     fitType: String,
     length: String,
@@ -55,7 +57,17 @@ const productSchema = new mongoose.Schema({
       costPrice: Number,
       retailPrice: Number,
     },
-    quantity: String,
+    
+    supplier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Supplier'
+    },
+      stockByAttribute: [
+        {
+            color: String,
+            quantity: Number,
+        }
+    ],
 
    priceHistory: [
   {
@@ -125,9 +137,6 @@ productSchema.index({ department: 1, isActive: 1 });
 //   this.updatedAt = new Date();
 //   next();
 // });
-
-
-
 
 const Product = mongoose.model('Product', productSchema);
 module.exports = Product;

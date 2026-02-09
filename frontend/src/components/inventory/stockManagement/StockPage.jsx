@@ -155,20 +155,20 @@ export default function StockPage() {
                     {activeTab === "overview" ? (
                         <>
                             <Button
-                                variant="outline"
+                               
                                 onClick={() => setActiveTab("adjustment-form")}
                                 className="gap-2"
                             >
                                 <ArrowUpDown className="h-4 w-4" />
                                 Stock Adjustment
                             </Button>
-                            <Button
+                            {/* <Button
                                 onClick={() => setActiveTab("transfer-form")}
                                 className="gap-2"
                             >
                                 <Truck className="h-4 w-4" />
                                 Stock Transfer
-                            </Button>
+                            </Button> */}
                         </>
                     ) : (
                         <Button variant="ghost" onClick={() => setActiveTab("overview")} className="gap-2">

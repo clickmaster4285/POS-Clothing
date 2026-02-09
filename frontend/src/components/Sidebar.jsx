@@ -16,6 +16,7 @@ import {
     LogOut,
     Building2,
     Receipt,
+    Truck,
 } from "lucide-react";
 
 const navItems = [
@@ -38,8 +39,8 @@ const navItems = [
         children: [
             { title: "Products", href: "/inventory/products" },
             { title: "Stock Management", href: "/inventory/stock" },
-            { title: "Purchase Orders", href: "/inventory/purchase-orders" },
-            { title: "Stock Audit", href: "/inventory/stock-audit" },
+            // { title: "Purchase Orders", href: "/inventory/purchase-orders" },
+            // { title: "Stock Audit", href: "/inventory/stock-audit" },
             { title: "Barcode Management", href: "/inventory/barcode-management" },
             { title: "Categories & Brands", href: "/inventory/categories" },
         ],
@@ -68,6 +69,8 @@ const navItems = [
             { title: "Inventory Reports", href: "/reports/inventory" },
         ],
     },
+    { title: "Branches", href: "/branches", icon: Building2 },
+    { title: "Supplier", href: "/supplier", icon: Truck },
     {
         title: "Promotions",
         icon: Tag,
@@ -84,8 +87,7 @@ const navItems = [
             { title: "Transactions", href: "/cash/transactions" },
         ],
     },
-    { title: "Branches", href: "/branches", icon: Building2 },
-    { title: "Supplier", href: "/supplier", icon: Building2 },
+
     {
         title: "Settings",
         icon: Settings,

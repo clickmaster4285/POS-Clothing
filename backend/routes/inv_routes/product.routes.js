@@ -25,6 +25,6 @@ router.post('/:id/variants', auth, productController.addProductVariant);
 
 router.put('/:productId/variants/:variantId/price', auth, productController.updateVariantPrice);
 
-
+router.patch('/:productId/:variantId', auth, productController.updateVariantQuantity);
 
 module.exports = router;

@@ -313,7 +313,7 @@ export function StockOverviewTab({
                 </Card>
 
                 {/* Recent Transfers */}
-                <Card className="border-border/50">
+                {/* <Card className="border-border/50">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Recent Transfers</CardTitle>
                     </CardHeader>
@@ -355,7 +355,7 @@ export function StockOverviewTab({
                             </div>
                         )}
                     </CardContent>
-                </Card>
+                </Card> */}
             </div>
 
 

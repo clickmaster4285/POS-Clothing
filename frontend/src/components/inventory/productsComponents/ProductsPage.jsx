@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { List, Plus } from "lucide-react"
@@ -34,6 +34,19 @@ export default function ProductPage() {
     const categories = categoriesData?.data || []
     const suppliers = suppliersData || []
    
+    useEffect(() => {
+        if (!productToEdit) return;
+
+        const updatedProduct = products.find(
+            (p) => p._id === productToEdit._id
+        );
+
+        if (updatedProduct) {
+            setProductToEdit(updatedProduct);
+        }
+    }, [products]);
+
+
     const handleViewProduct = (product) => {
         setProductToEdit(product)
         setIsViewDialogOpen(true)
@@ -108,6 +121,7 @@ export default function ProductPage() {
                 onOpenChange={setIsViewDialogOpen}
                 product={productToEdit}
                 onEdit={handleOpenEdit}
+                refetchProducts={refetchProducts}
             />
 
            

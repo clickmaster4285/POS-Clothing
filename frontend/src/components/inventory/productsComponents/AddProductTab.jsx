@@ -132,7 +132,7 @@ export default function AddProductTab({
             // 3. Variants – use plural "variants" and map each one properly
             variants: (productToEdit.variants || []).map(v => ({
                 size: v.size || "",
-                color: v.color || "",
+              //  color: v.color || "",
                 style: v.style || "",
                 fitType: v.fitType || "",
                 length: v.length || "",
@@ -140,8 +140,13 @@ export default function AddProductTab({
                 variantBarcode: v.variantBarcode || "",
                 costPrice: v.price?.costPrice?.toString() || "",
                 retailPrice: v.price?.retailPrice?.toString() || "",
-                quantity: v.quantity?.toString() || "",
+              //  quantity: v.quantity?.toString() || "",
                 images: [],
+                supplier: v.supplier || undefined,
+ stockByAttribute: (v.stockByAttribute || []).map(s => ({
+     color: s.color || "",
+     quantity: s.quantity?.toString() || ""
+ }))
              
             })),
 
@@ -288,29 +293,32 @@ export default function AddProductTab({
                 //           MULTI-VARIANT SECTION
                 // ────────────────────────────────────────────────
                 variants: formData.variants
-                    .filter(v => v.costPrice && v.retailPrice) // only send variants with required prices
-                    .map((v) => ({
+                    .filter(v => v.costPrice && v.retailPrice) // only include valid variants
+                    .map(v => ({
                         size: v.size?.trim() || undefined,
-                        color: v.color?.trim() || undefined,
+                        //color: v.color?.trim() || undefined,
                         style: v.style?.trim() || undefined,
                         fitType: v.fitType?.trim() || undefined,
                         length: v.length?.trim() || undefined,
-                        quantity: v.quantity?.trim()|| '',
+                        
+                      //  quantity: v.quantity?.trim() || '',
                         variantSku: v.variantSku?.trim() || undefined,
-                        // variantBarcode: v.variantBarcode?.trim() || undefined,
-
-                        // Variant-specific images (if you support them)
-                        images: v.images?.map(file => file.name) || [], // ← should be real URLs after upload
-
+                        images: v.images?.map(file => file.name) || [],
                         price: {
                             costPrice: Number(v.costPrice) || 0,
                             retailPrice: Number(v.retailPrice) || 0,
-                           
                         },
-
-                      
+                        // ✅ only assign if supplier is valid
+                        supplier: v.supplier && v.supplier !== "" ? v.supplier : undefined,
+                        stockByAttribute: v.stockByAttribute
+                            .filter(s => s.color && s.quantity)
+                            .map(s => ({
+                                color: s.color.trim(),
+                                quantity: Number(s.quantity)
+                            })),
                         isActive: true
                     })),
+
 
                 isActive: formData.isActive ?? true
             };
@@ -335,6 +343,10 @@ export default function AddProductTab({
                     description: "Product created successfully",
                 })
                 resetForm()
+                setStep(1)
+                onSuccess?.()      // optional, pass newly created product
+                onClose?.()
+                onTabChange("overview") 
              
             }
 
@@ -353,13 +365,59 @@ export default function AddProductTab({
 
 
     const formSummary = {
-        category: categories.find((c) => c._id === formData.category)?.categoryName || "Not selected",
-        brand: brands.find((b) => b._id === formData.brand)?.brandName || "Not selected",
-        margin: formData.variant?.costPrice && formData.variant.retailPrice
-            ? (((parseFloat(formData.variant.retailPrice) - parseFloat(formData.variant?.costPrice)) / parseFloat(formData.variant.retailPrice)) * 100).toFixed(1)
-            : "0",
-        isValid: formData.productName && formData.sku && formData.category && formData.brand,
+        productName: formData.productName || "Not provided",
+        sku: formData.sku || "Not provided",
+        barcode: formData.barcode || "Not provided",
+        brand: brands.find(b => b._id === formData.brand)?.brandName || "Not selected",
+        category: categories.find(c => c._id === formData.category)?.categoryName || "Not selected",
+        subCategory: categories.find(c => c._id === formData.subCategory)?.categoryName || "Not selected",
+        department: formData.department || "Not provided",
+        season: formData.season || "Not provided",
+        collection: formData.collection || "Not provided",
+        description: formData.description || "Not provided",
+        careInstructions: formData.careInstructions || "Not provided",
+        material: formData.material || "Not provided",
+        countryOfOrigin: formData.countryOfOrigin || "Not provided",
+        ageGroup: formData.ageGroup || "Not provided",
+        gender: formData.gender || "Not provided",
+        styleType: formData.styleType || "Not provided",
+        isActive: formData.isActive ? "Active" : "Inactive",
+
+        // Tags
+        tags: formData.tags?.length > 0 ? formData.tags : ["None"],
+
+        // Supplier info
+        supplier: formData.supplier?.supplier
+            ? suppliers.find(s => s._id === formData.supplier.supplier)?.company_name || "Unknown"
+            : "Not selected",
+        supplierCode: formData.supplier?.supplierCode || "N/A",
+        leadTime: formData.supplier?.leadTime || "N/A",
+        minOrderQuantity: formData.supplier?.minOrderQuantity || "N/A",
+        reorderLevel: formData.supplier?.reorderLevel || "N/A",
+
+        // Variants
+        variants: (formData.variants || []).map(v => ({
+            size: v.size || "N/A",
+            style: v.style || "N/A",
+            fitType: v.fitType || "N/A",
+            length: v.length || "N/A",
+            variantSku: v.variantSku || "N/A",
+            costPrice: v.costPrice || "0",
+            retailPrice: v.retailPrice || "0",
+            margin: v.costPrice && v.retailPrice
+                ? (((parseFloat(v.retailPrice) - parseFloat(v.costPrice)) / parseFloat(v.retailPrice)) * 100).toFixed(1) + "%"
+                : "0%",
+            supplier: v.supplier
+                ? suppliers.find(s => s._id === v.supplier)?.company_name || "Unknown"
+                : "Not selected",
+            stockByAttribute: (v.stockByAttribute || []).map(s => ({
+                color: s.color || "N/A",
+                quantity: s.quantity || "0"
+            }))
+        }))
     }
+
+
 
     const renderStepContent = () => {
         switch (step) {
@@ -399,13 +457,14 @@ export default function AddProductTab({
                         onRemovePricingTier={removePricingTier}
                         onUpdatePricingTier={updatePricingTier}
                         productToEdit={productToEdit}
+                        suppliers={suppliers}
                     />
                 )
 
             case 4:
                 return (
                     <>
-                        <SupplierInformation formData={formData} setFormData={setFormData} suppliers={suppliers} />
+                        {/* <SupplierInformation formData={formData} setFormData={setFormData} suppliers={suppliers} /> */}
                         <TagsSection
                             formData={formData}
                             tagInput={tagInput}

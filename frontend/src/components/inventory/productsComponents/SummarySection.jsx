@@ -2,60 +2,88 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle } from "lucide-react"
 
-
-
-export default function SummarySection({
-    formSummary,
-    showVariantSection
-}) {
+export default function SummarySection({ formSummary, showVariantSection }) {
     return (
-        <Card className="border-border/50">
-            <CardHeader>
-                <CardTitle className="text-lg">Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="rounded-lg border border-border p-4">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Category</p>
-                    <p className="text-xl font-semibold mt-1">{formSummary.category}</p>
-                </div>
+        <div className="space-y-6">
 
-                <div className="rounded-lg border border-border p-4">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Brand</p>
-                    <p className="text-xl font-semibold mt-1">{formSummary.brand}</p>
-                </div>
+            {/* Header */}
+            <h3 className="text-2xl font-bold border-b pb-2">Product Summary</h3>
 
-                {showVariantSection && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                        <p className="text-xs text-amber-600 uppercase tracking-wider">Profit Margin</p>
-                        <p className="text-3xl font-bold text-amber-700 mt-1">{formSummary.margin}%</p>
-                        <p className="text-xs text-amber-600 mt-1">calculated margin</p>
-                    </div>
-                )}
+            {/* Basic Info */}
+            <Card className="bg-muted/20 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-500" /> Basic Information
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div><strong>Name:</strong> {formSummary.productName}</div>
+                    <div><strong>SKU:</strong> {formSummary.sku}</div>
+                  
+                    <div><strong>Brand:</strong> {formSummary.brand}</div>
+                    <div><strong>Category:</strong> {formSummary.category}</div>
+                   
+                    <div><strong>Department:</strong> {formSummary.department}</div>
+                    <div><strong>Season:</strong> {formSummary.season}</div>
+                    <div><strong>Collection:</strong> {formSummary.collection}</div>
+                    <div><strong>Material:</strong> {formSummary.material}</div>
+                    <div><strong>Care Instructions:</strong> {formSummary.careInstructions}</div>
+                    <div><strong>Country of Origin:</strong> {formSummary.countryOfOrigin}</div>
+                    <div><strong>Age Group:</strong> {formSummary.ageGroup}</div>
+                    <div><strong>Gender:</strong> {formSummary.gender}</div>
+                    <div><strong>Style Type:</strong> {formSummary.styleType}</div>
+                    <div><strong>Status:</strong> {formSummary.isActive}</div>
+                </CardContent>
+            </Card>
 
-                <div className={`rounded-lg border p-4 ${formSummary.isValid
-                    ? "border-green-200 bg-green-50"
-                    : "border-red-200 bg-red-50"
-                    }`}>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Form Status</p>
-                    <div className="flex items-center gap-2 mt-2">
-                        {formSummary.isValid ? (
-                            <Badge className="bg-green-100 text-green-700 border-green-200">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Ready
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
-                                Missing required fields
-                            </Badge>
-                        )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        {formSummary.isValid
-                            ? "All required fields are filled"
-                            : "Please fill all required fields marked with *"}
-                    </p>
+                  {/* Variants */}
+            {showVariantSection && (
+                <div className="space-y-2">
+                    <h4 className="text-lg font-semibold  pb-1">Variants</h4>
+                    {formSummary.variants.map((v, idx) => (
+                        <Card key={idx} className="bg-muted/10 shadow-md pt-5">
+                            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div><strong>Size:</strong> {v.size}</div>
+                                <div><strong>Style:</strong> {v.style}</div>
+                             
+                               
+                                <div><strong>SKU:</strong> {v.variantSku}</div>
+                                <div><strong>Cost Price:</strong> {v.costPrice}</div>
+                                <div><strong>Retail Price:</strong> {v.retailPrice}</div>
+                                <div><strong>Margin:</strong> {v.margin}</div>
+                                <div><strong>Supplier:</strong> {v.supplier}</div>
+                                <div className="col-span-full">
+                                    <strong>Stock:</strong>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        {v.stockByAttribute.map((s, sIdx) => (
+                                            <Badge key={sIdx} variant="outline" className="px-2 py-1">
+                                                {s.color}: {s.quantity}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
-            </CardContent>
-        </Card>
+            )}
+
+            {/* Tags */}
+            <Card className="bg-muted/20 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Tags</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                    {formSummary.tags.map((tag, idx) => (
+                        <Badge key={idx} variant="secondary" className="px-3 py-1">
+                            {tag}
+                        </Badge>
+                    ))}
+                </CardContent>
+            </Card>
+
+
+      
+        </div>
     )
 }

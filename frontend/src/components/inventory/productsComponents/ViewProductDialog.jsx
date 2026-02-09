@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Edit, Plus, Pencil } from "lucide-react";
-import { useUpdateVariantPrice, useAddVariant } from '@/hooks/inv_hooks/useProducts';
+import { useUpdateVariantPrice, useAddVariant, useAddVariantQuantity } from '@/hooks/inv_hooks/useProducts';
 import { toast } from "sonner";
 
 
@@ -39,20 +39,34 @@ export default function ProductDetailSheet({
     onOpenChange,
     product,
     onEdit,
+    refetchProducts,
 }) {
     if (!product) return null;
 
     // ─── States ───
     const [editVariant, setEditVariant] = useState(null);
     const [addVariantOpen, setAddVariantOpen] = useState(false);
+    const [updateQuantityVariant, setUpdateQuantityVariant] = useState(null);
+
+    const [quantityForm, setQuantityForm] = useState({
+        color: '',
+        quantityChange: '',
+        reason: ''
+    });
+
+    
+
+    
 
     // Form state for adding new variant
     const [newVariant, setNewVariant] = useState({
         size: '',
-        color: '',
         costPrice: '',
         retailPrice: '',
         variantSku: '',
+        stockByAttribute: [
+            { color: '', quantity: '' }
+        ],
     });
 
     // Form state for editing price
@@ -64,19 +78,22 @@ export default function ProductDetailSheet({
     // ─── Mutations ───
     const { mutate: updatePrice, isPending: isUpdating } = useUpdateVariantPrice();
     const { mutate: addVariant, isPending: isAdding } = useAddVariant();
+    const { mutate: addQuantity, isPending: isUpdatingQuantity } = useAddVariantQuantity();
 
     // ─── Handlers ───
 
     const resetNewVariantForm = () => {
         setNewVariant({
             size: '',
-            color: '',
             costPrice: '',
             retailPrice: '',
             variantSku: '',
-            quantity: '',
+            stockByAttribute: [
+                { color: '', quantity: '' }
+            ],
         });
     };
+
 
     const handleAddVariantClose = () => {
         setAddVariantOpen(false);
@@ -84,14 +101,32 @@ export default function ProductDetailSheet({
     };
 
     const handleAddVariantSubmit = () => {
-        const { size, color, costPrice, retailPrice, variantSku, quantity } = newVariant;
+        const { size, costPrice, retailPrice, variantSku, stockByAttribute } = newVariant;
 
-        // Validation
-        if (!size.trim() || !color.trim() || !costPrice || !retailPrice ) {
-            toast.error("Size, Color, Cost Price and Retail Price are required.");
+        // ---------- Basic validation ----------
+        if (!size || !size.trim() || costPrice === '' || retailPrice === '') {
+            toast.error("Size, Cost Price and Retail Price are required.");
             return;
         }
 
+        // ---------- Color + quantity validation ----------
+        if (
+            !Array.isArray(stockByAttribute) ||
+            stockByAttribute.length === 0 ||
+            stockByAttribute.some(
+                (item) =>
+                    !item.color ||
+                    !item.color.trim() ||
+                    item.quantity === '' ||
+                    item.quantity === null ||
+                    Number(item.quantity) < 0
+            )
+        ) {
+            toast.error("All color and quantity fields are required.");
+            return;
+        }
+
+        // ---------- Price validation ----------
         const cost = Number(costPrice);
         const retail = Number(retailPrice);
 
@@ -100,34 +135,40 @@ export default function ProductDetailSheet({
             return;
         }
 
-        // Construct payload
+        // ---------- Payload ----------
         const payload = {
-           
-           
             size: size.trim(),
-            color: color.trim(),
             price: {
                 costPrice: cost,
                 retailPrice: retail,
             },
             variantSku: variantSku?.trim() || undefined,
-            quantity,
+            stockByAttribute: stockByAttribute.map((item) => ({
+                color: item.color.trim(),
+                quantity: Number(item.quantity),
+            })),
         };
 
-
-
-        // Send to API
-        addVariant({ productId: product._id, data: payload }, {
-            onSuccess: (res) => {
-                toast.success("Variant added successfully");
-                handleAddVariantClose(); // close modal/form
+        // ---------- API call ----------
+        addVariant(
+            {
+                productId: product._id,
+                data: payload,
             },
-            onError: (err) => {
-                console.error("Failed to add variant:", err);
-                toast.error("Failed to add variant");
-            },
-        });
+            {
+                onSuccess: () => {
+                    toast.success("Variant added successfully");
+                    refetchProducts();
+                    handleAddVariantClose();
+                },
+                onError: (err) => {
+                    console.error("Failed to add variant:", err);
+                    toast.error("Failed to add variant");
+                },
+            }
+        );
     };
+
 
 
 
@@ -170,6 +211,7 @@ export default function ProductDetailSheet({
             {
                 onSuccess: () => {
                     toast.success("Variant price updated successfully");
+                    refetchProducts(); 
                     setEditVariant(null);
                     // Optionally refetch product here
                 },
@@ -179,6 +221,80 @@ export default function ProductDetailSheet({
                 },
             }
         );
+    };
+
+    const handleOpenQuantity = (variant) => {
+        setUpdateQuantityVariant(variant);
+        setQuantityForm({
+            color: variant.stockByAttribute?.[0]?.color || '',
+            quantityChange: '',
+            reason: ''
+        });
+    };
+
+
+    const handleUpdateQuantitySubmit = () => {
+        if (!updateQuantityVariant?._id) return;
+
+        const qty = Number(quantityForm.quantityChange);
+        if (!quantityForm.color || !quantityForm.color.trim()) {
+            toast.error("Please select a color.");
+            return;
+        }
+
+        if (isNaN(qty) || qty === 0) {
+            toast.error("Please enter a valid quantity change (non-zero).");
+            return;
+        }
+
+        const payload = {
+            color: quantityForm.color.trim(),
+            quantityChange: qty,
+            reason: quantityForm.reason || "Manual update",
+        };
+
+        addQuantity(
+            {
+                productId: product._id,
+                variantId: updateQuantityVariant._id,
+                data: payload,
+            },
+            {
+                onSuccess: (res) => {
+                    toast.success(
+                        `Updated ${payload.color}: ${res.data.currentQuantity}`
+                    );
+                    setUpdateQuantityVariant(null);
+                    refetchProducts();
+                },
+                onError: () => {
+                    toast.error("Failed to update quantity");
+                },
+            }
+        );
+    };
+
+
+    const handleAddColorRow = () => {
+        setNewVariant((prev) => ({
+            ...prev,
+            stockByAttribute: [...prev.stockByAttribute, { color: '', quantity: '' }],
+        }));
+    };
+
+    const handleRemoveColorRow = (index) => {
+        setNewVariant((prev) => ({
+            ...prev,
+            stockByAttribute: prev.stockByAttribute.filter((_, i) => i !== index),
+        }));
+    };
+
+    const handleColorChange = (index, field, value) => {
+        setNewVariant((prev) => {
+            const updated = [...prev.stockByAttribute];
+            updated[index] = { ...updated[index], [field]: value };
+            return { ...prev, stockByAttribute: updated };
+        });
     };
 
 
@@ -322,8 +438,30 @@ export default function ProductDetailSheet({
                                                             {variant.variantSku || product.sku}
                                                         </TableCell>
                                                         <TableCell>{variant.size || "—"}</TableCell>
-                                                        <TableCell>{variant.color || "—"}</TableCell>
-                                                        <TableCell>{variant.quantity || "—"}</TableCell>
+                                                        <TableCell>
+                                                            {variant.stockByAttribute?.length > 0 ? (
+                                                                <div className="space-y-1">
+                                                                    {variant.stockByAttribute.map((item, i) => (
+                                                                        <div key={i} className="text-sm">
+                                                                            {item.color}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : "—"}
+                                                        </TableCell>
+
+                                                        <TableCell>
+                                                            {variant.stockByAttribute?.length > 0 ? (
+                                                                <div className="space-y-1 text-right">
+                                                                    {variant.stockByAttribute.map((item, i) => (
+                                                                        <div key={i} className="text-sm">
+                                                                            {item.quantity}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : "—"}
+                                                        </TableCell>
+
                                                         <TableCell className="text-right">
                                                             ${variant.price?.costPrice?.toFixed(2) || "0.00"}
                                                         </TableCell>
@@ -339,6 +477,17 @@ export default function ProductDetailSheet({
                                                             >
                                                                 <Pencil className="h-3.5 w-3.5" />
                                                             </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
+                                                                onClick={() => handleOpenQuantity(variant)}
+                                                                title="Update Quantity"
+                                                            >
+                                                                <Plus className="h-3.5 w-3.5 text-blue-500" />
+                                                            </Button>
+
+
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -459,14 +608,51 @@ export default function ProductDetailSheet({
                                         placeholder="e.g. S, M, L, 42"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Color *</Label>
-                                    <Input
-                                        value={newVariant.color}
-                                        onChange={(e) => setNewVariant((prev) => ({ ...prev, color: e.target.value }))}
-                                        placeholder="e.g. Black, White, Navy"
-                                    />
+                                <div className="space-y-4">
+                                    <Label>Colors & Quantities *</Label>
+
+                                    {newVariant.stockByAttribute.map((item, index) => (
+                                        <div
+                                            key={index}
+                                            className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end"
+                                        >
+                                            <Input
+                                                placeholder="Color"
+                                                value={item.color}
+                                                onChange={(e) => handleColorChange(index, 'color', e.target.value)}
+                                            />
+
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                placeholder="Quantity"
+                                                value={item.quantity}
+                                                onChange={(e) => handleColorChange(index, 'quantity', e.target.value)}
+                                            />
+
+                                            {newVariant.stockByAttribute.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRemoveColorRow(index)}
+                                                >
+                                                    ✕
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleAddColorRow}
+                                    >
+                                        + Add another color
+                                    </Button>
                                 </div>
+
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -492,17 +678,7 @@ export default function ProductDetailSheet({
                                         placeholder="0.00"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Quantity*</Label>
-                                    <Input
-                                        type="number"
-                                        step="1"
-                                        min="0"
-                                        value={newVariant.quantity}
-                                        onChange={(e) => setNewVariant((prev) => ({ ...prev, quantity: e.target.value }))}
-                                        placeholder="0"
-                                    />
-                                </div>
+                               
                             </div>
 
                             <div className="space-y-2">
@@ -528,6 +704,74 @@ export default function ProductDetailSheet({
                         </div>
                     </DialogContent>
                 </Dialog>
+
+
+                {/* ─── Update Variant Quantity Dialog ─── */}
+                <Dialog open={!!updateQuantityVariant} onOpenChange={() => setUpdateQuantityVariant(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Add Variant Quantity</DialogTitle>
+                        </DialogHeader>
+
+                        <div className="space-y-5 py-5">
+                            <div className="space-y-2">
+                                <Label>Color *</Label>
+                                <select
+                                    className="w-full border rounded-md h-9 px-3 text-sm"
+                                    value={quantityForm.color}
+                                    onChange={(e) =>
+                                        setQuantityForm((prev) => ({ ...prev, color: e.target.value }))
+                                    }
+                                >
+                                    <option value="">Select color</option>
+                                    {updateQuantityVariant?.stockByAttribute?.map((item, i) => (
+                                        <option key={i} value={item.color}>
+                                            {item.color} (Current: {item.quantity})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Quantity *</Label>
+                                <Input
+                                    type="number"
+                                    step="1"
+                                    value={quantityForm.quantityChange}
+                                    onChange={(e) =>
+                                        setQuantityForm((prev) => ({ ...prev, quantityChange: e.target.value }))
+                                    }
+                                    placeholder="e.g. 20 or -5"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Reason</Label>
+                                <Input
+                                    value={quantityForm.reason}
+                                    onChange={(e) =>
+                                        setQuantityForm((prev) => ({ ...prev, reason: e.target.value }))
+                                    }
+                                    placeholder="Optional reason"
+                                />
+                            </div>
+                        </div>
+
+
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={() => setUpdateQuantityVariant(null)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                disabled={isUpdatingQuantity}
+                                onClick={handleUpdateQuantitySubmit}
+                            >
+                                {isUpdatingQuantity ? "Saving..." : "Update Quantity"}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
             </SheetContent>
         </Sheet>
     );

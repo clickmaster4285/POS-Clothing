@@ -271,56 +271,121 @@ exports.deleteProduct = async (req, res) => {
 };
 
 
-
 exports.addProductVariant = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const productId = req.params.id;
+    const variantData = req.body;
 
+    // 1️⃣ Find product
+    const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
     }
 
-    const variantData = req.body;
     const variantCount = product.variants.length;
 
-    // ✅ Only generate SKU if missing
+    // 2️⃣ Auto-generate Variant SKU (based on new model)
     if (!variantData.variantSku) {
-      const variantCode = variantData.size ? variantData.size.substring(0, 2).toUpperCase() : 'VR';
-      const colorCode = variantData.color ? variantData.color.substring(0, 3).toUpperCase() : 'DEF';
-      variantData.variantSku = `${product.sku}-${colorCode}-${variantCode}-${String(variantCount + 1).padStart(2, '0')}`;
+      // Size code
+      const sizeCode = variantData.size
+        ? variantData.size.substring(0, 2).toUpperCase()
+        : "VR";
+
+      // Color code (from stockByAttribute)
+      let colorCode = "DEF";
+      if (
+        variantData.stockByAttribute &&
+        Array.isArray(variantData.stockByAttribute) &&
+        variantData.stockByAttribute.length > 0 &&
+        variantData.stockByAttribute[0].color
+      ) {
+        colorCode = variantData.stockByAttribute[0].color
+          .substring(0, 3)
+          .toUpperCase();
+      }
+
+      variantData.variantSku = `${product.sku}-${colorCode}-${sizeCode}-${String(
+        variantCount + 1
+      ).padStart(2, "0")}`;
     }
 
-    product.variants.push(variantData);
+    // 3️⃣ Manual uniqueness check for variant SKU
+    const existingSku = await Product.findOne({
+      "variants.variantSku": variantData.variantSku
+    });
+
+    if (existingSku) {
+      return res.status(400).json({
+        success: false,
+        message: "Variant SKU already exists"
+      });
+    }
+
+    // 4️⃣ Push variant into product
+    product.variants.push({
+      size: variantData.size,
+      style: variantData.style,
+      fitType: variantData.fitType,
+      length: variantData.length,
+      variantSku: variantData.variantSku,
+      images: variantData.images || [],
+      price: {
+        costPrice: variantData?.price?.costPrice || 0,
+        retailPrice: variantData?.price?.retailPrice || 0
+      },
+      supplier: variantData.supplier,
+      stockByAttribute: variantData.stockByAttribute || [],
+      priceHistory: [
+        {
+          date: new Date(),
+          price: {
+            costPrice: variantData?.price?.costPrice || 0,
+            retailPrice: variantData?.price?.retailPrice || 0
+          },
+          type: "update",
+          changedBy: req.user?._id || null
+        }
+      ],
+      competitorPrice: variantData.competitorPrice,
+      isActive: true
+    });
+
     await product.save();
 
-    // ✅ Create stock records for branches if provided
-    if (req.body.branches && req.body.branches.length > 0) {
-      const newVariant = product.variants[product.variants.length - 1];
-      const stockPromises = req.body.branches.map(async branchId => {
-        const stock = new Stock({
+    // 5️⃣ Get newly added variant
+    const newVariant = product.variants[product.variants.length - 1];
+
+    // 6️⃣ Create stock records per branch (optional)
+    if (variantData.branches && Array.isArray(variantData.branches)) {
+      const stockPromises = variantData.branches.map(branchId => {
+        return new Stock({
           product: product._id,
           variantId: newVariant._id,
           branch: branchId,
-          location: 'warehouse',
+          location: "warehouse",
           currentStock: 0,
           availableStock: 0
-        });
-        await stock.save();
+        }).save();
       });
+
       await Promise.all(stockPromises);
     }
 
-    // ✅ Return only the new variant
-    const newVariant = product.variants[product.variants.length - 1];
-    res.status(201).json({
+    // 7️⃣ Success response
+    return res.status(201).json({
       success: true,
+      message: "Variant added successfully",
       data: newVariant
     });
 
   } catch (error) {
-    res.status(400).json({
+    console.error("Add Variant Error:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || "Internal server error"
     });
   }
 };
@@ -404,3 +469,93 @@ exports.updateVariantPrice = async (req, res) => {
     });
   }
 };
+
+exports.updateVariantQuantity = async (req, res) => {
+  try {
+    const { productId, variantId } = req.params;
+    const { color, quantityChange, reason } = req.body;
+
+    // ---------- Validation ----------
+    if (!color || !color.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Color is required"
+      });
+    }
+
+    if (quantityChange === undefined || isNaN(quantityChange)) {
+      return res.status(400).json({
+        success: false,
+        message: "quantityChange must be a number"
+      });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const variant = product.variants.id(variantId);
+    if (!variant) {
+      return res.status(404).json({ success: false, message: "Variant not found" });
+    }
+
+    // ---------- Find color stock ----------
+    const stockItem = variant.stockByAttribute.find(
+      (item) => item.color.toLowerCase() === color.toLowerCase()
+    );
+
+    if (!stockItem) {
+      return res.status(404).json({
+        success: false,
+        message: `Color '${color}' not found in this variant`
+      });
+    }
+
+    const prevQuantity = Number(stockItem.quantity) || 0;
+    const change = Number(quantityChange);
+
+    if (prevQuantity + change < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Stock cannot be negative"
+      });
+    }
+
+    // ---------- Update quantity ----------
+    stockItem.quantity = prevQuantity + change;
+
+    // ---------- Save stock history ----------
+    variant.stockHistory = variant.stockHistory || [];
+    variant.stockHistory.push({
+      date: new Date(),
+      color: stockItem.color,
+      quantityChange: change,
+      previousQuantity: prevQuantity,
+      currentQuantity: stockItem.quantity,
+      reason: reason || "No reason provided",
+      changedBy: req.user?.id || "system"
+    });
+
+    await product.save();
+
+    res.json({
+      success: true,
+      data: {
+        productId,
+        variantId,
+        color: stockItem.color,
+        previousQuantity: prevQuantity,
+        currentQuantity: stockItem.quantity,
+        change
+      }
+    });
+  } catch (error) {
+    console.error("updateVariantQuantity error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+

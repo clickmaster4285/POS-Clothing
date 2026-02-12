@@ -168,6 +168,7 @@ export function StockOverviewTab({
                                 const variant = stock.product?.variants?.find((v) =>
                                     v._id === stock.variantId || v.id === stock.variantId
                                 )
+                                
                                 return (
                                     <TableRow key={stock.id}>
                                         <TableCell className="font-medium">{stock?.product?.productName}</TableCell>
@@ -204,28 +205,41 @@ export function StockOverviewTab({
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={() => {
                                                         setAdjustForm({
-                                                            product: stock.product._id,       // ← change to _id
-                                                            variant: stock.variantId,         // usually already _id
-                                                            branch: stock.branch._id,         // ← change to _id
                                                             type: "add",
-                                                            quantity: "",
                                                             reason: "",
+                                                            branch: stock.branch._id,
+                                                            items: [
+                                                                {
+                                                                    product: stock.product._id,
+                                                                    variant: stock.variantId,
+                                                                    color: stock.color, // optional, can prefill if needed
+                                                                    quantity: ""
+                                                                }
+                                                            ]
                                                         })
                                                         setActiveTab("adjustment-form")
+
+                                                        
                                                     }}>
                                                         <PackagePlus className="mr-2 h-4 w-4" />
                                                         Add Stock
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => {
                                                         setAdjustForm({
-                                                            product: stock.product._id,       // ← change to _id
-                                                            variant: stock.variantId,
-                                                            branch: stock.branch._id,         // ← change to _id
                                                             type: "remove",
-                                                            quantity: "",
                                                             reason: "",
+                                                            branch: stock.branch._id,
+                                                            items: [
+                                                                {
+                                                                    product: stock.product._id,
+                                                                    variant: stock.variantId,
+                                                                    color: stock?.color || "",  // optional
+                                                                    quantity: ""
+                                                                }
+                                                            ]
                                                         })
                                                         setActiveTab("adjustment-form")
+
                                                     }}>
                                                         <PackageMinus className="mr-2 h-4 w-4" />
                                                         Remove Stock

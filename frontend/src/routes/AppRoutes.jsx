@@ -10,19 +10,33 @@ import PurchaseOrdersPage from "../pages/Inventory/PurchaseOrder";
 import StockAuditPage from "../pages/Inventory/StockAudit";
 import StockManagementPage from "../pages/Inventory/StockManagement";
 import SupplierPage from '../pages/Suppliers';
+import UserPage from '../pages/User';
+import StaffCreatePage from '../pages/users/create/page';
+import StaffFormPage from '../pages/users/[id]/edit/page'
+import StaffDetailPage from '../pages/users/[id]/page'
+import CustomerPage from '../pages/pos/customer/Customers';
+import CustomerCreatePage from '../pages/pos/customer/create/page';
+import CustomerProfilePage from '../pages/pos/customer/[id]/page'
+import CustomerEditPage from '../pages/pos/customer/[id]/edit/page'
+import SpecialItems from '../pages/pos/SpecialItems'
+import DiscountsPromotions from '../pages/pos/DiscountAndPromotions';
+import TransactionPage from '../pages/pos/Transaction'
 
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
-
+import { useAuth } from "@/hooks/useAuth";
 
 const AppRoutes = () => {
+    const { user, isAuthenticated } = useAuth();
+    const role = user?.role?.toLowerCase() || 'customer'; // default role
+
     return (
         <Routes>
-            {/* Public routes */}
+            {/* Public route */}
             <Route
-                path="/"
+                path="/login"
                 element={
                     <AuthLayout>
                         <Auth />
@@ -30,9 +44,9 @@ const AppRoutes = () => {
                 }
             />
 
-            {/* Protected routes */}
+            {/* Role-based protected routes */}
             <Route
-                path="/dashboard"
+                path={`/${role}/dashboard`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -43,7 +57,96 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/branches"
+                path={`/${role}/pos/transaction`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <TransactionPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/pos/customer-info`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/pos/create`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerCreatePage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/pos/:id/detail`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerProfilePage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+
+            />
+
+            <Route
+                path={`/${role}/pos/:id/edit`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerEditPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+
+            />
+
+            <Route
+                path={`/${role}/pos/discounts`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <DiscountsPromotions />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/pos/special-items`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <SpecialItems />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/user-management`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <UserPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/branches`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -52,8 +155,43 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
             <Route
-                path="/supplier"
+                path={`/${role}/users/create`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <StaffCreatePage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/users/:id/edit`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <StaffFormPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/users/:id`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <StaffDetailPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+
+            <Route
+                path={`/${role}/supplier`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -62,8 +200,9 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
             <Route
-                path="/inventory/products"
+                path={`/${role}/inventory/products`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -74,7 +213,7 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/inventory/categories"
+                path={`/${role}/inventory/categories`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -85,7 +224,7 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/inventory/barcode-management"
+                path={`/${role}/inventory/barcode-management`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -96,7 +235,7 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/inventory/purchase-orders"
+                path={`/${role}/inventory/purchase-orders`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -107,7 +246,7 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/inventory/stock-audit"
+                path={`/${role}/inventory/stock-audit`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -118,7 +257,7 @@ const AppRoutes = () => {
             />
 
             <Route
-                path="/inventory/stock"
+                path={`/${role}/inventory/stock`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>

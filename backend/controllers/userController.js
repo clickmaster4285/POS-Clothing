@@ -1,14 +1,27 @@
-const User = require("../models/user.model");
+const mongoose = require('mongoose');
+const User = require('../models/user.model');
+const Branch = require('../models/branch.model');
 const { generateUserId } = require('../utils/userIdGenerator');
 const { hashPassword } = require('../utils/password');
 const { generateToken } = require('../utils/jwt');
+const { PERMISSIONS } = require('../config/permissions');
 
 const createUser = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, password, role = 'customer', permissions = [] } = req.body;
+    const { firstName, lastName, phone, email, password, role = 'customer', permissions = [], branch_id } = req.body;
 
-    if (!firstName|| !email || !password) {
+    if (!firstName || !email || !password) {
       return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    if (branch_id) {
+      if (!mongoose.Types.ObjectId.isValid(branch_id)) {
+        return res.status(400).json({ message: 'Invalid branch ID format' });
+      }
+      const branchExists = await Branch.findOne({ _id: branch_id, status: 'ACTIVE' });
+      if (!branchExists) {
+        return res.status(400).json({ message: 'Branch not found or is inactive' });
+      }
     }
 
     const existingUser = await User.findOne({ email, isDeleted: false });
@@ -24,9 +37,11 @@ const createUser = async (req, res, next) => {
       firstName,
       lastName,
       email,
+      phone,
       password: hashedPassword,
       role,
       permissions,
+      branch_id,
     };
 
     const token = generateToken({
@@ -40,7 +55,7 @@ const createUser = async (req, res, next) => {
       ...userData
     });
 
-   const userResponse = user.toObject();
+    const userResponse = user.toObject();
     delete userResponse.password;
     userResponse.role = user.role;
     userResponse.permissions = user.permissions;
@@ -60,12 +75,14 @@ const getAllUsers = async (req, res, next) => {
 
     // Execute queries in parallel for better performance
     const [users, total] = await Promise.all([
-      User.find({ isDeleted: false })
+      User.find({ isDeleted: false, role: { $ne: 'admin' } })
+        .populate('branch_id', 'branch_name')
+        .populate('deletedBy', 'firstName lastName')
         .select('-password')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 }),
-      User.countDocuments({ isDeleted: false })
+      User.countDocuments({ isDeleted: false, role: { $ne: 'admin' } })
     ]);
 
     res.status(200).json({
@@ -83,7 +100,7 @@ const getAllUsers = async (req, res, next) => {
 
 const getUserById = async (req, res, next) => {
   try {
-    const user = await User.findOne({ userId: req.params.id, isDeleted: false }).select('-password');
+    const user = await User.findOne({ _id: req.params.id, isDeleted: false }).populate('branch_id', 'branch_name').populate('deletedBy', 'firstName lastName').select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -95,17 +112,43 @@ const getUserById = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const {userId, ...updateFields } = req.body;
+    const { userId, ...updateFields } = req.body;
+
+    // Fetch the user being updated to check their role
+    const targetUser = await User.findById(req.params.id);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Security check: Prevent non-admin users from editing admin profiles
+    if (req.user.role !== 'admin' && targetUser.role === 'admin') {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to edit an admin user.' });
+    }
+
+    // Security check: Only an admin can set a user's role to 'admin'
+    if (updateFields.role === 'admin' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: Only an admin can assign the "admin" role.' });
+    }
+
     // Basic validation for role and permissions
     if (updateFields.role && typeof updateFields.role !== 'string') {
       return res.status(400).json({ message: 'Role must be a string.' });
     }
     if (updateFields.permissions && (!Array.isArray(updateFields.permissions) || !updateFields.permissions.every(p => typeof p === 'string'))) {
-      return res.status(400).json({ message: 'Permissions must be an array of strings.' });
+    }
+    if (updateFields.branch_id) {
+      if (!mongoose.Types.ObjectId.isValid(updateFields.branch_id)) {
+        return res.status(400).json({ message: 'Invalid branch ID format' });
+      }
+      const branchExists = await Branch.findOne({ _id: updateFields.branch_id, status: 'ACTIVE' });
+      if (!branchExists) {
+        return res.status(400).json({ message: 'Branch not found or is inactive' });
+      }
     }
 
     const user = await User.findOneAndUpdate(
-      { userId: req.params.id, isDeleted: false },
+      { _id: req.params.id, isDeleted: false },
       updateFields, // Use the filtered updateFields
       { new: true, runValidators: true }
     ).select('-password');
@@ -122,15 +165,15 @@ const updateUser = async (req, res, next) => {
 const deleteUser = async (req, res, next) => {
   try {
     const user = await User.findOneAndUpdate(
-        { userId: req.params.id, isDeleted: false },
-        {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy: req.user._id, 
-          isActive: false,
-        },
-        { new: true }
-      ).select('-password');
+      { _id: req.params.id, isDeleted: false },
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.user._id,
+        isActive: false,
+      },
+      { new: true }
+    ).select('-password');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -143,8 +186,19 @@ const deleteUser = async (req, res, next) => {
 
 const getPermissions = (req, res, next) => {
   try {
-    const PERMISSIONS = require('../config/permissions');
-    res.status(200).json(PERMISSIONS);
+    // Group all available permissions by module
+    const allModulesStructured = PERMISSIONS.reduce((acc, perm) => {
+      if (!acc[perm.module]) {
+        acc[perm.module] = {
+          moduleName: perm.module,
+          permissions: [],
+        };
+      }
+      acc[perm.module].permissions.push(perm.id);
+      return acc;
+    }, {});
+
+    res.status(200).json(Object.values(allModulesStructured));
   } catch (error) {
     next(error);
   }

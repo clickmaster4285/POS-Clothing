@@ -1,69 +1,27 @@
 const mongoose = require("mongoose");
 // Stock Schema
 const stockSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
-  },
-  variantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
-  },
-  branch: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branch',
-    required: true
-  },
-  location: {
-    type: String,
-  
-    required: true
-  },
-  storageDetails: {
-    rack: String,
-    shelf: String,
-    bin: String
-  },
-  currentStock: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  reservedStock: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  availableStock: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  inTransitStock: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  damagedStock: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  variantId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
+  location: { type: String, required: true },
+
+  // NEW: track quantity per color
+  color: { type: String, default: "Default" },
+   
+  currentStock: { type: Number, default: 0, min: 0 },
+  reservedStock: { type: Number, default: 0, min: 0 },
+  availableStock: { type: Number, default: 0, min: 0 },
+  inTransitStock: { type: Number, default: 0, min: 0 },
+  damagedStock: { type: Number, default: 0, min: 0 },
   reorderPoint: Number,
   reorderQuantity: Number,
   lastRestockDate: Date,
   lastSoldDate: Date,
-  stockValue: Number, // calculated field
-  isLowStock: {
-    type: Boolean,
-    default: false
-  },
+  stockValue: Number,
+  isLowStock: { type: Boolean, default: false },
   stockAlerts: [{
-    type: {
-      type: String,
-      enum: ['low', 'out', 'expiring']
-    },
+    type: { type: String, enum: ['low', 'out', 'expiring'] },
     triggeredAt: Date,
     resolved: Boolean,
     resolvedAt: Date
@@ -92,6 +50,7 @@ const stockAdjustmentSchema = new mongoose.Schema({
       ref: 'Product'
     },
     variantId: mongoose.Schema.Types.ObjectId,
+      color: String, 
     quantity: {
       type: Number,
       required: true

@@ -1,0 +1,133 @@
+// @/components/pos/transaction/dialogs/PaymentDialog.tsx
+import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTransaction } from '@/context/TransactionContext';
+import { toast } from '@/hooks/use-toast';
+
+
+
+export function PaymentDialog({ open, onOpenChange }) {
+    const { finalTotal, setPaymentDetails, setCurrentStep, paymentDetails } = useTransaction();
+    const [amountTendered, setAmountTendered] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handlePayment = () => {
+        const tendered = parseFloat(amountTendered);
+
+        if (isNaN(tendered) || tendered <= 0) {
+            toast({
+                title: 'Invalid amount',
+                description: 'Please enter a valid amount',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (tendered < finalTotal) {
+            toast({
+                title: 'Insufficient payment',
+                description: `Amount tendered is less than $${finalTotal.toFixed(2)}`,
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+
+        // Simulate payment processing
+        setTimeout(() => {
+            const changeDue = tendered - finalTotal;
+
+            setPaymentDetails({
+                amountTendered: tendered,
+                changeDue: changeDue,
+                paymentMethod: 'cash',
+                timestamp: new Date().toISOString(),
+            });
+         
+
+            toast({
+                title: 'Payment successful',
+                description: `Change due: $${changeDue.toFixed(2)}`,
+            });
+
+            setIsProcessing(false);
+            onOpenChange(false);
+            setCurrentStep(2); // Go to transaction totals
+        }, 1000);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Process Payment</DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                    <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                        <span className="font-semibold">Total Amount:</span>
+                        <span className="text-2xl font-bold text-primary">
+                            ${finalTotal.toFixed(2)}
+                        </span>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Amount Tendered
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                $
+                            </span>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={amountTendered}
+                                onChange={(e) => setAmountTendered(e.target.value)}
+                                className="pl-7"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+
+                    {amountTendered && !isNaN(parseFloat(amountTendered)) && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Change Due:</span>
+                            <span className="font-semibold">
+                                ${Math.max(0, parseFloat(amountTendered) - finalTotal).toFixed(2)}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter className="sm:justify-between">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handlePayment}
+                        disabled={isProcessing || !amountTendered}
+                    >
+                        {isProcessing ? 'Processing...' : 'Complete Payment'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}

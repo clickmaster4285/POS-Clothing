@@ -21,7 +21,13 @@ const BranchSchema = new mongoose.Schema({
     city: String,
     state: String,
     country: String
+  },
+    branch_manager: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", 
+     unique: true, 
   }
+    
 }, {
   timestamps: true
 });

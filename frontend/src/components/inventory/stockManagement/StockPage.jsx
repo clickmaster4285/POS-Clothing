@@ -44,13 +44,14 @@ export default function StockPage() {
 
     // Forms
     const [adjustForm, setAdjustForm] = useState({
-        product: "",
-        variant: "",
         type: "add",
-        quantity: "",
         reason: "",
         branch: "",
+        items: [
+            { product: "", variant: "", color: "", quantity: "" } // add color here
+        ]
     })
+
 
     const [transferForm, setTransferForm] = useState({
         fromBranch: "",
@@ -85,7 +86,15 @@ export default function StockPage() {
     }, [transferData])
 
     // Handlers
-    const resetAdjustForm = () => setAdjustForm({ product: "", variant: "", type: "add", quantity: "", reason: "", branch: "" })
+    const resetAdjustForm = () => setAdjustForm({
+        type: "add",
+        reason: "",
+        branch: "",
+        items: [
+            { product: "", variant: "", color: "", quantity: "" }
+        ]
+    })
+
     const resetTransferForm = () => setTransferForm({ fromBranch: "", toBranch: "", product: "", variant: "", quantity: "", notes: "" })
 
     const lowStockItems = stocks.filter((s) => s.isLowStock)
@@ -102,18 +111,76 @@ export default function StockPage() {
     }
 
     const handleAddAdjustment = () => {
-        if (!adjustSummary.isValid) { toast.error("Please fill all fields"); return; }
-        adjustStockMutate({
-            branchId: adjustForm.branch,
-            data: {
-                adjustmentType: adjustForm.type,
-                reason: adjustForm.reason,
-                remarks: adjustForm.reason,
-                items: [{ product: adjustForm.product, variantId: adjustForm.variant, quantity: Number(adjustForm.quantity) }]
+        if (!adjustSummary.isValid) {
+            toast.error("Please fill all fields");
+            return;
+        }
+
+        // Prepare items for backend
+        const itemsToAdjust = adjustForm.items.map(row => ({
+            product: row.product,
+            color: row.color,
+            variantId: row.variant,
+            quantity: Number(row.quantity)
+        }));
+
+       
+
+        adjustStockMutate(
+            {
+                branchId: adjustForm.branch,
+                data: {
+                    adjustmentType: adjustForm.type,
+                    reason: adjustForm.reason,
+                    remarks: adjustForm.reason,
+                    items: itemsToAdjust
+                }
+            },
+            {
+                onSuccess: (data) => {
+                    toast.success("Adjustment submitted!");
+                    resetAdjustForm();
+                    setActiveTab("overview");
+
+                    // Merge the newly added/adjusted stock into frontend stocks
+                    setStocks(prevStocks => {
+                        const updatedStocks = [...prevStocks];
+
+                        itemsToAdjust.forEach(item => {
+                            const existingStockIndex = updatedStocks.findIndex(
+                                s => s.product === item.product && s.variantId === item.variantId && s.branch === adjustForm.branch
+                            );
+
+                            const branchLocation = branches.find(b => b._id === adjustForm.branch)?.branch_name + ", ";
+
+                            if (existingStockIndex >= 0) {
+                                // Stock exists → update quantity
+                                updatedStocks[existingStockIndex].currentStock += item.quantity;
+                                updatedStocks[existingStockIndex].availableStock += item.quantity;
+                            } else {
+                                // Stock does not exist → create new
+                                updatedStocks.push({
+                                    _id: `${item.product}-${item.variantId}-${adjustForm.branch}-${Date.now()}`, // temporary ID for frontend
+                                    product: item.product,
+                                    variantId: item.variantId,
+                                    branch: adjustForm.branch,
+                                    location: branchLocation,
+                                    currentStock: item.quantity,
+                                    availableStock: item.quantity,
+                                    damagedStock: 0,
+                                    inTransitStock: 0,
+                                    reservedStock: 0,
+                                    isLowStock: false,
+                                    stockAlerts: []
+                                });
+                            }
+                        });
+
+                        return updatedStocks;
+                    });
+                }
             }
-        }, {
-            onSuccess: () => { toast.success("Adjustment submitted!"); resetAdjustForm(); setActiveTab("overview"); }
-        });
+        );
     };
 
     const handleAddTransfer = () => {
@@ -131,9 +198,21 @@ export default function StockPage() {
     // Summaries
     const selectedAdjustProduct = products.find(p => p._id === adjustForm.product)
     const adjustSummary = {
-        product: selectedAdjustProduct?.productName || "Not selected",
-        isValid: adjustForm.product && adjustForm.variant && adjustForm.quantity && adjustForm.branch && adjustForm.reason,
-    }
+        isValid:
+            adjustForm.branch &&
+            adjustForm.reason &&
+            adjustForm.items.length > 0 &&
+            adjustForm.items.every(
+                row => row.product && row.variant && row.quantity && Number(row.quantity) > 0
+            ),
+        typeLabel: adjustForm.type === "add" ? "Add Stock" : adjustForm.type === "remove" ? "Remove Stock" : "Damage",
+        product: (adjustForm.items || []).map(row => {
+            const prod = products?.find(p => p._id === row.product);
+            return prod ? prod.productName : "Not selected";
+        }).join(", ")
+    };
+
+
 
     const selectedTransferProduct = products.find(p => p._id === transferForm.product)
     const transferSummary = {

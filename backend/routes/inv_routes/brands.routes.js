@@ -6,13 +6,19 @@ const categoryBrandController = require('../../controllers/inv_controllers/categ
 const auth = require('../../middlewares/auth');
 const upload = require('../../middlewares/upload');
 
+const checkPermission = require('../../middlewares/checkPermission');
+const { PERMISSIONS_OBJECT } = require('../../config/permissions');
+
+router.use(auth);
+
+router.post('/',checkPermission(PERMISSIONS_OBJECT.CATEGORIES.CREATE), upload.single("logo"), categoryBrandController.createBrand);
+
+router.get('/', checkPermission(PERMISSIONS_OBJECT.CATEGORIES.READ), categoryBrandController.getBrands);
+
+router.put('/:id', checkPermission(PERMISSIONS_OBJECT.CATEGORIES.UPDATE), upload.single("logo"), categoryBrandController.updateBrand);
 
 
-router.post('/', auth, upload.single("logo"), categoryBrandController.createBrand);
-
-router.get('/', auth, categoryBrandController.getBrands);
-router.put('/:id', auth,upload.single("logo"), categoryBrandController.updateBrand);
-router.delete('/:id', auth, categoryBrandController.deleteBrand);
+router.delete('/:id',  checkPermission(PERMISSIONS_OBJECT.CATEGORIES.DELETE), categoryBrandController.deleteBrand);
 
 
 

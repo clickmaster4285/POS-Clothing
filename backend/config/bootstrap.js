@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const { generateUserId } = require('../utils/userIdGenerator');
 const { hashPassword } = require('../utils/password');
-const PERMISSIONS = require('./permissions'); 
+const { PERMISSIONS } = require('./permissions'); 
 
 const initializeAdminAccount = async () => {
   const {
@@ -26,13 +26,24 @@ const initializeAdminAccount = async () => {
     });
 
     if (existingAdmin) {
-      console.log('✅ Admin user already exists. Skipping creation.');
+      console.log('✅ Admin user already exists.');
+      const allPermissions = PERMISSIONS.map(p => p.id);
+      const existingPermissionsSet = new Set(existingAdmin.permissions);
+      const permissionsToAdd = allPermissions.filter(p => !existingPermissionsSet.has(p));
+
+      if (permissionsToAdd.length > 0) {
+        existingAdmin.permissions = [...existingAdmin.permissions, ...permissionsToAdd];
+        await existingAdmin.save();
+        console.log(`✅ Updated admin user with new permissions: ${permissionsToAdd.join(', ')}`);
+      } else {
+        console.log('Admin user permissions are already up to date.');
+      }
       return;
     }
 
     console.log('No admin user found. Creating default admin...');
 
-    const allPermissions = Object.values(PERMISSIONS).flatMap(module => Object.values(module));
+    const allPermissions = PERMISSIONS.map(p => p.id);
 
     const hashedPassword = await hashPassword(ADMIN_PASSWORD);
 

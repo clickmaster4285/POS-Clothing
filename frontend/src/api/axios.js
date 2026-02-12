@@ -1,26 +1,52 @@
-import axios from "axios";
+// lib/api.js
+import axios from 'axios';
+
+const API_BASE_URL = "http://localhost:5000";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL: API_BASE_URL,
   withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// attach JWT automatically
+let authErrorHandler = null;
+
+export const setAuthErrorRedirector = (handler) => {
+  authErrorHandler = handler;
+};
+
+// Add auth token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
-
-  // ✅ IMPORTANT: handle FormData vs JSON properly
-  if (config.data instanceof FormData) {
-    // 🚫 Let axios set Content-Type + boundary
-    delete config.headers["Content-Type"];
-  } else {
-    config.headers["Content-Type"] = "application/json";
-  }
-
   return config;
 });
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      if (typeof window !== 'undefined' && authErrorHandler) {
+        authErrorHandler(error.response.status);
+      }
+    }
+
+    // Return a consistent error format
+    return Promise.reject({
+      message: error.response?.data?.message || 'An error occurred',
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+  }
+);
 
 export default api;

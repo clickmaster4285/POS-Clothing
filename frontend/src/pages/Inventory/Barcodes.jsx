@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 
 import { StatCard } from "@/components/inventory/stat-card"
 import { Button } from "@/components/ui/button"
@@ -85,17 +85,26 @@ export default function BarcodeManagementPage() {
     };
 
     // Generate barcode items from products
-    const [barcodeItems, setBarcodeItems] = useState(
-        products.flatMap((product) =>
-            product.variants.map((variant) => ({
+    const [barcodeItems, setBarcodeItems] = useState([]);
+
+    useEffect(() => {
+        if (!products || products.length === 0) return;
+
+        const items = products.flatMap(product =>
+            product.variants.map(variant => ({
                 product,
                 variant,
                 barcode: variant.variantBarcode || variant.variantSku || generateFallbackBarcode(product, variant),
                 selected: false,
                 printQuantity: 1,
             }))
-        )
-    )
+        );
+
+        setBarcodeItems(items);
+    }, [products]);
+
+
+
     const [templates] = useState([
         {
             id: "standard",

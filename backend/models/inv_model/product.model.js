@@ -75,7 +75,8 @@ const productSchema = new mongoose.Schema({
     price: {
       costPrice: { type: Number },
       retailPrice: { type: Number }
-    },
+       },
+    color: String,
     type: { type: String, enum: ["previous", "update"] },
     changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
   }

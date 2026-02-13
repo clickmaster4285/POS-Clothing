@@ -20,7 +20,7 @@ export const getHeldTransactions = async () => {
 
 // 🔹 CREATE transaction
 export const createTransaction = async (data) => {
-  const res = await api.post("/transactions", data);
+  const res = await api.post("/transactions/create", data);
   return res.data;
 };
 
@@ -45,5 +45,11 @@ export const voidHeldTransaction = async (id) => {
 // 🔹 GENERATE receipt
 export const generateReceipt = async (id) => {
   const res = await api.get(`/transactions/receipt/${id}`);
+  return res.data;
+};
+
+export const completeHeldTransaction = async (id, payment) => {
+ 
+  const res = await api.patch(`/transactions/held/${id}/complete` , payment);
   return res.data;
 };

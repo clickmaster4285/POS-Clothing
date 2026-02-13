@@ -87,7 +87,7 @@ export default function AddProductTab({
       
         isActive: true
     })
-    console.log("productToEdit", productToEdit)
+    
     
     useEffect(() => {
         if (!productToEdit) {

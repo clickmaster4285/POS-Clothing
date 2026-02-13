@@ -21,7 +21,8 @@ import CustomerEditPage from '../pages/pos/customer/[id]/edit/page'
 import SpecialItems from '../pages/pos/SpecialItems'
 import DiscountsPromotions from '../pages/pos/DiscountAndPromotions';
 import TransactionPage from '../pages/pos/Transaction'
-
+import ReturnsExchanges from '../pages/pos/ReturnExchange'
+import ReciptManagement from '../pages/pos/RecieptManagement'
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -129,6 +130,26 @@ const AppRoutes = () => {
                     <ProtectedRoute>
                         <MainLayout>
                             <SpecialItems />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/pos/returns`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <ReturnsExchanges />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/pos/receipts`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <ReciptManagement />
                         </MainLayout>
                     </ProtectedRoute>
                 }

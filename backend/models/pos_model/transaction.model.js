@@ -20,6 +20,9 @@ const transactionSchema = new mongoose.Schema(
         productId: { type: String, required: true },
         name: { type: String, required: true },
         quantity: { type: Number, required: true },
+
+        returnedQuantity: { type: Number, default: 0 }, 
+         
         size: { type: String },
         color: { name: { type: String } },
         unitPrice: { type: Number, required: true },
@@ -29,18 +32,32 @@ const transactionSchema = new mongoose.Schema(
       },
     ],
 
+    returnSummary: {
+  totalReturnedAmount: { type: Number, default: 0 },
+  totalRefunded: { type: Number, default: 0 },
+  totalCreditIssued: { type: Number, default: 0 },
+  status: {
+    type: String,
+    // enum: ["none", "partial", "fully_returned"],
+    default: "none"
+  }
+},
+
+    
     // Totals
     totals: {
       subtotal: { type: Number, required: true },
-      totalTax: { type: Number, required: true },
+
+      // totalTax: { type: Number, required: true },
+
       totalDiscount: { type: Number, default: 0 },
       grandTotal: { type: Number, required: true },
-      taxBreakdown: [
-        {
-          rate: { type: Number, required: true },
-          amount: { type: Number, required: true },
-        },
-      ],
+      // taxBreakdown: [
+      //   {
+      //     rate: { type: Number, required: true },
+      //     amount: { type: Number, required: true },
+      //   },
+      // ],
     },
 
     // Loyalty Info
@@ -60,9 +77,9 @@ const transactionSchema = new mongoose.Schema(
 
     // Payment Info
     payment: {
-      amountTendered: { type: Number, required: true },
-      changeDue: { type: Number, required: true },
-      paymentMethod: { type: String, required: true },
+      amountTendered: { type: Number },
+      changeDue: { type: Number },
+      paymentMethod: { type: String },
       timestamp: { type: Date, default: Date.now },
     },
 

@@ -23,7 +23,7 @@ export function AdjustmentForm({
     getStatusColor
 }) {
 
-    console.log("products", products)
+
     const handleRowChange = (index, field, value) => {
         const updatedItems = [...adjustForm.items]
         updatedItems[index][field] = value

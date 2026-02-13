@@ -1,5 +1,7 @@
 const { Transaction } = require("../../models/pos_model/transaction.model");
 
+const ReturnExchange = require("../../models/pos_model/returnExchange.model");
+
 // GET all transactions
 const getAllTransactions = async (req, res) => {
   try {
@@ -14,16 +16,12 @@ const getAllTransactions = async (req, res) => {
 const createTransaction = async (req, res) => {
   try {
     const payload = req.body;
+   
 
     const transactionData = {
       transactionNumber: payload.transactionNumber,
       status: payload.status || "active",
-      customer: {
-        customerId: payload.customer.customerId,
-        customerFirstName: payload.customer.firstName,
-        customerLastName: payload.customer.lastName,
-        customerEmail: payload.customer.email,
-      },
+     customer: payload.customer || {},
       cartItems: payload.cartItems,
       totals: payload.totals,
       loyalty: payload.loyalty,
@@ -40,6 +38,8 @@ const createTransaction = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 // GET transactions by status (active, held, void)
 const getTransactionsByStatus = async (req, res) => {
@@ -171,6 +171,40 @@ Thank you for your purchase!
   }
 };
 
+// PATCH a held transaction to completed
+const completeHeldTransaction = async (req, res) => {
+ 
+  try {
+    const { id } = req.params;
+    const { paymentMethod, amountTendered, changeDue } = req.body;
+
+    const transaction = await Transaction.findOneAndUpdate(
+      { _id: id, status: "held" },
+      {
+        status: "completed",
+        payment: {
+          paymentMethod,
+          amountTendered,
+          changeDue,
+          timestamp: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!transaction)
+      return res
+        .status(404)
+        .json({ success: false, message: "Held transaction not found" });
+
+    res.json({ success: true, transaction });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 module.exports = {
   getAllTransactions,
   createTransaction,
@@ -180,4 +214,5 @@ module.exports = {
   voidTransaction,
   voidHeldTransaction,
   generateReceipt,
+  completeHeldTransaction
 };

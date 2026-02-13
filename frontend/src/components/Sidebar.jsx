@@ -75,7 +75,7 @@ export default function Sidebar() {
                 { title: "Transaction", href: `/${role}/pos/transaction` },
                 { title: "Customer Information", href: `/${role}/pos/customer-info` },
                 { title: "Discounts & Promotions", href: `/${role}/pos/discounts` },
-                { title: "Special Items", href: `/${role}/pos/special-items` },
+                // { title: "Special Items", href: `/${role}/pos/special-items` },
                 { title: "Returns & Exchanges", href: `/${role}/pos/returns` },
                 { title: "Receipt Management", href: `/${role}/pos/receipts` },
             ],
@@ -91,14 +91,14 @@ export default function Sidebar() {
                
             ],
         },
-        {
-            title: "Customers",
-            icon: Users,
-            children: [
-                { title: "All Customers", href: `/${role}/customers/all` },
-                { title: "Loyalty Programs", href: `/${role}/customers/loyalty` },
-            ],
-        },
+        // {
+        //     title: "Customers",
+        //     icon: Users,
+        //     children: [
+        //         { title: "All Customers", href: `/${role}/customers/all` },
+        //         { title: "Loyalty Programs", href: `/${role}/customers/loyalty` },
+        //     ],
+        // },
         {
             title: "Employees",
             icon: UserCog,

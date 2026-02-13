@@ -7,7 +7,8 @@ import {
   holdTransaction,
   voidTransaction,
   voidHeldTransaction,
-  generateReceipt,
+    generateReceipt,
+  completeHeldTransaction,
 } from "@/api/pos/transaction.api";
 
 
@@ -97,5 +98,17 @@ export const useGenerateReceipt = (id) => {
     queryKey: ["receipt", id],
     queryFn: () => generateReceipt(id),
     enabled: !!id,
+  });
+};
+
+export const useCompleteHeldTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payment }) => completeHeldTransaction(id, payment),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions", "held"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
   });
 };

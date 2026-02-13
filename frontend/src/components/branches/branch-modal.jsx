@@ -66,11 +66,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
 
         const { country, state, city } = branch.address;
 
-        console.log("Branch data for editing:", {
-            branch_manager: branch.branch_manager,
-            address: branch.address
-        });
-
+      
         // Set form data
         setFormData({
             branch_name: branch.branch_name || "",
@@ -99,14 +95,14 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                 try {
                     setIsLoadingStates(true);
                     const statesData = await getStates(country);
-                    console.log("Loaded states for", country, ":", statesData);
+                   
                     setStates(statesData);
 
                     if (state) {
                         setIsLoadingCities(true);
                         const citiesData = await getCities(country, state);
-                        console.log("Loaded cities for", country, state, ":", citiesData);
-                        console.log("Looking for city:", city);
+                     
+                 
 
                         // Find the exact city in the loaded data
                         const foundCity = citiesData.find(c =>
@@ -114,7 +110,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                             c.name.toLowerCase() === city.toLowerCase()
                         );
 
-                        console.log("City found in data:", foundCity);
+                       
 
                         // If city is found, ensure we use the exact name from API
                         if (foundCity) {
@@ -193,7 +189,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
         try {
             setIsLoadingCities(true);
             const citiesData = await getCities(countryCode, stateIso);
-            console.log("Cities loaded on state change:", citiesData);
+          
             setCities(citiesData);
         } catch (error) {
             console.error("Error loading cities:", error);
@@ -204,7 +200,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
 
     // Handle city selection
     const handleCityChange = (cityName) => {
-        console.log("City selected:", cityName);
+      
         setFormData({
             ...formData,
             address: {

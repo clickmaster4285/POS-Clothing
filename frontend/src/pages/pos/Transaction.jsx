@@ -50,10 +50,7 @@ function POSContent() {
                         <h3 className="text-sm font-semibold mb-3 text-gray-700 sm:hidden">Quick Actions</h3>
                         <QuickActions />
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4 sm:p-4">
-                        <h3 className="text-sm font-semibold mb-3 text-gray-700 sm:hidden">Transaction Summary</h3>
-                        <TransactionTotals />
-                    </div>
+                  
                 </aside>
             </main>
         </div>

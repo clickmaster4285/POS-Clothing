@@ -1,68 +1,76 @@
 // @/components/pos/transaction/dialogs/PaymentDialog.tsx
-import { useState } from 'react';
+
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useTransaction } from '@/context/TransactionContext';
-import { toast } from '@/hooks/use-toast';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useTransaction } from "@/context/TransactionContext";
+import { toast } from "@/hooks/use-toast";
 
 
 
-export function PaymentDialog({ open, onOpenChange }) {
-    const { finalTotal, setPaymentDetails, setCurrentStep, paymentDetails } = useTransaction();
-    const [amountTendered, setAmountTendered] = useState('');
+export function PaymentDialog({
+    open,
+    onOpenChange,
+    onSuccess,
+}) {
+    const { totals } = useTransaction();
+
+    const [amountTendered, setAmountTendered] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const finalTotal = totals.grandTotal;
 
     const handlePayment = () => {
         const tendered = parseFloat(amountTendered);
 
         if (isNaN(tendered) || tendered <= 0) {
             toast({
-                title: 'Invalid amount',
-                description: 'Please enter a valid amount',
-                variant: 'destructive',
+                title: "Invalid amount",
+                description: "Please enter a valid amount",
+                variant: "destructive",
             });
             return;
         }
 
         if (tendered < finalTotal) {
             toast({
-                title: 'Insufficient payment',
+                title: "Insufficient payment",
                 description: `Amount tendered is less than $${finalTotal.toFixed(2)}`,
-                variant: 'destructive',
+                variant: "destructive",
             });
             return;
         }
 
         setIsProcessing(true);
 
-        // Simulate payment processing
         setTimeout(() => {
             const changeDue = tendered - finalTotal;
 
-            setPaymentDetails({
+            const paymentData = {
                 amountTendered: tendered,
-                changeDue: changeDue,
-                paymentMethod: 'cash',
+                changeDue,
+                paymentMethod: "cash",
+                amountPaid: finalTotal,
                 timestamp: new Date().toISOString(),
-            });
-         
+            };
 
             toast({
-                title: 'Payment successful',
+                title: "Payment successful",
                 description: `Change due: $${changeDue.toFixed(2)}`,
             });
 
             setIsProcessing(false);
             onOpenChange(false);
-            setCurrentStep(2); // Go to transaction totals
-        }, 1000);
+            onSuccess(paymentData); // 🔥 Important
+            setAmountTendered("");
+        }, 800);
     };
 
     return (
@@ -81,13 +89,13 @@ export function PaymentDialog({ open, onOpenChange }) {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Amount Tendered
-                        </label>
+                        <label className="text-sm font-medium">Amount Tendered</label>
+
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                                 $
                             </span>
+
                             <Input
                                 type="number"
                                 step="0.01"
@@ -101,14 +109,21 @@ export function PaymentDialog({ open, onOpenChange }) {
                         </div>
                     </div>
 
-                    {amountTendered && !isNaN(parseFloat(amountTendered)) && (
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Change Due:</span>
-                            <span className="font-semibold">
-                                ${Math.max(0, parseFloat(amountTendered) - finalTotal).toFixed(2)}
-                            </span>
-                        </div>
-                    )}
+                    {amountTendered &&
+                        !isNaN(parseFloat(amountTendered)) && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    Change Due:
+                                </span>
+                                <span className="font-semibold">
+                                    $
+                                    {Math.max(
+                                        0,
+                                        parseFloat(amountTendered) - finalTotal
+                                    ).toFixed(2)}
+                                </span>
+                            </div>
+                        )}
                 </div>
 
                 <DialogFooter className="sm:justify-between">
@@ -119,12 +134,13 @@ export function PaymentDialog({ open, onOpenChange }) {
                     >
                         Cancel
                     </Button>
+
                     <Button
                         type="button"
                         onClick={handlePayment}
                         disabled={isProcessing || !amountTendered}
                     >
-                        {isProcessing ? 'Processing...' : 'Complete Payment'}
+                        {isProcessing ? "Processing..." : "Complete Payment"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

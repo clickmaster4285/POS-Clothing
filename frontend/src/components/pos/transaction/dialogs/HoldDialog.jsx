@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle2 } from 'lucide-react';
 import { useTransaction } from '@/context/TransactionContext';
 import { toast } from '@/hooks/use-toast';
-
+import { useCreateTransaction } from "@/hooks/pos_hooks/useTransaction"; 
 // ===== In-page held transactions store =====
 const heldTransactions = [];
 
@@ -32,31 +32,48 @@ const holdReasons = [
 ];
 
 export function HoldDialog({ open, onOpenChange }) {
-    const { cartItems, totals, clearCart, setCurrentStep } = useTransaction();
-    const [reason, setReason] = useState('');
-    const [customReason, setCustomReason] = useState('');
-    const [parkCode, setParkCode] = useState('');
+    const { cartItems, totals, clearCart, setCurrentStep, selectedCustomer, loyalty } = useTransaction();
+    const [reason, setReason] = useState("");
+    const [customReason, setCustomReason] = useState("");
+    const [parkCode, setParkCode] = useState("");
     const [confirmed, setConfirmed] = useState(false);
+    const { mutateAsync: createTransaction, isLoading } = useCreateTransaction();
+  
 
-    const handleHold = () => {
-        const finalReason = reason === 'Other' ? customReason : reason;
+
+    const handleHold = async () => {
+        const finalReason = reason === "Other" ? customReason : reason;
         if (!finalReason) {
-            toast({ title: 'Please select a reason', variant: 'destructive' });
+            toast({ title: "Please select a reason", variant: "destructive" });
             return;
         }
 
-        const code = generateParkCode();
-        holdTransaction({
-            id: `hold-${Date.now()}`,
-            parkCode: code,
-            reason: finalReason,
-            items: [...cartItems],
-            subtotal: totals.grandTotal,
-            timestamp: new Date(),
-        });
+        const code = `PARK-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 
-        setParkCode(code);
-        setConfirmed(true);
+        const payload = {
+            transactionNumber: `TXN-${Date.now()}`,
+            status: "held", // ✅ important
+            customer: selectedCustomer || null,
+            cartItems: cartItems.map((item) => ({
+                ...item,
+                id: item.id || `${item.productId}-${Date.now()}`,
+            })),
+            totals,
+            loyalty,
+            parkCode: code,       // optional, for reference
+            holdReason: finalReason,
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            await createTransaction(payload); // save to backend
+            setParkCode(code);
+            setConfirmed(true);
+            toast({ title: "Transaction held successfully", description: `Park Code: ${code}` });
+        } catch (err) {
+            console.error(err);
+            toast({ title: "Failed to hold transaction", variant: "destructive" });
+        }
     };
 
     const handleClose = () => {
@@ -64,9 +81,9 @@ export function HoldDialog({ open, onOpenChange }) {
             clearCart();
             setCurrentStep(0);
         }
-        setReason('');
-        setCustomReason('');
-        setParkCode('');
+        setReason("");
+        setCustomReason("");
+        setParkCode("");
         setConfirmed(false);
         onOpenChange(false);
     };

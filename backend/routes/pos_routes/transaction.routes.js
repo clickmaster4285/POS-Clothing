@@ -11,7 +11,8 @@ const {
   getHeldTransactions,
   voidTransaction,
   voidHeldTransaction,
-  generateReceipt
+  generateReceipt,
+  completeHeldTransaction
 } = require("../../controllers/pos_controllers/transactionController");
 
 // Apply auth middleware to all routes
@@ -40,5 +41,7 @@ router.post("/void-held/:id", voidHeldTransaction);
 
 // Generate receipt for a transaction
 router.get("/receipt/:id", generateReceipt);
+
+router.patch("/held/:id/complete", completeHeldTransaction);
 
 module.exports = router;

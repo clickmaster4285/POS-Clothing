@@ -10,7 +10,6 @@ export function TransactionTotals() {
         setCurrentStep,
         paymentDetails,
         loyaltyDiscount,
-        finalTotal,
         redeemPoints,
         selectedCustomer,
     } = useTransaction();
@@ -22,11 +21,9 @@ export function TransactionTotals() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-bold text-foreground">
-                Transaction Totals
-            </h2>
+            <h2 className="text-xl font-bold text-foreground">Transaction Totals</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Breakdown */}
                 <Card>
                     <CardHeader className="pb-3">
@@ -34,9 +31,7 @@ export function TransactionTotals() {
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                                Items ({itemCount})
-                            </span>
+                            <span className="text-muted-foreground">Items ({itemCount})</span>
                             <span>${safeToFixed(totals.subtotal)}</span>
                         </div>
 
@@ -54,33 +49,10 @@ export function TransactionTotals() {
                             </div>
                         )}
 
-                        <div className="border-t pt-3 space-y-1">
-                            <p className="text-sm font-medium">Tax Breakdown</p>
-                            {totals.taxBreakdown.map((t) => (
-                                <div key={t.rate} className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">
-                                        Tax @ {t.rate}%
-                                    </span>
-                                    <span>${safeToFixed(t.amount)}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Total Tax</span>
-                            <span>${safeToFixed(totals.totalTax)}</span>
-                        </div>
-
-                        <div className="flex justify-between text-xl font-bold pt-3 border-t">
-                            <span>Grand Total</span>
-                            <span>${safeToFixed(totals.grandTotal)}</span>
-                        </div>
-
-                        <div className="flex justify-between text-2xl font-bold pt-2 border-t">
+                        {/* FINAL TOTAL - with loyalty discount applied */}
+                        <div className="flex justify-between text-2xl font-bold pt-3 border-t-2 border-primary/20">
                             <span>Final Total</span>
-                            <span className="text-primary">
-                                ${safeToFixed(finalTotal)}
-                            </span>
+                            <span className="text-primary">${safeToFixed(totals.grandTotal)}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -94,7 +66,9 @@ export function TransactionTotals() {
                         <CardContent className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Loyalty Points</span>
-                                <span>
+                                <span
+                                    className={redeemPoints && loyaltyDiscount > 0 ? 'text-green-600 font-semibold' : ''}
+                                >
                                     {redeemPoints && selectedCustomer && loyaltyDiscount > 0
                                         ? `- $${safeToFixed(loyaltyDiscount)}`
                                         : '—'}
@@ -120,8 +94,12 @@ export function TransactionTotals() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Change Due</span>
-                                    <span className="font-semibold">
-                                        ${safeToFixed(paymentDetails.changeDue)}
+                                    <span className="font-semibold">${safeToFixed(paymentDetails.changeDue)}</span>
+                                </div>
+                                <div className="flex justify-between pt-2 border-t">
+                                    <span className="font-medium">Amount to Pay</span>
+                                    <span className="font-bold text-primary">
+                                        ${safeToFixed(totals.grandTotal)}
                                     </span>
                                 </div>
                             </CardContent>

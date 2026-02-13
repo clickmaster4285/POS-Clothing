@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { useTransaction } from '@/context/TransactionContext';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTransaction } from '@/context/TransactionContext';
 import { useCustomers } from "@/hooks/pos_hooks/useCustomer";
 
 export function ShoppingCart() {
@@ -23,22 +23,22 @@ export function ShoppingCart() {
         setLoyaltyDiscount,
         finalTotal,
         setFinalTotal,
-        pointsRedeemed, // Make sure this exists in your context
-        setPointsRedeemed, // Add this to your context
-        pointsEarned, // Make sure this exists in your context
-        setPointsEarned, // Add this to your context
+        pointsRedeemed,
+        setPointsRedeemed,
+        pointsEarned,
+        setPointsEarned,
     } = useTransaction();
 
     const { data: customers = [], isLoading } = useCustomers();
 
-    // Local state for calculations
+    // Local states for calculations
     const [effectiveLoyaltyDiscount, setEffectiveLoyaltyDiscount] = useState(0);
     const [effectiveFinalTotal, setEffectiveFinalTotal] = useState(0);
     const [effectivePointsEarned, setEffectivePointsEarned] = useState(0);
     const [effectivePointsRedeemed, setEffectivePointsRedeemed] = useState(0);
     const [effectiveNewBalance, setEffectiveNewBalance] = useState(0);
 
-    // Update all calculations whenever dependencies change
+    // Recalculate totals when cart or customer changes
     useEffect(() => {
         const subtotal = Number(totals?.subtotal) || 0;
         const totalDiscount = Number(totals?.totalDiscount) || 0;
@@ -69,41 +69,23 @@ export function ShoppingCart() {
         setEffectivePointsEarned(pointsEarnedCalc);
         setEffectivePointsRedeemed(pointsRedeemedCalc);
         setEffectiveNewBalance(newBalance);
-    }, [
-        cartItems,
-        totals,
-        selectedCustomer,
-        redeemPoints
-    ]);
+    }, [cartItems, totals, selectedCustomer, redeemPoints]);
 
-    // Update context with calculated values to prevent NaN in transactions page
+    // Sync calculated values with context
     useEffect(() => {
-        // Update loyalty discount in context
         if (setLoyaltyDiscount && effectiveLoyaltyDiscount !== Number(loyaltyDiscount)) {
             setLoyaltyDiscount(effectiveLoyaltyDiscount);
         }
-
-        // Update final total in context
         if (setFinalTotal && effectiveFinalTotal !== Number(finalTotal)) {
             setFinalTotal(effectiveFinalTotal);
         }
-
-        // Update points earned in context
         if (setPointsEarned && effectivePointsEarned !== Number(pointsEarned)) {
             setPointsEarned(effectivePointsEarned);
         }
-
-        // Update points redeemed in context
         if (setPointsRedeemed && effectivePointsRedeemed !== Number(pointsRedeemed)) {
             setPointsRedeemed(effectivePointsRedeemed);
         }
-
-    }, [
-        effectiveLoyaltyDiscount,
-        effectiveFinalTotal,
-        effectivePointsEarned,
-        effectivePointsRedeemed
-    ]);
+    }, [effectiveLoyaltyDiscount, effectiveFinalTotal, effectivePointsEarned, effectivePointsRedeemed]);
 
     const handleCustomerChange = (e) => {
         const customerId = e.target.value;
@@ -111,7 +93,6 @@ export function ShoppingCart() {
         setSelectedCustomer(customer || null);
         setRedeemPoints(false);
 
-        // Reset points in context
         if (setPointsRedeemed) setPointsRedeemed(0);
         if (setLoyaltyDiscount) setLoyaltyDiscount(0);
     };
@@ -120,7 +101,6 @@ export function ShoppingCart() {
         setRedeemPoints(checked);
     };
 
-    // Safe number formatting
     const formatCurrency = (value) => {
         const num = Number(value);
         return (isNaN(num) ? 0 : num).toFixed(2);
@@ -138,10 +118,7 @@ export function ShoppingCart() {
                 <Card>
                     <CardContent className="py-16 text-center">
                         <p className="text-muted-foreground">Your cart is empty</p>
-                        <Button
-                            className="mt-4"
-                            onClick={() => setCurrentStep(0)}
-                        >
+                        <Button className="mt-4" onClick={() => setCurrentStep(0)}>
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Add Products
                         </Button>
@@ -160,9 +137,7 @@ export function ShoppingCart() {
                 <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-sm font-medium">
-                            Select Customer (Optional)
-                        </label>
+                        <label className="text-sm font-medium">Select Customer (Optional)</label>
                     </div>
 
                     <select
@@ -178,7 +153,6 @@ export function ShoppingCart() {
                         ))}
                     </select>
 
-                    {/* Customer Loyalty Info */}
                     {selectedCustomer && (
                         <div className="mt-3 p-3 bg-muted/50 rounded-md border">
                             <div className="flex items-center justify-between">
@@ -187,74 +161,37 @@ export function ShoppingCart() {
                                     <span className="text-sm font-medium">Loyalty Points</span>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-lg font-bold text-primary">
-                                        {formatPoints(selectedCustomer.loyaltyPoints)}
-                                    </span>
+                                    <span className="text-lg font-bold text-primary">{formatPoints(selectedCustomer.loyaltyPoints)}</span>
                                     <span className="text-xs text-muted-foreground ml-1">points</span>
                                 </div>
                             </div>
 
-                            {/* Additional Customer Info */}
                             <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                                 <div>
-                                    <span className="font-medium">Card #:</span>{' '}
-                                    <span className="font-mono">{selectedCustomer.loyaltyCardNumber || 'N/A'}</span>
+                                    <span className="font-medium">Card #:</span> <span className="font-mono">{selectedCustomer.loyaltyCardNumber || 'N/A'}</span>
                                 </div>
                                 <div>
-                                    <span className="font-medium">Program:</span>{' '}
-                                    <span>{selectedCustomer.loyaltyProgram || 'Standard'}</span>
+                                    <span className="font-medium">Program:</span> <span>{selectedCustomer.loyaltyProgram || 'Standard'}</span>
                                 </div>
                                 <div>
-                                    <span className="font-medium">Redeemed:</span>{' '}
-                                    <span>{formatPoints(selectedCustomer.redeemedPoints)} pts</span>
+                                    <span className="font-medium">Redeemed:</span> <span>{formatPoints(selectedCustomer.redeemedPoints)} pts</span>
                                 </div>
                                 <div>
-                                    <span className="font-medium">Member since:</span>{' '}
-                                    <span>{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}</span>
+                                    <span className="font-medium">Member since:</span> <span>{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}</span>
                                 </div>
                             </div>
 
-                            {/* Redeem Points Section */}
                             {Number(selectedCustomer.loyaltyPoints) >= 100 && (
                                 <div className="mt-3 pt-2 border-t">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Checkbox
-                                                id="redeem-points"
-                                                checked={redeemPoints}
-                                                onCheckedChange={handleRedeemPoints}
-                                            />
-                                            <label
-                                                htmlFor="redeem-points"
-                                                className="text-sm cursor-pointer font-medium"
-                                            >
-                                                Redeem points for discount
-                                            </label>
+                                            <Checkbox id="redeem-points" checked={redeemPoints} onCheckedChange={handleRedeemPoints} />
+                                            <label htmlFor="redeem-points" className="text-sm cursor-pointer font-medium">Redeem points for discount</label>
                                         </div>
                                         {redeemPoints && effectiveLoyaltyDiscount > 0 && (
-                                            <span className="text-sm font-bold text-primary">
-                                                -{formatCurrency(effectiveLoyaltyDiscount)}
-                                            </span>
+                                            <span className="text-sm font-bold text-primary">-{formatCurrency(effectiveLoyaltyDiscount)}</span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1 ml-6">
-                                        Available: {formatPoints(selectedCustomer.loyaltyPoints)} points •
-                                        100 points = 1 discount • 1000 spent = 100 points
-                                    </p>
-                                    {redeemPoints && (
-                                        <>
-                                            <div className="mt-2 ml-6 p-2 bg-primary/10 rounded-md border border-primary/20">
-                                                <p className="text-xs font-medium text-primary">
-                                                    💰 Redeeming {formatPoints(effectivePointsRedeemed)} points for {formatCurrency(effectiveLoyaltyDiscount)} discount
-                                                </p>
-                                            </div>
-                                            <div className="mt-2 ml-6 p-2 bg-amber-50 rounded-md border border-amber-200">
-                                                <p className="text-xs font-medium text-amber-700">
-                                                    ⚡ Points will be deducted: {formatPoints(selectedCustomer.loyaltyPoints)} → {formatPoints(Math.max(0, Number(selectedCustomer.loyaltyPoints) - effectivePointsRedeemed))} pts
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
                                 </div>
                             )}
 
@@ -282,7 +219,6 @@ export function ShoppingCart() {
                                 <TableHead className="text-center">Qty</TableHead>
                                 <TableHead className="text-right">Unit Price</TableHead>
                                 <TableHead className="text-right">Disc %</TableHead>
-                                <TableHead className="text-right">Tax %</TableHead>
                                 <TableHead className="text-right">Line Total</TableHead>
                                 <TableHead />
                             </TableRow>
@@ -292,13 +228,10 @@ export function ShoppingCart() {
                                 const unitPrice = Number(item.unitPrice) || 0;
                                 const quantity = Number(item.quantity) || 1;
                                 const discountPercent = Number(item.discountPercent) || 0;
-                                const taxPercent = Number(item.taxPercent) || 0;
 
                                 const gross = unitPrice * quantity;
                                 const disc = gross * (discountPercent / 100);
-                                const afterDisc = gross - disc;
-                                const tax = afterDisc * (taxPercent / 100);
-                                const lineTotal = afterDisc + tax;
+                                const lineTotal = gross - disc;
 
                                 return (
                                     <TableRow key={item.id}>
@@ -343,24 +276,14 @@ export function ShoppingCart() {
                                                 max={100}
                                                 step="0.01"
                                                 onChange={(e) =>
-                                                    updateCartItem(item.id, {
-                                                        discountPercent: Number(e.target.value) || 0
-                                                    })
+                                                    updateCartItem(item.id, { discountPercent: Number(e.target.value) || 0 })
                                                 }
                                                 className="w-20 text-right ml-auto"
                                             />
                                         </TableCell>
-                                        <TableCell className="text-right">{taxPercent}%</TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                            {formatCurrency(lineTotal)}
-                                        </TableCell>
+                                        <TableCell>{formatCurrency(lineTotal)}</TableCell>
                                         <TableCell>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                onClick={() => removeCartItem(item.id)}
-                                                className="text-destructive hover:text-destructive/90"
-                                            >
+                                            <Button size="icon" variant="ghost" onClick={() => removeCartItem(item.id)} className="text-destructive hover:text-destructive/90">
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </TableCell>
@@ -397,17 +320,10 @@ export function ShoppingCart() {
                         </div>
                     )}
 
-                    <div className="flex justify-between">
-                        <span>Tax</span>
-                        <span>{formatCurrency(totals?.totalTax)}</span>
-                    </div>
-
                     <div className="flex justify-between text-lg font-bold pt-3 border-t border-dashed">
                         <span>FINAL TOTAL</span>
                         <span className="text-primary">{formatCurrency(effectiveFinalTotal)}</span>
                     </div>
-
-               
                 </CardContent>
             </Card>
 
@@ -416,11 +332,7 @@ export function ShoppingCart() {
                 <Button variant="outline" onClick={() => setCurrentStep(0)}>
                     <ArrowLeft className="w-4 h-4 mr-2" /> Product Entry
                 </Button>
-                <Button
-                    size="lg"
-                    onClick={() => setCurrentStep(2)}
-                    className="bg-primary hover:bg-primary/90"
-                >
+                <Button size="lg" onClick={() => setCurrentStep(2)} className="bg-primary hover:bg-primary/90">
                     Continue to Payment <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
             </div>

@@ -25,7 +25,8 @@ const BranchSchema = new mongoose.Schema({
     branch_manager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User", 
-     unique: true, 
+      unique: true, 
+      sparse: true 
   }
     
 }, {

@@ -29,7 +29,7 @@ const ReturnsExchangesPage = () => {
     const { data: transactionData, isLoading } = useTransactions();
     const transactions = transactionData?.transactions || [];
 
-  
+
     const { data: transactionFullDetails, isLoading: isLoadingReturns } = useTransactionFullDetails(
         selectedTxn?._id,
         {
@@ -37,8 +37,8 @@ const ReturnsExchangesPage = () => {
         }
     );
 
-  
-    console.log("transactionFullDetails", transactionFullDetails)
+
+
 
     useEffect(() => {
         if (!transactionFullDetails) return;
@@ -59,16 +59,18 @@ const ReturnsExchangesPage = () => {
                     (exchangedItemIds.includes(item.productId) ? 1 : 0); // subtract exchanged qty
 
                 if (remainingQty <= 0) return null; // skip fully returned or exchanged
-
+                console.log("items in use effect", item)
                 return {
                     id: item.id || item.productId || `item-${index}`,
                     name: item.name,
                     productId: item.productId,
+                    variantId: item.variantId,
                     price: item.unitPrice || 0,
                     qty: remainingQty,
                     maxReturnQty: remainingQty,
                     originalItem: {
                         productId: item.productId,
+                        variantId: item.variantId || null,
                         unitPrice: item.unitPrice || 0,
                         discountPercent: item.discountPercent || 0,
                         size: item.size || null,
@@ -84,7 +86,7 @@ const ReturnsExchangesPage = () => {
 
     }, [transactionFullDetails]);
 
-   
+
 
     const handleViewReturn = (txn) => {
         setSelectedTxn(txn);
@@ -129,7 +131,8 @@ const ReturnsExchangesPage = () => {
         }
 
         const returnTotal = items.reduce((acc, item) => acc + item.price * item.qty, 0);
-
+        console.log("items", items)
+        console.log("selectedTxn", selectedTxn)
         const payload = {
             type: "return",
             mode: "normal",
@@ -142,7 +145,9 @@ const ReturnsExchangesPage = () => {
                 customerPhone: selectedTxn.customer?.customerPhone || ""
             },
             items: items.map(item => ({
+
                 productId: item.originalItem?.productId || item.id,
+                variantId: item.originalItem?.variantId || item.variantId,
                 name: item.name,
                 quantity: item.qty,
                 size: item.originalItem?.size || null,
@@ -167,7 +172,7 @@ const ReturnsExchangesPage = () => {
             },
             notes: `Return processed - Reason: ${finalReason}`
         };
-
+        console.log("payload", payload)
         try {
             await createReturnExchangeMutation.mutateAsync(payload);
             toast.success("Return processed successfully!");
@@ -213,7 +218,7 @@ const ReturnsExchangesPage = () => {
         );
     });
 
-//-----------------exchage items funt-----------------
+    //-----------------exchage items funt-----------------
     const getNewExchangedItems = (transactionFullDetails) => {
         if (!transactionFullDetails) return [];
 
@@ -242,7 +247,7 @@ const ReturnsExchangesPage = () => {
                 quantity: quantity,
                 size: newItem.size || null,
                 color: newItem.color || null,
-                
+
                 exchangeDate: newItem.exchangeDate || ex.createdAt,
                 exchangedFrom: ex.items?.map(i => i.name).join(", ") || "N/A",
                 total: exchangeGrandTotal
@@ -283,7 +288,7 @@ const ReturnsExchangesPage = () => {
     };
     const returnedItems = getReturnedItems(transactionFullDetails);
     //------------updated totals funt --------------------
-    
+
     const getUpdatedTransactionTotals = (transactionFullDetails) => {
         if (!transactionFullDetails?.updatedTotals) return null;
 
@@ -325,6 +330,7 @@ const ReturnsExchangesPage = () => {
                 returnItems={selectedReturnItems}
                 onBack={() => setView("return")}
                 onComplete={async (data) => {
+                    console.log("data", data)
                     try {
                         const payload = {
                             type: "exchange",
@@ -339,6 +345,7 @@ const ReturnsExchangesPage = () => {
                             },
                             items: data.exchangeItem ? [{
                                 productId: data.exchangeItem._id,
+                                variantId: data.exchangeItem.variantSelected._id,
                                 name: data.exchangeItem.productName,
                                 quantity: data.exchangeQuantity,
                                 size: data.exchangeItem.variantSelected.size,
@@ -352,7 +359,7 @@ const ReturnsExchangesPage = () => {
                             payment: data.payment,
                             notes: "Exchange processed via POS"
                         };
-
+                        console.log("payload", payload)
                         await createReturnExchangeMutation.mutateAsync(payload);
 
                         toast.success("Exchange saved successfully!");
@@ -385,7 +392,7 @@ const ReturnsExchangesPage = () => {
                 newItems={newItems}
                 updatedTotals={updatedTotals}
                 returnedItems={returnedItems}
-                
+
             />
         );
     }
@@ -433,26 +440,26 @@ const ReturnsExchangesPage = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-<Card className="p-4">
-            <div className="mb-4">
-                <h3 className="font-semibold text-base sm:text-lg">Transaction History</h3>
-                <p className="text-sm text-muted-foreground">
-                    {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} found
-                </p>
-            </div>
+            <Card className="p-4">
+                <div className="mb-4">
+                    <h3 className="font-semibold text-base sm:text-lg">Transaction History</h3>
+                    <p className="text-sm text-muted-foreground">
+                        {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} found
+                    </p>
+                </div>
 
-            {filteredTransactions.length === 0 ? (
-                <EmptyState searchQuery={searchQuery} />
-            ) : (
-                <TransactionList
-                    transactions={filteredTransactions}
-                    onViewReceipt={handleViewReceipt}
-                    onViewReturn={handleViewReturn}
-                    formatDate={formatDate}
-                    statusColor={statusColor}
-                />
+                {filteredTransactions.length === 0 ? (
+                    <EmptyState searchQuery={searchQuery} />
+                ) : (
+                    <TransactionList
+                        transactions={filteredTransactions}
+                        onViewReceipt={handleViewReceipt}
+                        onViewReturn={handleViewReturn}
+                        formatDate={formatDate}
+                        statusColor={statusColor}
+                    />
                 )}
-                
+
             </Card>
         </div>
     );

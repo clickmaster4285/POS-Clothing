@@ -29,7 +29,7 @@ function POSContent() {
                 <span className="text-primary font-medium truncate">{transactionNumber}</span>
             </div>
 
-            <header className="sticky top-0 z-50 bg-white shadow-sm rounded-md border-b mb-4 sm:mb-6">
+            <header className=" bg-white shadow-sm rounded-md border-b mb-4 sm:mb-6">
                 <div className="max-w-full mx-auto px-4 sm:px-6 py-3 sm:py-4">
                     <Stepper currentStep={currentStep} onStepClick={setCurrentStep} />
                 </div>

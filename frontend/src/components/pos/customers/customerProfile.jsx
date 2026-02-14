@@ -2,20 +2,20 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCustomer } from "@/hooks/pos_hooks/useCustomer";
 import { Mail, Phone, MapPin, ArrowLeft, Send, Star, Award } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth } from "@/hooks/useAuth";
+import { useTransactionsByCustomer } from "@/hooks/pos_hooks/useTransaction";
+
 const CustomerProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuth()
+    const { user: currentUser } = useAuth();
+
     // Fetch customer from API
     const { data: customer, isLoading, isError } = useCustomer(id);
 
-    // Temporary recent purchases (replace later with API if available)
-    const recentPurchases = [
-        { date: "2024-01-15", item: "BK Of 850 Fertilizer", amount: "$45.99" },
-        { date: "2024-01-10", item: "Garden Hose 50ft", amount: "$29.99" },
-        { date: "2024-01-05", item: "Plant Food Mix", amount: "$12.99" },
-    ];
+    // Fetch transactions for this customer
+    const { data: transactionsData, isLoading: transactionsLoading } = useTransactionsByCustomer(customer?._id);
+    const transactions = transactionsData?.transactions || [];
 
     if (isLoading) return <div>Loading customer...</div>;
     if (isError || !customer) return <div>Customer not found.</div>;
@@ -58,9 +58,6 @@ const CustomerProfile = () => {
                                 </div>
                             </div>
                             <button
-                                
-
-
                                 className="text-sm text-primary hover:underline"
                                 onClick={() => navigate(`/${currentUser?.role}/pos/${customer._id}/edit`)}
                             >
@@ -90,35 +87,56 @@ const CustomerProfile = () => {
                             </div>
                         </div>
 
-                        {/* Communication history */}
+                        {/* Communication history / Transactions */}
                         <div className="border-t mt-6 pt-4">
-                            <div className="flex gap-4 mb-4">
+                            {/* <div className="flex gap-4 mb-4">
                                 <button className="text-sm font-medium text-primary border-b-2 border-primary pb-1">Email</button>
                                 <button className="text-sm font-medium text-muted-foreground pb-1">SMS</button>
                                 <button className="text-sm font-medium text-muted-foreground pb-1">Push Notifications</button>
-                            </div>
-                            <div className="space-y-2">
-                                {recentPurchases.map((p, i) => (
-                                    <div key={i} className="flex items-center justify-between text-sm p-3 bg-muted/50 rounded-lg">
-                                        <div>
-                                            <p className="font-medium">{p.item}</p>
-                                            <p className="text-xs text-muted-foreground">{p.date}</p>
-                                        </div>
-                                        <span className="pos-badge pos-badge-success">Delivered</span>
+                            </div> */}
+
+                            <h3 className="font-semibold mb-3">Recent Transactions</h3>
+
+                            {transactionsLoading && <p className="text-muted-foreground text-sm">Loading transactions...</p>}
+
+                            {transactions.length === 0 && !transactionsLoading && (
+                                <p className="text-muted-foreground text-sm">No transactions found.</p>
+                            )}
+
+                            {transactions.map((tx) => (
+                                <div
+                                    key={tx._id}
+                                    className="flex items-center justify-between text-sm p-3 bg-muted/50 rounded-lg mb-2"
+                                >
+                                    <div>
+                                        <p className="font-medium">{tx.transactionNumber}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {new Date(tx.createdAt).toLocaleDateString()} – Status: {tx.status}
+                                        </p>
+
+                                        {/* Show cart items */}
+                                        {tx.cartItems?.map((item, i) => (
+                                            <p key={i} className="text-xs text-muted-foreground ml-2">
+                                                {item.name} x {item.quantity} – ${item.unitPrice}
+                                            </p>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                    <span className={`pos-badge ${tx.status === "completed" ? "pos-badge-success" : "pos-badge-destructive"}`}>
+                                        {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3 mt-6">
+                        {/* <div className="flex gap-3 mt-6">
                             <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90">
                                 <Send size={14} /> Send To Transaction
                             </button>
                             <button className="flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted">
                                 Mark Customer To Remember
                             </button>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 
@@ -130,7 +148,7 @@ const CustomerProfile = () => {
                             <h3 className="font-semibold">Loyalty Program</h3>
                         </div>
                         <div className="text-sm text-muted-foreground mb-1">Member Since</div>
-                        <div className="text-sm mb-4">{customer.createdAt}</div>
+                        <div className="text-sm mb-4">{new Date(customer.createdAt).toLocaleDateString()}</div>
 
                         {/* Loyalty Card */}
                         <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-xl p-5 mb-4">
@@ -153,9 +171,9 @@ const CustomerProfile = () => {
                             </div>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        {/* <div className="text-center text-sm text-muted-foreground">
                             Reward: 5 Stars = 100 pts
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

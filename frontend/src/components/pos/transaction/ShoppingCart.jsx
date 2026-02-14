@@ -1,5 +1,5 @@
-import { Trash2, Minus, Plus, ArrowLeft, ArrowRight, User, Award } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Trash2, Minus, Plus, ArrowLeft, ArrowRight, User, Award, Tag } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,6 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTransaction } from '@/context/TransactionContext';
 import { useCustomers } from "@/hooks/pos_hooks/useCustomer";
+import {
+    usePromotions,
+    useCreatePromotion,
+    useUpdatePromotion,
+    useDeletePromotion,
+} from "@/hooks/pos_hooks/useDiscountPromotion";
 
 export function ShoppingCart() {
     const {
@@ -30,6 +36,235 @@ export function ShoppingCart() {
     } = useTransaction();
 
     const { data: customers = [], isLoading } = useCustomers();
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponError, setCouponError] = useState('');
+
+    
+
+    const {
+        data: response,
+    } = usePromotions();
+    // Extract promotions array from response
+    const promotions = response?.success && Array.isArray(response.data)
+        ? response.data
+        : [];
+
+
+    // Function to check if a promotion applies to a cart item
+    const doesPromotionApplyToItem = (promotion, item) => {
+        // Check if promotion is active
+        if (promotion.status !== 'active') return false;
+
+        // Check date validity
+        const now = new Date();
+        const startDate = new Date(promotion.startDate);
+        const endDate = new Date(promotion.endDate);
+
+        if (now < startDate || now > endDate) return false;
+
+        // Check if promotion has expiration and is expired
+        if (promotion.hasExpiration && promotion.expirationDate) {
+            const expirationDate = new Date(promotion.expirationDate);
+            if (now > expirationDate) return false;
+        }
+
+        // Check qualifying categories
+        if (promotion.qualifyingCategories && promotion.qualifyingCategories.length > 0) {
+            const matchesCategory = promotion.qualifyingCategories.some(
+                cat => cat._id === item.categoryId
+            );
+            if (matchesCategory) return true;
+        }
+
+        // Check qualifying products
+        if (promotion.qualifyingProducts && promotion.qualifyingProducts.length > 0) {
+            const matchesProduct = promotion.qualifyingProducts.some(
+                prod => prod._id === item.productId
+            );
+            if (matchesProduct) return true;
+        }
+
+        return false;
+    };
+
+    // Function to calculate discount amount for an item based on promotion
+    const calculateItemDiscount = (item, promotion) => {
+        const unitPrice = Number(item.unitPrice) || 0;
+        const quantity = Number(item.quantity) || 1;
+        const gross = unitPrice * quantity;
+
+        if (promotion.amountType === "Percentage") {
+            const discountPercent = Number(promotion.amountValue) || 0;
+            return gross * (discountPercent / 100);
+        } else if (promotion.amountType === "Fixed") {
+            // Fixed amount per item or per order? Assuming per item for now
+            return Number(promotion.amountValue) || 0;
+        }
+
+        return 0;
+    };
+
+    // Auto-apply eligible promotions to cart items
+    useEffect(() => {
+        if (!promotions || promotions.length === 0) return;
+
+        // Get all auto-apply promotions
+        const autoApplyPromotions = promotions.filter(p => p.autoApply === true);
+
+        // Create a copy of cart items to update
+        const updatedItems = [...cartItems];
+        let itemsChanged = false;
+
+        // For each auto-apply promotion, apply to eligible items
+        autoApplyPromotions.forEach(promotion => {
+            updatedItems.forEach((item, index) => {
+                // Check if this promotion applies to this item
+                if (doesPromotionApplyToItem(promotion, item)) {
+                    // Calculate the discount based on promotion
+                    const discountAmount = calculateItemDiscount(item, promotion);
+
+                    // Convert to percentage for display (if it's a percentage promotion)
+                    if (promotion.amountType === "Percentage") {
+                        // Store the original promotion percent in discountPercent field
+                        // But we need to be careful not to override existing manual discounts
+                        // You might want to store promotion info separately
+                        if (item.discountPercent !== promotion.amountValue) {
+                            itemsChanged = true;
+                            updateCartItem(item.id, {
+                                discountPercent: promotion.amountValue,
+                                appliedPromotion: promotion._id // You might want to track which promotion was applied
+                            });
+                        }
+                    } else if (promotion.amountType === "Fixed") {
+                        // For fixed amount, you might need to calculate the equivalent percentage
+                        // based on the item price, or handle fixed discounts separately
+                        const unitPrice = Number(item.unitPrice) || 0;
+                        const quantity = Number(item.quantity) || 1;
+                        const gross = unitPrice * quantity;
+                        const equivalentPercent = (promotion.amountValue / gross) * 100;
+
+                        if (Math.abs(item.discountPercent - equivalentPercent) > 0.01) {
+                            itemsChanged = true;
+                            updateCartItem(item.id, {
+                                discountPercent: equivalentPercent,
+                                appliedPromotion: promotion._id
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+        // Note: This might cause infinite loops if not handled carefully
+        // Consider adding a flag to prevent re-triggering
+
+    }, [promotions, cartItems]); // Be careful with dependencies to avoid loops
+
+    // Handle coupon code application
+    const handleApplyCoupon = () => {
+        setCouponError('');
+
+        if (!couponCode.trim()) {
+            setCouponError('Please enter a coupon code');
+            return;
+        }
+
+        // Find promotion with matching coupon code
+        const promotion = promotions.find(p =>
+            p.couponCode && p.couponCode.toLowerCase() === couponCode.toLowerCase()
+        );
+
+        if (!promotion) {
+            setCouponError('Invalid coupon code');
+            return;
+        }
+
+        // Check if promotion is active and valid
+        if (promotion.status !== 'active') {
+            setCouponError('This promotion is not active');
+            return;
+        }
+
+        // Check date validity
+        const now = new Date();
+        const startDate = new Date(promotion.startDate);
+        const endDate = new Date(promotion.endDate);
+
+        if (now < startDate) {
+            setCouponError('This promotion has not started yet');
+            return;
+        }
+
+        if (now > endDate) {
+            setCouponError('This promotion has expired');
+            return;
+        }
+
+        // Check if promotion has expiration and is expired
+        if (promotion.hasExpiration && promotion.expirationDate) {
+            const expirationDate = new Date(promotion.expirationDate);
+            if (now > expirationDate) {
+                setCouponError('This coupon has expired');
+                return;
+            }
+        }
+
+        // Apply the promotion to eligible items
+        let itemsUpdated = false;
+
+        cartItems.forEach(item => {
+            if (doesPromotionApplyToItem(promotion, item)) {
+                if (promotion.amountType === "Percentage") {
+                    // Check if further discounts are allowed
+                    if (promotion.allowFurtherDiscounts || item.discountPercent === 0) {
+                        updateCartItem(item.id, {
+                            discountPercent: promotion.amountValue,
+                            appliedCouponPromotion: promotion._id
+                        });
+                        itemsUpdated = true;
+                    }
+                } else if (promotion.amountType === "Fixed") {
+                    // Handle fixed discounts similarly
+                    const unitPrice = Number(item.unitPrice) || 0;
+                    const quantity = Number(item.quantity) || 1;
+                    const gross = unitPrice * quantity;
+                    const equivalentPercent = (promotion.amountValue / gross) * 100;
+
+                    if (promotion.allowFurtherDiscounts || item.discountPercent === 0) {
+                        updateCartItem(item.id, {
+                            discountPercent: equivalentPercent,
+                            appliedCouponPromotion: promotion._id
+                        });
+                        itemsUpdated = true;
+                    }
+                }
+            }
+        });
+
+        if (itemsUpdated) {
+            setAppliedCoupon(promotion);
+            setCouponCode('');
+        } else {
+            setCouponError('No eligible items found for this coupon');
+        }
+    };
+
+    // Handle removing applied coupon
+    const handleRemoveCoupon = () => {
+        if (appliedCoupon) {
+            // Remove coupon discounts from items
+            cartItems.forEach(item => {
+                if (item.appliedCouponPromotion === appliedCoupon._id) {
+                    updateCartItem(item.id, {
+                        discountPercent: 0,
+                        appliedCouponPromotion: null
+                    });
+                }
+            });
+            setAppliedCoupon(null);
+        }
+    };
 
     // Local states for calculations
     const [effectiveLoyaltyDiscount, setEffectiveLoyaltyDiscount] = useState(0);
@@ -203,6 +438,45 @@ export function ShoppingCart() {
                                 </div>
                             )}
                         </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Promotions Card - Coupon Code Input */}
+            <Card>
+                <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Tag className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-sm font-medium">Have a coupon code?</label>
+                    </div>
+
+                    {appliedCoupon ? (
+                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-md">
+                            <div>
+                                <span className="text-sm font-medium text-green-700">Applied: {appliedCoupon.couponCode}</span>
+                                <p className="text-xs text-green-600">{appliedCoupon.name} - {appliedCoupon.discountDescription}</p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={handleRemoveCoupon} className="text-red-600 hover:text-red-700">
+                                Remove
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex gap-2">
+                            <Input
+                                type="text"
+                                placeholder="Enter coupon code"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                className="flex-1"
+                            />
+                            <Button onClick={handleApplyCoupon} variant="outline">
+                                Apply
+                            </Button>
+                        </div>
+                    )}
+
+                    {couponError && (
+                        <p className="text-xs text-red-500 mt-2">{couponError}</p>
                     )}
                 </CardContent>
             </Card>

@@ -6,13 +6,11 @@ const auth = require("../../middlewares/auth");
 const {
   getAllTransactions,
   createTransaction,
-  getTransactionsByStatus,
-  holdTransaction,
   getHeldTransactions,
   voidTransaction,
   voidHeldTransaction,
-  generateReceipt,
-  completeHeldTransaction
+  completeHeldTransaction,
+  getTransactionsByCustomer
 } = require("../../controllers/pos_controllers/transactionController");
 
 // Apply auth middleware to all routes
@@ -24,12 +22,6 @@ router.post("/create", createTransaction);
 // Get all transactions
 router.get("/", getAllTransactions);
 
-// Get transactions by status (active, held, void)
-router.get("/status/:status", getTransactionsByStatus);
-
-// Hold a transaction
-router.post("/hold/:id", holdTransaction);
-
 // Get all held transactions
 router.get("/held", getHeldTransactions);
 
@@ -39,9 +31,9 @@ router.post("/void/:id", voidTransaction);
 // Void a held transaction
 router.post("/void-held/:id", voidHeldTransaction);
 
-// Generate receipt for a transaction
-router.get("/receipt/:id", generateReceipt);
-
 router.patch("/held/:id/complete", completeHeldTransaction);
+
+router.get("/:customerId", getTransactionsByCustomer);
+
 
 module.exports = router;

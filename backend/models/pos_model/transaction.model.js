@@ -13,7 +13,7 @@ const transactionSchema = new mongoose.Schema(
       customerEmail: { type: String },
     },
 
-   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch'},
+   branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch',  required: true,},
 
     // Cart Items
     cartItems: [
@@ -24,7 +24,7 @@ const transactionSchema = new mongoose.Schema(
         quantity: { type: Number, required: true },
         variantId: { type: String },
         size: { type: String },
-        color: { name: { type: String } },
+        color: {  type: String  },
         unitPrice: { type: Number, required: true },
         discountPercent: { type: Number, default: 0 },
         image: { type: String, default: "" },
@@ -75,6 +75,13 @@ const transactionSchema = new mongoose.Schema(
     // Transaction timestamp
     timestamp: { type: Date, default: Date.now },
 
+    createdBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: true,
+},
+
+    
     returnExchangeIds: [
   { type: mongoose.Schema.Types.ObjectId, ref: "ReturnExchange" }
 ]

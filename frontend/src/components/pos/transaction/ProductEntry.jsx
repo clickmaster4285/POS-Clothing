@@ -7,15 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { useTransaction } from '@/context/TransactionContext';
 import { useProducts } from "@/hooks/inv_hooks/useProducts";
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from "@/hooks/useAuth"
+import { useStockByBranch } from '@/hooks/inv_hooks/useStock'
 
 export function ProductEntry() {
     const { addToCart, setCurrentStep, cartItems, transactionNumber, status } = useTransaction();
     const [query, setQuery] = useState('');
-    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [selectedStockItem, setSelectedStockItem] = useState(null);
     const [selectedSize, setSelectedSize] = useState('');
     const [selectedColor, setSelectedColor] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [showResults, setShowResults] = useState(false);
+
 
     // Helper function to get color hex values
     const getColorHex = (colorName) => {
@@ -43,94 +46,138 @@ export function ProductEntry() {
             'lime': '#84cc16',
             'emerald': '#10b981',
         };
-        return colorMap[colorName.toLowerCase()] || '#6b7280';
+        return colorMap[colorName?.toLowerCase()] || '#6b7280';
     };
 
-    // Fetch products
+    const { user: currentUser, role } = useAuth();
+    const branchId = currentUser?.branch_id
+
+    // Fetch stock for the current user's branch
+    const { data: branchStockData, isLoading: branchStockLoading, error: branchStockError } = useStockByBranch(branchId);
+    const branchStock = branchStockData?.data || [];
+
+   
+
+    // Fetch products (keeping for product data enrichment if needed)
     const { data: productsData } = useProducts();
     const products = productsData?.data || [];
 
-    const filteredProducts = useMemo(() => {
+    // Filter stock items based on search query
+    const filteredStock = useMemo(() => {
         if (!query) return [];
-        return products.filter(p =>
-            p.productName.toLowerCase().includes(query.toLowerCase())
+        return branchStock.filter(stockItem =>
+            stockItem.product?.productName?.toLowerCase().includes(query.toLowerCase()) ||
+            stockItem.product?.sku?.toLowerCase().includes(query.toLowerCase())
         );
-    }, [query, products]);
+    }, [query, branchStock]);
 
-    // Get all available sizes for selected product
-    const allSizes = useMemo(() => {
-        if (!selectedProduct) return [];
-        return [...new Set(selectedProduct.variants.map(v => v.size))];
-    }, [selectedProduct]);
+    // Get current variant data from the selected stock item
+    const selectedVariant = useMemo(() => {
+        if (!selectedStockItem?.product?.variants || !selectedStockItem?.variantId) return null;
+        return selectedStockItem.product.variants.find(v => v?._id === selectedStockItem.variantId);
+    }, [selectedStockItem]);
 
-    // Get all available colors with their variants and prices
-    const allColors = useMemo(() => {
-        if (!selectedProduct) return [];
+    // Get current price from the variant
+    const currentPrice = useMemo(() => {
+        return selectedVariant?.price?.retailPrice || 0;
+    }, [selectedVariant]);
 
-        const colorMap = new Map();
+    // Current stock is directly from the stock item
+    const currentStock = selectedStockItem?.currentStock || 0;
 
-        selectedProduct.variants.forEach(variant => {
-            variant.stockByAttribute.forEach(stock => {
-                const colorName = stock.color;
-                if (!colorMap.has(colorName)) {
-                    colorMap.set(colorName, {
-                        name: colorName,
-                        hex: getColorHex(colorName),
-                        variants: [],
-                        totalStock: 0
-                    });
-                }
-                const colorData = colorMap.get(colorName);
-                colorData.variants.push({
-                    size: variant.size,
-                    price: variant.price,
-                    quantity: stock.quantity,
-                    variantId: variant._id
+    // Get available colors for the selected product (from variants)
+    const availableColors = useMemo(() => {
+        if (!selectedStockItem?.product?.variants) return [];
+
+        // Get all colors from all variants of this product
+        const colors = new Set();
+        selectedStockItem.product.variants.forEach(variant => {
+            if (variant.stockByAttribute && Array.isArray(variant.stockByAttribute)) {
+                variant.stockByAttribute.forEach(stock => {
+                    if (stock?.color) {
+                        colors.add(stock.color);
+                    }
                 });
-                colorData.totalStock += stock.quantity;
-            });
+            }
         });
 
-        return Array.from(colorMap.values());
-    }, [selectedProduct]);
+        return Array.from(colors).map(color => ({
+            name: color,
+            hex: getColorHex(color),
+            // Check if this color has stock in the current branch
+            hasStock: branchStock.some(s =>
+                s?.product?._id === selectedStockItem.product._id &&
+                s?.color === color &&
+                s?.currentStock > 0
+            )
+        }));
+    }, [selectedStockItem, branchStock]);
 
-    // Get current variant based on selected size and color
-    const selectedVariant = useMemo(() => {
-        if (!selectedProduct || !selectedSize || !selectedColor) return null;
+    // Get available sizes for the selected product (from variants)
+    const availableSizes = useMemo(() => {
+        if (!selectedStockItem?.product?.variants) return [];
 
-        return selectedProduct.variants.find(v =>
-            v.size === selectedSize &&
-            v.stockByAttribute.some(s => s.color === selectedColor)
+        return [...new Set(
+            selectedStockItem.product.variants
+                .map(v => v?.size)
+                .filter(size => size) // Remove undefined/null sizes
+        )];
+    }, [selectedStockItem]);
+
+    // NEW: Function to find stock item for selected size and color
+    const findStockItemForSelection = (size, color) => {
+        if (!selectedStockItem?.product) return null;
+        
+        // Find the variant that matches the size
+        const variant = selectedStockItem.product.variants.find(v => v.size === size);
+        if (!variant) return null;
+        
+        // Find stock item for this variant and color
+        return branchStock.find(s =>
+            s?.product?._id === selectedStockItem.product._id &&
+            s?.variantId === variant._id &&
+            s?.color === color &&
+            s?.currentStock > 0
         );
-    }, [selectedProduct, selectedSize, selectedColor]);
+    };
 
-    // Get current price based on selected variant
-    const currentPrice = useMemo(() => {
-        return selectedVariant?.price?.retailPrice ||
-            selectedProduct?.variants[0]?.price?.retailPrice ||
-            0;
-    }, [selectedVariant, selectedProduct]);
+    // UPDATED: Handle size change - update selected stock item when size changes
+    const handleSizeChange = (size) => {
+        setSelectedSize(size);
+        
+        // Find the stock item for the new size with current color
+        const newStockItem = findStockItemForSelection(size, selectedColor);
+        if (newStockItem) {
+            setSelectedStockItem(newStockItem);
+        }
+    };
 
-    // Get current stock for selected color
-    const currentStock = useMemo(() => {
-        if (!selectedVariant || !selectedColor) return 0;
-        return selectedVariant.stockByAttribute.find(s => s.color === selectedColor)?.quantity || 0;
-    }, [selectedVariant, selectedColor]);
+    // UPDATED: Handle color change - update selected stock item when color changes
+    const handleColorChange = (color) => {
+        setSelectedColor(color);
+        
+        // Find the stock item for the new color with current size
+        const newStockItem = findStockItemForSelection(selectedSize, color);
+        if (newStockItem) {
+            setSelectedStockItem(newStockItem);
+        }
+    };
 
-    const handleSelectProduct = (product) => {
-        setSelectedProduct(product);
-        const firstVariant = product.variants[0];
-        const firstColor = firstVariant?.stockByAttribute[0]?.color || '';
+    const handleSelectStockItem = (stockItem) => {
+        setSelectedStockItem(stockItem);
+        setSelectedColor(stockItem.color || '');
 
-        setSelectedSize(firstVariant?.size || '');
-        setSelectedColor(firstColor);
+        // Find the variant for this stock item
+        const variant = stockItem.product?.variants?.find(v => v._id === stockItem.variantId);
+        setSelectedSize(variant?.size || '');
+
         setQuantity(1);
-        setQuery(product.productName);
+        setQuery(stockItem.product?.productName || '');
         setShowResults(false);
     };
 
     const handleAddToCart = () => {
-        if (!selectedProduct || !selectedSize || !selectedColor || !selectedVariant) return;
+        if (!selectedStockItem || !selectedVariant) return;
 
         if (quantity > currentStock) {
             toast({
@@ -140,29 +187,31 @@ export function ProductEntry() {
             });
             return;
         }
-
+       
         addToCart({
-            id: `${selectedProduct._id}-${selectedSize}-${selectedColor}-${Date.now()}`,
-            productId: selectedProduct._id,
-            name: selectedProduct.productName,
+            id: `${selectedStockItem._id}-${Date.now()}`,
+            productId: selectedStockItem.product._id,
+            stockId: selectedStockItem._id,
+            name: selectedStockItem.product.productName,
             size: selectedSize,
-            color: {
-                name: selectedColor,
-                hex: getColorHex(selectedColor)
-            },
+            color: selectedColor,
             quantity,
             unitPrice: currentPrice,
             discountPercent: 0,
             taxPercent: 8.5,
-            image: selectedVariant?.images?.[0] || selectedProduct.variants[0].images[0] || '',
+            image: selectedVariant?.images?.[0] || '',
+            variantId: selectedStockItem.variantId,
+            categoryId: selectedStockItem?.product?.category?._id || '',
         });
 
+
+    
         toast({
             title: 'Added to cart',
-            description: `${selectedProduct.productName} (${selectedSize}, ${selectedColor}) x${quantity}`
+            description: `${selectedStockItem.product.productName} (${selectedSize}, ${selectedColor}) x${quantity}`
         });
 
-        setSelectedProduct(null);
+        setSelectedStockItem(null);
         setQuery('');
         setSelectedSize('');
         setSelectedColor('');
@@ -170,14 +219,7 @@ export function ProductEntry() {
     };
 
     const totalCartItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-    const defaultDropdownProducts = products.slice(0, 6);
-
-    // Calculate total stock for a product
-    const getTotalStock = (product) => {
-        return product.variants.reduce((total, variant) => {
-            return total + variant.stockByAttribute.reduce((sum, stock) => sum + stock.quantity, 0);
-        }, 0);
-    };
+    const defaultStockItems = branchStock.slice(0, 6);
 
     return (
         <div className="space-y-4 sm:space-y-6">
@@ -215,7 +257,7 @@ export function ProductEntry() {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by product name..."
+                                placeholder="Search by product name or SKU..."
                                 value={query}
                                 onChange={(e) => { setQuery(e.target.value); setShowResults(true); }}
                                 onFocus={() => setShowResults(true)}
@@ -223,30 +265,33 @@ export function ProductEntry() {
                             />
                             {showResults && (
                                 <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                                    {(query ? filteredProducts : defaultDropdownProducts).map(p => (
+                                    {(query ? filteredStock : defaultStockItems).map(stockItem => (
                                         <button
-                                            key={p._id}
-                                            onClick={() => handleSelectProduct(p)}
+                                            key={stockItem._id}
+                                            onClick={() => handleSelectStockItem(stockItem)}
                                             className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 hover:bg-muted flex items-center gap-2 sm:gap-3 border-b last:border-b-0"
                                         >
                                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground flex-shrink-0">
-                                                {p.variants[0]?.images?.[0] ? (
-                                                    <img src={p.variants[0].images[0]} alt={p.productName} className="w-full h-full object-cover rounded" />
+                                                {stockItem.product?.variants?.[0]?.images?.[0] ? (
+                                                    <img
+                                                        src={stockItem.product.variants[0].images[0]}
+                                                        alt={stockItem.product.productName}
+                                                        className="w-full h-full object-cover rounded"
+                                                    />
                                                 ) : (
                                                     'IMG'
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-xs sm:text-sm truncate">{p.productName}</p>
+                                                <p className="font-medium text-xs sm:text-sm truncate">
+                                                    {stockItem.product?.productName}
+                                                </p>
                                                 <p className="text-xs text-muted-foreground truncate">
-                                                    {p.category?.categoryName} · From ${Math.min(...p.variants.map(v => v.price.retailPrice))}
+                                                    {stockItem.color} · {stockItem.location}
                                                 </p>
                                             </div>
-                                            <Badge variant="secondary" className="text-xs flex-shrink-0 hidden sm:inline-flex">
-                                                {getTotalStock(p)} in stock
-                                            </Badge>
-                                            <Badge variant="secondary" className="text-xs sm:hidden">
-                                                {getTotalStock(p)}
+                                            <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                                {stockItem.currentStock} in stock
                                             </Badge>
                                         </button>
                                     ))}
@@ -265,21 +310,21 @@ export function ProductEntry() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 sm:px-6">
-                        <Input placeholder="Scan or enter barcode..." className="text-sm" />
+                        <Input placeholder="Scan barcode" className="text-sm" />
                         <p className="text-xs text-muted-foreground mt-2">Press Enter after scanning</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Selected Product - Mobile Optimized */}
-            {selectedProduct && (
+            {/* Selected Stock Item - Mobile Optimized */}
+            {selectedStockItem && (
                 <Card className="relative overflow-hidden">
                     {/* Close Button */}
                     <Button
                         size="icon"
                         variant="ghost"
                         className="absolute top-2 right-2 z-10 text-muted-foreground hover:text-red-600 hover:bg-card"
-                        onClick={() => setSelectedProduct(null)}
+                        onClick={() => setSelectedStockItem(null)}
                     >
                         ✕
                     </Button>
@@ -289,10 +334,10 @@ export function ProductEntry() {
                             {/* Product Info - Mobile: Horizontal Layout */}
                             <div className="flex gap-3 sm:gap-4 lg:w-1/2">
                                 <div className="w-20 h-20 sm:w-24 sm:h-24 bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-xs sm:text-sm flex-shrink-0">
-                                    {selectedVariant?.images?.[0] || selectedProduct.variants[0]?.images?.[0] ? (
+                                    {selectedVariant?.images?.[0] || selectedStockItem.product?.variants?.[0]?.images?.[0] ? (
                                         <img
-                                            src={selectedVariant?.images?.[0] || selectedProduct.variants[0].images[0]}
-                                            alt={selectedProduct.productName}
+                                            src={selectedVariant?.images?.[0] || selectedStockItem.product.variants[0].images[0]}
+                                            alt={selectedStockItem.product.productName}
                                             className="w-full h-full object-cover rounded-lg"
                                         />
                                     ) : (
@@ -300,24 +345,32 @@ export function ProductEntry() {
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-base sm:text-lg truncate">{selectedProduct.productName}</h3>
-                                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{selectedProduct.category?.categoryName}</p>
-                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-3">{selectedProduct.description}</p>
-                                    <p className="text-xl sm:text-2xl font-bold text-primary mt-2">{currentPrice}</p>
+                                    <h3 className="font-semibold text-base sm:text-lg truncate">
+                                        {selectedStockItem.product.productName}
+                                    </h3>
+                                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                        SKU: {selectedStockItem.product.sku}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Location: {selectedStockItem.location}
+                                    </p>
+                                    <p className="text-xl sm:text-2xl font-bold text-primary mt-2">
+                                        ${currentPrice?.toFixed(2)}
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Configuration - Mobile: Full Width */}
                             <div className="space-y-4 lg:w-1/2">
                                 {/* Size Selection - Scrollable on Mobile */}
-                                {allSizes.length > 0 && (
+                                {availableSizes.length > 0 && (
                                     <div>
                                         <label className="text-xs sm:text-sm font-medium mb-2 block">Size</label>
                                         <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                            {allSizes.map(size => (
+                                            {availableSizes.map(size => (
                                                 <button
                                                     key={size}
-                                                    onClick={() => setSelectedSize(size)}
+                                                    onClick={() => handleSizeChange(size)} // UPDATED: Use handleSizeChange
                                                     className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium border transition-colors ${selectedSize === size
                                                             ? 'bg-primary text-white border-primary'
                                                             : 'bg-background border-input hover:bg-muted'
@@ -330,36 +383,19 @@ export function ProductEntry() {
                                     </div>
                                 )}
 
-                                {/* Color Selection - Only show colors available for selected size */}
-                                <div>
-                                    <label className="text-xs sm:text-sm font-medium mb-2 block">Color</label>
-                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                        {allColors
-                                            .filter(color =>
-                                                !selectedSize ||
-                                                color.variants.some(v => v.size === selectedSize && v.quantity > 0)
-                                            )
-                                            .map(color => {
-                                                const isAvailable = color.variants.some(v =>
-                                                    v.size === selectedSize && v.quantity > 0
-                                                );
-                                                const price = color.variants.find(v => v.size === selectedSize)?.price?.retailPrice;
-
+                                {/* Color Selection */}
+                                {availableColors.length > 0 && (
+                                    <div>
+                                        <label className="text-xs sm:text-sm font-medium mb-2 block">Color</label>
+                                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                            {availableColors.map(color => {
+                                                const hasStock = color.hasStock;
                                                 return (
                                                     <button
                                                         key={color.name}
-                                                        onClick={() => {
-                                                            setSelectedColor(color.name);
-                                                            // Auto-select the size that has this color if not selected
-                                                            if (!selectedSize) {
-                                                                const availableVariant = color.variants.find(v => v.quantity > 0);
-                                                                if (availableVariant) {
-                                                                    setSelectedSize(availableVariant.size);
-                                                                }
-                                                            }
-                                                        }}
-                                                        disabled={!isAvailable}
-                                                        className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm border transition-colors ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+                                                        onClick={() => handleColorChange(color.name)} // UPDATED: Use handleColorChange
+                                                        disabled={!hasStock}
+                                                        className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm border transition-colors ${!hasStock ? 'opacity-50 cursor-not-allowed' : ''
                                                             } ${selectedColor === color.name
                                                                 ? 'border-primary bg-primary/10'
                                                                 : 'border-input hover:bg-muted'
@@ -370,16 +406,12 @@ export function ProductEntry() {
                                                             style={{ backgroundColor: color.hex }}
                                                         />
                                                         <span className="hidden xs:inline">{color.name}</span>
-                                                        {price && selectedSize && (
-                                                            <span className="text-xs text-muted-foreground ml-1">
-                                                                {price}
-                                                            </span>
-                                                        )}
                                                     </button>
                                                 );
                                             })}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Quantity and Stock - Mobile Optimized */}
                                 <div className="flex flex-col xs:flex-row xs:items-end gap-3 xs:gap-4">
@@ -391,7 +423,6 @@ export function ProductEntry() {
                                                 variant="outline"
                                                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                                                 className="h-8 w-8 sm:h-9 sm:w-9"
-                                                disabled={!selectedSize || !selectedColor}
                                             >
                                                 <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                                             </Button>
@@ -402,27 +433,24 @@ export function ProductEntry() {
                                                 value={quantity}
                                                 onChange={(e) => setQuantity(Math.min(currentStock, Math.max(1, parseInt(e.target.value) || 1)))}
                                                 className="w-16 sm:w-20 text-center text-sm h-8 sm:h-9"
-                                                disabled={!selectedSize || !selectedColor}
                                             />
                                             <Button
                                                 size="icon"
                                                 variant="outline"
                                                 onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
                                                 className="h-8 w-8 sm:h-9 sm:w-9"
-                                                disabled={!selectedSize || !selectedColor || quantity >= currentStock}
+                                                disabled={quantity >= currentStock}
                                             >
                                                 <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                                             </Button>
                                         </div>
                                     </div>
-                                    {selectedVariant && selectedColor && (
-                                        <Badge
-                                            variant={currentStock > 5 ? 'secondary' : 'destructive'}
-                                            className="w-fit xs:mb-1"
-                                        >
-                                            {currentStock} in stock
-                                        </Badge>
-                                    )}
+                                    <Badge
+                                        variant={currentStock > 5 ? 'secondary' : 'destructive'}
+                                        className="w-fit xs:mb-1"
+                                    >
+                                        {currentStock} in stock at {selectedStockItem.location}
+                                    </Badge>
                                 </div>
 
                                 {/* Add to Cart Button - Full Width on Mobile */}
@@ -430,10 +458,10 @@ export function ProductEntry() {
                                     className="w-full bg-primary hover:bg-primary/90 text-white"
                                     size="lg"
                                     onClick={handleAddToCart}
-                                    disabled={!selectedSize || !selectedColor || !selectedVariant || quantity > currentStock}
+                                    disabled={!selectedVariant || quantity > currentStock}
                                 >
                                     <ShoppingCart className="w-4 h-4 mr-2" />
-                                    Add — {(currentPrice * quantity).toFixed(2)}
+                                    Add — ${(currentPrice * quantity).toFixed(2)}
                                 </Button>
                             </div>
                         </div>
@@ -441,30 +469,121 @@ export function ProductEntry() {
                 </Card>
             )}
 
-            {/* Quick Browse - Responsive Grid */}
+          
+            {/* Quick Browse - Responsive Grid with Product Grouping */}
             <div>
-                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Quick Browse</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
-                    {products.slice(0, 6).map((p) => (
-                        <button
-                            key={p._id}
-                            onClick={() => handleSelectProduct(p)}
-                            className="text-left p-2 sm:p-3 border rounded-lg hover:border-primary hover:shadow-sm transition-all bg-card"
-                        >
-                            <div className="w-full aspect-square bg-muted rounded mb-1.5 sm:mb-2 flex items-center justify-center text-xs text-muted-foreground overflow-hidden">
-                                {p.variants[0]?.images?.[0] ? (
-                                    <img src={p.variants[0].images[0]} alt={p.productName} className="w-full h-full object-cover" />
-                                ) : (
-                                    'IMG'
-                                )}
-                            </div>
-                            <p className="font-medium text-xs sm:text-sm truncate">{p.productName}</p>
-                            <p className="text-xs text-muted-foreground truncate hidden sm:block">{p.category?.categoryName}</p>
-                            <p className="text-xs sm:text-sm font-semibold text-primary mt-0.5 sm:mt-1">
-                                From {Math.min(...p.variants.map(v => v.price.retailPrice))}
-                            </p>
-                        </button>
-                    ))}
+                <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Quick Browse - Available Stock</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+                    {(() => {
+                        // Group stock items by product ID
+                        const groupedByProduct = branchStock.slice(0, 10).reduce((acc, stockItem) => {
+                            const productId = stockItem.product?._id;
+                            if (!acc[productId]) {
+                                acc[productId] = {
+                                    product: stockItem.product,
+                                    variants: []
+                                };
+                            }
+                            acc[productId].variants.push(stockItem);
+                            return acc;
+                        }, {});
+
+                        return Object.values(groupedByProduct).map((group) => (
+                            <Card key={group.product._id} className="overflow-hidden">
+                                <CardContent className="p-3 sm:p-4">
+                                    {/* Product Header */}
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground overflow-hidden flex-shrink-0">
+                                            {group.product?.variants?.[0]?.images?.[0] ? (
+                                                <img
+                                                    src={group.product.variants[0].images[0]}
+                                                    alt={group.product.productName}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                'IMG'
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm sm:text-base truncate">
+                                                {group.product.productName}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate">
+                                                SKU: {group.product.sku}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {group.variants.length} variant(s) available
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Variants List */}
+                                    <div className="space-y-2 mt-2">
+                                        {group.variants.map((variant) => {
+                                            // Find the variant details to get size and price
+                                            const variantDetails = group.product.variants?.find(v => v._id === variant.variantId);
+                                            const variantPrice = variantDetails?.price?.retailPrice || variant.retailPrice || 0;
+
+                                            return (
+                                                <button
+                                                    key={variant._id}
+                                                    onClick={() => handleSelectStockItem(variant)}
+                                                    className="w-full flex items-center justify-between p-2 rounded-lg border hover:border-primary hover:bg-muted/50 transition-all"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Color Indicator */}
+                                                        {variant.color && (
+                                                            <span
+                                                                className="w-4 h-4 rounded-full border border-border shadow-sm"
+                                                                style={{ backgroundColor: getColorHex(variant.color) }}
+                                                                title={variant.color}
+                                                            />
+                                                        )}
+                                                        {/* Size */}
+                                                        {variantDetails?.size && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                Size: {variantDetails.size}
+                                                            </Badge>
+                                                        )}
+                                                  
+                                                       
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Price */}
+                                                        <span className="text-sm font-semibold text-primary">
+                                                            ${variantPrice.toFixed(2)}
+                                                        </span>
+                                                        {/* Stock Status */}
+                                                        <Badge
+                                                            variant={variant.currentStock > 5 ? 'secondary' : 'destructive'}
+                                                            className="text-xs"
+                                                        >
+                                                            {variant.currentStock}
+                                                        </Badge>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* View All Variants Button (if more than 3 variants) */}
+                                    {group.variants.length > 3 && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full mt-2 text-xs"
+                                            onClick={() => {
+                                                // Optional: Expand or navigate to product view
+                                                console.log('Show all variants for', group.product.productName);
+                                            }}
+                                        >
+                                            View all {group.variants.length} variants
+                                        </Button>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ));
+                    })()}
                 </div>
             </div>
         </div>

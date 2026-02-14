@@ -7,175 +7,144 @@ const { Stock } = require('../../models/inv_model/stock.model')
 
 // GET all transactions
 const getAllTransactions = async (req, res) => {
+  const user = req.user; // logged-in user
+
   try {
-    const transactions = await Transaction.find().sort({ createdAt: -1 });
-    res.json({ success: true, transactions });
+    if (!user?.branch_id) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not have a branch assigned",
+      });
+    }
+
+    // Fetch only transactions for this branch
+    const transactions = await Transaction.find({ branch: user.branch_id }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: transactions.length,
+      transactions,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching transactions:", err);
+    return res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 };
 
-// CREATE / SAVE transaction
+
+// GET transactions by branch ID
+
+
+
+
 const createTransaction = async (req, res) => {
- 
   try {
     const payload = req.body;
-   
 
+
+    // Get user and branch
+    const user = req.user; // auth middleware sets req.user
+    const branchId = user.branch_id;
+
+    if (!branchId) {
+      return res.status(400).json({
+        success: false,
+        message: "Branch ID is required for stock deduction",
+      });
+    }
+
+    // Loop through cart items and check/deduct stock
+    for (const item of payload.cartItems) {
+      // Normalize color
+      const colorStr = typeof item.color === "object" ? item.color.name : item.color;
+      item.color = colorStr;
+
+      // Build stock query
+      const stockQuery = {
+        product: item.productId,
+        branch: branchId,
+        color: colorStr,
+      };
+      if (item.variantId) stockQuery.variantId = item.variantId;
+
+     
+
+      const stockRecord = await Stock.findOne(stockQuery);
+
+      if (!stockRecord) {
+      
+        return res.status(400).json({
+          success: false,
+          message: `Stock not found for product ${item.name}, color ${colorStr}`,
+        });
+      }
+
+      // Check if enough stock is available
+      if (stockRecord.availableStock < item.quantity) {
+      
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for product ${item.name}, color ${colorStr}`,
+        });
+      }
+
+      // Deduct stock
+      stockRecord.currentStock -= item.quantity;
+      stockRecord.availableStock -= item.quantity;
+      stockRecord.lastSoldDate = new Date();
+      stockRecord.isLowStock = stockRecord.availableStock <= (stockRecord.reorderPoint || 5);
+
+
+      stockRecord.history.push({
+      action: "sale",
+      quantity: -item.quantity,
+      user: user._id,
+      timestamp: new Date(),
+     
+    });
+
+      await stockRecord.save();
+
+   
+    }
+
+    // Build transaction object
     const transactionData = {
       transactionNumber: payload.transactionNumber,
       status: payload.status || "active",
-     customer: payload.customer || {},
+      customer: payload.customer || {},
       cartItems: payload.cartItems,
       totals: payload.totals,
       loyalty: payload.loyalty,
       payment: payload.payment,
       coupon: payload.coupon || { code: null, discountAmount: 0, applied: false },
-      timestamp: payload.timestamp || Date.now(),
+      timestamp: payload.timestamp || new Date(),
+      branch: branchId,       // must match schema
+      createdBy: user._id,    // must match schema
     };
 
+ 
+
+    // Save transaction
     const transaction = new Transaction(transactionData);
     await transaction.save();
 
+  
+
     res.status(201).json({ success: true, transaction });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Transaction error:", err);
+
+    // Handle validation errors separately
+    if (err.name === "ValidationError") {
+      const messages = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ success: false, message: messages.join(", ") });
+    }
+
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// const createTransaction = async (req, res) => {
-//   try {
-//     const payload = req.body;
-//     console.log("Payload received:", JSON.stringify(payload, null, 2));
-
-//     const user = req.user; // auth middleware sets req.user
-//     const branchId = user.branch_id;
-
-//     if (!branchId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Branch ID is required for stock deduction",
-//       });
-//     }
-
-//     // Loop through cart items
-//     for (const item of payload.cartItems) {
-//       // Normalize color to string
-//       const colorStr = typeof item.color === "object" ? item.color.name : item.color;
-//       item.color = colorStr;
-
-//       // Build stock query dynamically
-//       const stockQuery = {
-//         product: item.productId,
-//         branch: branchId,
-//         color: colorStr,
-//       };
-//       if (item.variantId) stockQuery.variantId = item.variantId;
-
-//       console.log("Searching stock for:", stockQuery);
-
-//       // Find stock record
-//       const stockRecord = await Stock.findOne(stockQuery);
-
-//       if (!stockRecord) {
-//         console.log(
-//           `No stock found for product: ${item.name}, variantId: ${item.variantId}, color: ${colorStr}, branch: ${branchId}`
-//         );
-//         return res.status(400).json({
-//           success: false,
-//           message: `Stock not found for product ${item.name}, color ${colorStr}`,
-//         });
-//       } else {
-//         console.log("Matched stock record:", stockRecord);
-//       }
-
-//       // Check available stock
-//       if (stockRecord.availableStock < item.quantity) {
-//         console.log(
-//           `Insufficient stock for ${item.name}. Available: ${stockRecord.availableStock}, Requested: ${item.quantity}`
-//         );
-//         return res.status(400).json({
-//           success: false,
-//           message: `Insufficient stock for product ${item.name}, color ${colorStr}`,
-//         });
-//       }
-
-//       // Deduct stock
-//       stockRecord.currentStock -= item.quantity;
-//       stockRecord.availableStock -= item.quantity;
-//       stockRecord.lastSoldDate = new Date();
-//       stockRecord.isLowStock = stockRecord.availableStock <= (stockRecord.reorderPoint || 5);
-//       await stockRecord.save();
-
-//       console.log(
-//         `Stock updated for product ${item.name}, new availableStock: ${stockRecord.availableStock}`
-//       );
-//     }
-
-//     // Build transaction object
-//     const transactionData = {
-//       transactionNumber: payload.transactionNumber,
-//       status: payload.status || "active",
-//       customer: payload.customer || {},
-//       cartItems: payload.cartItems,
-//       totals: payload.totals,
-//       loyalty: payload.loyalty,
-//       payment: payload.payment,
-//       coupon: payload.coupon || { code: null, discountAmount: 0, applied: false },
-//       timestamp: payload.timestamp || new Date(),
-//       branch: branchId,
-//       createdBy: user._id,
-//     };
-
-//     console.log(
-//       "Transaction data ready to save:",
-//       JSON.stringify(transactionData, null, 2)
-//     );
-
-//     // Save transaction
-//     const transaction = new Transaction(transactionData);
-//     await transaction.save();
-
-//     console.log("Transaction saved successfully:", transaction._id);
-
-//     res.status(201).json({ success: true, transaction });
-//   } catch (err) {
-//     console.error("Transaction error:", err);
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
-
-
-// GET transactions by status (active, held, void)
-
-
-const getTransactionsByStatus = async (req, res) => {
-  try {
-    const { status } = req.params;
-    const transactions = await Transaction.find({ status }).sort({ createdAt: -1 });
-    res.json({ success: true, status, transactions });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// HOLD a transaction
-const holdTransaction = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const transaction = await Transaction.findByIdAndUpdate(
-      id,
-      { status: "held" },
-      { new: true }
-    );
-
-    if (!transaction) return res.status(404).json({ success: false, message: "Transaction not found" });
-
-    res.json({ success: true, transaction });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 // GET all held transactions
 const getHeldTransactions = async (req, res) => {
@@ -223,60 +192,6 @@ const voidHeldTransaction = async (req, res) => {
   }
 };
 
-// GENERATE receipt for a transaction
-const generateReceipt = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const transaction = await Transaction.findById(id);
-
-    if (!transaction) return res.status(404).json({ success: false, message: "Transaction not found" });
-
-    const receiptText = `
-===== RECEIPT =====
-Transaction #: ${transaction.transactionNumber}
-Status: ${transaction.status}
-Date: ${transaction.timestamp.toLocaleString()}
-
-Customer: ${transaction.customer.customerFirstName || ""} ${transaction.customer.customerLastName || ""}
-Email: ${transaction.customer.customerEmail || ""}
-
----- Items ----
-${transaction.cartItems.map(
-  (item, i) =>
-    `${i + 1}. ${item.name} [${item.size}, ${item.color?.name || ""}] x${item.quantity} - Unit: $${item.unitPrice} - Tax: ${item.taxPercent}%`
-).join("\n")}
-
----- Totals ----
-Subtotal: $${transaction.totals.subtotal.toFixed(2)}
-Tax: $${transaction.totals.totalTax.toFixed(2)}
-Loyalty Discount: $${transaction.loyalty.loyaltyDiscount.toFixed(2)}
-Coupon Discount: $${transaction.coupon.discountAmount.toFixed(2)}
-Grand Total: $${transaction.totals.grandTotal.toFixed(2)}
-
-Payment: ${transaction.payment.paymentMethod}
-Amount Tendered: $${transaction.payment.amountTendered.toFixed(2)}
-Change Due: $${transaction.payment.changeDue.toFixed(2)}
-
-Thank you for your purchase!
-====================
-`;
-
-    res.json({
-      success: true,
-      receipt: {
-        transactionId: transaction._id,
-        transactionNumber: transaction.transactionNumber,
-        customer: transaction.customer,
-        items: transaction.cartItems,
-        totals: transaction.totals,
-        payment: transaction.payment,
-        receiptText,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 // PATCH a held transaction to completed
 const completeHeldTransaction = async (req, res) => {
@@ -311,15 +226,54 @@ const completeHeldTransaction = async (req, res) => {
 };
 
 
+const getTransactionsByCustomer = async (req, res) => {
+  try {
+    const { customerId } = req?.params; // This is Mongo _id (string)
+
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer ID is required",
+      });
+    }
+
+    // Optional: Validate Mongo ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Customer ID format",
+      });
+    }
+
+    const transactions = await Transaction.find({
+      "customer.customerId": customerId, // 👈 important
+    })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: transactions.length,
+      transactions,
+    });
+
+  } catch (error) {
+    console.error("Error fetching transactions by customer:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = {
   getAllTransactions,
   createTransaction,
-  getTransactionsByStatus,
-  holdTransaction,
   getHeldTransactions,
   voidTransaction,
   voidHeldTransaction,
-  generateReceipt,
-  completeHeldTransaction
+  completeHeldTransaction,
+  getTransactionsByCustomer
 };

@@ -118,22 +118,22 @@ export default function Sidebar() {
         },
         { title: "Branches", href: `/${role}/branches`, icon: Building2 },
         { title: "Supplier", href: `/${role}/supplier`, icon: Truck },
-        {
-            title: "Promotions",
-            icon: Tag,
-            children: [
-                { title: "Active Promotions", href: `/${role}/promotions/active` },
-                { title: "Create Promotion", href: `/${role}/promotions/create` },
-            ],
-        },
-        {
-            title: "Cash Management",
-            icon: Wallet,
-            children: [
-                { title: "Cash Registers", href: `/${role}/cash/registers` },
-                { title: "Transactions", href: `/${role}/cash/transactions` },
-            ],
-        },
+        // {
+        //     title: "Promotions",
+        //     icon: Tag,
+        //     children: [
+        //         { title: "Active Promotions", href: `/${role}/promotions/active` },
+        //         { title: "Create Promotion", href: `/${role}/promotions/create` },
+        //     ],
+        // },
+        // {
+        //     title: "Cash Management",
+        //     icon: Wallet,
+        //     children: [
+        //         { title: "Cash Registers", href: `/${role}/cash/registers` },
+        //         { title: "Transactions", href: `/${role}/cash/transactions` },
+        //     ],
+        // },
         {
             title: "Settings",
             icon: Settings,
@@ -142,7 +142,7 @@ export default function Sidebar() {
                 { title: "Users", href: `/${role}/settings/users` },
             ],
         },
-        { title: "Self-Checkout", href: `/${role}/self-checkout`, icon: MonitorSmartphone },
+        // { title: "Self-Checkout", href: `/${role}/self-checkout`, icon: MonitorSmartphone },
     ];
 
     // Decide if toggle button should be visible

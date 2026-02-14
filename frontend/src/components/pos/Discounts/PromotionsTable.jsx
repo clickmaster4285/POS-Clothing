@@ -16,7 +16,7 @@ const PromotionsTable = ({
     const [filteredPromotions, setFilteredPromotions] = useState([]);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
-    console.log("promotions", promotions)
+   
 
     // Filter promotions based on search
     useEffect(() => {

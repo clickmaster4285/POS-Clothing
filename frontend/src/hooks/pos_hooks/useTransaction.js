@@ -1,14 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getTransactions,
-  getTransactionsByStatus,
   getHeldTransactions,
   createTransaction,
-  holdTransaction,
   voidTransaction,
   voidHeldTransaction,
-    generateReceipt,
   completeHeldTransaction,
+  getTransactionsByCustomer
 } from "@/api/pos/transaction.api";
 
 
@@ -20,15 +18,6 @@ export const useTransactions = () => {
   });
 };
 
-
-// 🔹 Fetch transactions by status
-export const useTransactionsByStatus = (status) => {
-  return useQuery({
-    queryKey: ["transactions", status],
-    queryFn: () => getTransactionsByStatus(status),
-    enabled: !!status,
-  });
-};
 
 
 // 🔹 Fetch held transactions
@@ -53,17 +42,6 @@ export const useCreateTransaction = () => {
 };
 
 
-// 🔹 Hold transaction
-export const useHoldTransaction = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: holdTransaction,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    },
-  });
-};
 
 
 // 🔹 Void transaction
@@ -92,14 +70,6 @@ export const useVoidHeldTransaction = () => {
 };
 
 
-// 🔹 Generate receipt
-export const useGenerateReceipt = (id) => {
-  return useQuery({
-    queryKey: ["receipt", id],
-    queryFn: () => generateReceipt(id),
-    enabled: !!id,
-  });
-};
 
 export const useCompleteHeldTransaction = () => {
   const queryClient = useQueryClient();
@@ -110,5 +80,13 @@ export const useCompleteHeldTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", "held"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
+  });
+};
+
+export const useTransactionsByCustomer = (customerId) => {
+  return useQuery({
+    queryKey: ["transactions", "customer", customerId],
+    queryFn: () => getTransactionsByCustomer(customerId),
+    enabled: !!customerId, // only fetch if customerId is provided
   });
 };

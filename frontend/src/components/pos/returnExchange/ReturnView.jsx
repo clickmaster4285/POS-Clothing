@@ -22,7 +22,7 @@ const ReturnView = ({
     const [showExchangeHistory, setShowExchangeHistory] = useState(false);
 
 
-    console.log("updatedTotals", updatedTotals)
+   
 
     // Reset selection whenever returnItems change
     useEffect(() => {

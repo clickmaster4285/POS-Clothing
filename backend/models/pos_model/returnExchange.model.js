@@ -30,11 +30,11 @@ const returnExchangeSchema = new mongoose.Schema(
   items: [
     {
       productId: String,
+      productId: String,
       name: String,
       quantity: Number,
       size: String,
-      color: { name: String },
-
+      color: String,
       unitPrice: Number,         
       originalUnitPrice: Number, 
       discountPercent: Number,

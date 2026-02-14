@@ -32,6 +32,7 @@ export function Actions() {
     const [showCustomerLookup, setShowCustomerLookup] = useState(false);
 
     const handlePaymentSuccess = async (paymentData) => {
+     
         try {
             setPaymentDetails(paymentData);
             await saveTransaction();

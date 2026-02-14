@@ -25,7 +25,19 @@ const stockSchema = new mongoose.Schema({
     triggeredAt: Date,
     resolved: Boolean,
     resolvedAt: Date
-  }]
+  }],
+
+   history: [
+    {
+      action: { type: String, enum: ["sale", "purchase", "return", "exchange","adjustment"]},
+      quantity: { type: Number},
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      timestamp: { type: Date, default: Date.now },
+     
+    }
+  ]
+   
+   
 });
 
 // Stock Adjustment Schema

@@ -96,11 +96,13 @@ export function TransactionProvider({ children }) {
         });
     }, []);
 
+
+ 
     const updateCartItem = useCallback((id, updates) => {
         setCartItems((prev) =>
             prev.map((i) => (i.id === id ? { ...i, ...updates } : i))
         );
-    }, []);
+    }, []);     
 
     const removeCartItem = useCallback((id) => {
         setCartItems((prev) => prev.filter((i) => i.id !== id));

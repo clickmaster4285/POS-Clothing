@@ -6,13 +6,21 @@ const Branch = require("../models/branch.model");
  */
 exports.createBranch = async (req, res) => {
   try {
-    const branch = await Branch.create(req.body);
+   
+   const branchData = {
+  ...req.body,
+  branch_manager: req.body.branch_manager || undefined // avoid sending empty string
+};
+
+const branch = await Branch.create(branchData);
 
     res.status(201).json({
       success: true,
       message: "Branch created successfully",
       data: branch
     });
+
+
   } catch (error) {
     res.status(400).json({
       success: false,

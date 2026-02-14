@@ -2,84 +2,84 @@ const {StockAdjustment , StockTransfer , Stock}= require('../../models/inv_model
 const Branch = require("../../models/branch.model")
 const Product = require('../../models/inv_model/product.model');
 
-exports.getStockByBranch = async (req, res) => {
-  try {
-    const { branchId } = req.params;
-    const { location, lowStock, search, category, page = 1, limit = 50 } = req.query;
+// exports.getStockByBranch = async (req, res) => {
+//   try {
+//     const { branchId } = req.params;
+//     const { location, lowStock, search, category, page = 1, limit = 50 } = req.query;
     
-    let query = { branch: branchId };
+//     let query = { branch: branchId };
     
-    if (location) query.location = location;
-    if (lowStock === 'true') query.isLowStock = true;
+//     if (location) query.location = location;
+//     if (lowStock === 'true') query.isLowStock = true;
     
-    // Add product filtering if search or category provided
-    if (search || category) {
-      const productQuery = {};
-      if (search) {
-        productQuery.$or = [
-          { productName: { $regex: search, $options: 'i' } },
-          { sku: { $regex: search, $options: 'i' } }
-        ];
-      }
-      if (category) productQuery.category = category;
+//     // Add product filtering if search or category provided
+//     if (search || category) {
+//       const productQuery = {};
+//       if (search) {
+//         productQuery.$or = [
+//           { productName: { $regex: search, $options: 'i' } },
+//           { sku: { $regex: search, $options: 'i' } }
+//         ];
+//       }
+//       if (category) productQuery.category = category;
       
-      const products = await Product.find(productQuery).select('_id');
-      const productIds = products.map(p => p._id);
-      query.product = { $in: productIds };
-    }
+//       const products = await Product.find(productQuery).select('_id');
+//       const productIds = products.map(p => p._id);
+//       query.product = { $in: productIds };
+//     }
     
-    const stocks = await Stock.find(query)
-      .populate('product', 'productName sku primaryImage')
-      .populate('branch', 'name code')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .sort({ isLowStock: -1, updatedAt: -1 });
+//     const stocks = await Stock.find(query)
+//       .populate('product', 'productName sku primaryImage')
+//       .populate('branch', 'name code')
+//       .skip((page - 1) * limit)
+//       .limit(parseInt(limit))
+//       .sort({ isLowStock: -1, updatedAt: -1 });
     
-    // Get variant details for each stock
-    for (let stock of stocks) {
-      const product = await Product.findById(stock.product);
-      if (product) {
-        const variant = product.variants.id(stock.variantId);
-        stock.variantDetails = variant;
-      }
-    }
+//     // Get variant details for each stock
+//     for (let stock of stocks) {
+//       const product = await Product.findById(stock.product);
+//       if (product) {
+//         const variant = product.variants.id(stock.variantId);
+//         stock.variantDetails = variant;
+//       }
+//     }
     
-    const total = await Stock.countDocuments(query);
+//     const total = await Stock.countDocuments(query);
     
-    // Calculate summary
-    const totalValue = stocks.reduce((sum, stock) => {
-      const variant = stock.variantDetails;
-      if (variant && variant.price) {
-        return sum + (stock.currentStock * variant.price.costPrice);
-      }
-      return sum;
-    }, 0);
+//     // Calculate summary
+//     const totalValue = stocks.reduce((sum, stock) => {
+//       const variant = stock.variantDetails;
+//       if (variant && variant.price) {
+//         return sum + (stock.currentStock * variant.price.costPrice);
+//       }
+//       return sum;
+//     }, 0);
     
-    const lowStockCount = await Stock.countDocuments({ ...query, isLowStock: true });
+//     const lowStockCount = await Stock.countDocuments({ ...query, isLowStock: true });
     
-    res.json({
-      success: true,
-      data: stocks,
-      summary: {
-        totalItems: total,
-        totalValue,
-        lowStockCount,
-        outOfStockCount: await Stock.countDocuments({ ...query, currentStock: 0 })
-      },
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+//     res.json({
+//       success: true,
+//       data: stocks,
+//       summary: {
+//         totalItems: total,
+//         totalValue,
+//         lowStockCount,
+//         outOfStockCount: await Stock.countDocuments({ ...query, currentStock: 0 })
+//       },
+//       pagination: {
+//         page: parseInt(page),
+//         limit: parseInt(limit),
+//         total,
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
 // exports.getAllStock = async (req, res) => {
 //   try {
 //     const {
@@ -175,6 +175,112 @@ exports.getStockByBranch = async (req, res) => {
 //     });
 //   }
 // };
+
+
+
+exports.getStockByBranch = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const { location, lowStock, search, category, page = 1, limit = 50 } = req.query;
+
+    let query = { branch: branchId };
+
+    if (location) query.location = location;
+    if (lowStock === 'true') query.isLowStock = true;
+
+    // Handle product search or category filter
+    let productIds = [];
+    if (search || category) {
+      const productQuery = {};
+      if (search) {
+        productQuery.$or = [
+          { productName: { $regex: search, $options: 'i' } },
+          { sku: { $regex: search, $options: 'i' } }
+        ];
+      }
+      if (category) productQuery.category = category;
+
+      const products = await Product.find(productQuery).select('_id');
+      productIds = products.map(p => p._id);
+      query.product = { $in: productIds };
+    }
+
+    // Fetch stocks with product details
+   // Fetch stocks with product details including category
+const stocks = await Stock.find(query)
+  .populate({
+    path: 'product',
+    select: 'productName sku primaryImage variants category',
+    populate: {
+      path: 'category',
+      select: 'categoryName' // pick only the fields you need from category
+    }
+  })
+  .populate('branch', 'name code')
+  .skip((page - 1) * limit)
+  .limit(parseInt(limit))
+  .sort({ isLowStock: -1, updatedAt: -1 });
+
+    
+
+    // Enrich stocks with variant details and retailPrice
+    const enrichedStocks = stocks.map(stock => {
+      let variantDetails = null;
+      let retailPrice = null;
+
+      if (stock.product && stock.product.variants) {
+        variantDetails = stock.product.variants.id(stock.variantId);
+        if (variantDetails && variantDetails.price) {
+          retailPrice = variantDetails.price.retailPrice;
+        }
+      }
+
+      return {
+        ...stock.toObject(),
+        variantDetails,
+        retailPrice,
+      };
+    });
+
+    // Calculate summary
+    const totalValue = enrichedStocks.reduce((sum, stock) => {
+      if (stock.variantDetails && stock.variantDetails.price) {
+        return sum + (stock.currentStock * stock.variantDetails.price.costPrice);
+      }
+      return sum;
+    }, 0);
+
+    const total = await Stock.countDocuments(query);
+    const lowStockCount = await Stock.countDocuments({ ...query, isLowStock: true });
+    const outOfStockCount = await Stock.countDocuments({ ...query, currentStock: 0 });
+
+    res.json({
+      success: true,
+      data: enrichedStocks,
+      summary: {
+        totalItems: total,
+        totalValue,
+        lowStockCount,
+        outOfStockCount,
+      },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
 
 exports.getAllStock = async (req, res) => {
   try {

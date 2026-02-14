@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { useCreateCustomer, useUpdateCustomer, useCustomer } from "@/hooks/pos_hooks/useCustomer"
 import { useAuth } from "@/hooks/useAuth"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const CreateCustomer = () => {
     const navigate = useNavigate()
@@ -263,13 +264,12 @@ const CreateCustomer = () => {
                 <div className="mb-6">
                     <label className="text-sm font-medium mb-3 block">Communication Preferences</label>
                     <div className="flex gap-6">
-                        {(["communicationEmail", "communicationSms", "communicationPush"]).map((key) => (
+                        {["communicationEmail", "communicationSms", "communicationPush"].map((key) => (
                             <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     checked={form[key]}
-                                    onChange={(e) => updateField(key, e.target.checked)}
-                                    className="rounded border-input accent-primary"
+                                    onCheckedChange={(checked) => updateField(key, checked)}
+                                    className="accent-primary"
                                 />
                                 {key.replace("communication", "")}
                             </label>
@@ -279,7 +279,7 @@ const CreateCustomer = () => {
 
                 {/* Preferences */}
                 <div className="mb-6">
-                    <label className="text-sm font-medium mb-1 block">Preferences / Allergies</label>
+                    <label className="text-sm font-medium mb-1 block">Notes</label>
                     <textarea
                         value={form.preferences}
                         onChange={(e) => updateField("preferences", e.target.value)}

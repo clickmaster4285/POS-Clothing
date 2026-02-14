@@ -18,17 +18,18 @@ exports.createPromotion = async (req, res) => {
   }
 };
 
-// Get all promotions
+
 // Get all promotions with populated category names
 exports.getAllPromotions = async (req, res) => {
   try {
     const promotions = await DiscountPromotion.find({ status: "active" })
-      .sort({ startDate: -1 })
-      .populate({
-        path: "qualifyingCategories", // field to populate
-        select: "categoryName categoryCode -_id", // return only these fields
-        model: Category
-      });
+       .sort({ startDate: -1 })
+  .populate({
+    path: "qualifyingCategories", // field to populate
+    select: "categoryName categoryCode _id", // keep only these fields
+    model: Category,
+    options: { _id: 0 } // explicitly remove _id
+  });
 
     res.status(200).json({ success: true, data: promotions });
   } catch (error) {

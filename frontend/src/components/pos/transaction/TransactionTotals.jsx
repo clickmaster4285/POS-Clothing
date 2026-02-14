@@ -75,10 +75,10 @@ export function TransactionTotals() {
                                 </span>
                             </div>
 
-                            <div className="flex justify-between">
+                            {/* <div className="flex justify-between">
                                 <span className="text-muted-foreground">Coupon Code</span>
                                 <span>—</span>
-                            </div>
+                            </div> */}
                         </CardContent>
                     </Card>
 

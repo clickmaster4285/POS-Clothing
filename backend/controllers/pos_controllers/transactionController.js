@@ -1,6 +1,9 @@
 const { Transaction } = require("../../models/pos_model/transaction.model");
+const mongoose = require("mongoose");
+const { Stock } = require('../../models/inv_model/stock.model')
 
-const ReturnExchange = require("../../models/pos_model/returnExchange.model");
+
+
 
 // GET all transactions
 const getAllTransactions = async (req, res) => {
@@ -14,6 +17,7 @@ const getAllTransactions = async (req, res) => {
 
 // CREATE / SAVE transaction
 const createTransaction = async (req, res) => {
+ 
   try {
     const payload = req.body;
    
@@ -39,9 +43,112 @@ const createTransaction = async (req, res) => {
   }
 };
 
+// const createTransaction = async (req, res) => {
+//   try {
+//     const payload = req.body;
+//     console.log("Payload received:", JSON.stringify(payload, null, 2));
+
+//     const user = req.user; // auth middleware sets req.user
+//     const branchId = user.branch_id;
+
+//     if (!branchId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Branch ID is required for stock deduction",
+//       });
+//     }
+
+//     // Loop through cart items
+//     for (const item of payload.cartItems) {
+//       // Normalize color to string
+//       const colorStr = typeof item.color === "object" ? item.color.name : item.color;
+//       item.color = colorStr;
+
+//       // Build stock query dynamically
+//       const stockQuery = {
+//         product: item.productId,
+//         branch: branchId,
+//         color: colorStr,
+//       };
+//       if (item.variantId) stockQuery.variantId = item.variantId;
+
+//       console.log("Searching stock for:", stockQuery);
+
+//       // Find stock record
+//       const stockRecord = await Stock.findOne(stockQuery);
+
+//       if (!stockRecord) {
+//         console.log(
+//           `No stock found for product: ${item.name}, variantId: ${item.variantId}, color: ${colorStr}, branch: ${branchId}`
+//         );
+//         return res.status(400).json({
+//           success: false,
+//           message: `Stock not found for product ${item.name}, color ${colorStr}`,
+//         });
+//       } else {
+//         console.log("Matched stock record:", stockRecord);
+//       }
+
+//       // Check available stock
+//       if (stockRecord.availableStock < item.quantity) {
+//         console.log(
+//           `Insufficient stock for ${item.name}. Available: ${stockRecord.availableStock}, Requested: ${item.quantity}`
+//         );
+//         return res.status(400).json({
+//           success: false,
+//           message: `Insufficient stock for product ${item.name}, color ${colorStr}`,
+//         });
+//       }
+
+//       // Deduct stock
+//       stockRecord.currentStock -= item.quantity;
+//       stockRecord.availableStock -= item.quantity;
+//       stockRecord.lastSoldDate = new Date();
+//       stockRecord.isLowStock = stockRecord.availableStock <= (stockRecord.reorderPoint || 5);
+//       await stockRecord.save();
+
+//       console.log(
+//         `Stock updated for product ${item.name}, new availableStock: ${stockRecord.availableStock}`
+//       );
+//     }
+
+//     // Build transaction object
+//     const transactionData = {
+//       transactionNumber: payload.transactionNumber,
+//       status: payload.status || "active",
+//       customer: payload.customer || {},
+//       cartItems: payload.cartItems,
+//       totals: payload.totals,
+//       loyalty: payload.loyalty,
+//       payment: payload.payment,
+//       coupon: payload.coupon || { code: null, discountAmount: 0, applied: false },
+//       timestamp: payload.timestamp || new Date(),
+//       branch: branchId,
+//       createdBy: user._id,
+//     };
+
+//     console.log(
+//       "Transaction data ready to save:",
+//       JSON.stringify(transactionData, null, 2)
+//     );
+
+//     // Save transaction
+//     const transaction = new Transaction(transactionData);
+//     await transaction.save();
+
+//     console.log("Transaction saved successfully:", transaction._id);
+
+//     res.status(201).json({ success: true, transaction });
+//   } catch (err) {
+//     console.error("Transaction error:", err);
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
 
 
 // GET transactions by status (active, held, void)
+
+
 const getTransactionsByStatus = async (req, res) => {
   try {
     const { status } = req.params;

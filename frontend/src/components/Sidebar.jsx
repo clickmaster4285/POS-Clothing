@@ -72,12 +72,14 @@ export default function Sidebar() {
             title: "Point Of Sale",
             icon: ShoppingCart,
             children: [
-                { title: "Transaction", href: `/${role}/pos/transaction` },
+               
                 { title: "Customer Information", href: `/${role}/pos/customer-info` },
                 { title: "Discounts & Promotions", href: `/${role}/pos/discounts` },
+                { title: "Transaction", href: `/${role}/pos/transaction` },
+                { title: "Receipt Management", href: `/${role}/pos/receipts` },
                 // { title: "Special Items", href: `/${role}/pos/special-items` },
                 { title: "Returns & Exchanges", href: `/${role}/pos/returns` },
-                { title: "Receipt Management", href: `/${role}/pos/receipts` },
+              
             ],
         },
         {

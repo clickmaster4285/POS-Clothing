@@ -30,3 +30,8 @@ export const updateReturnExchange = async (id, data) => {
   const res = await api.put(`/returnExchange/update/${id}`, data);
   return res.data;
 };
+
+export const getTransactionFullDetails = async (id) => {
+  const res = await api.get(`/returnExchange/detail/${id}`);
+  return res.data;
+};

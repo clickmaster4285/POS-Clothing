@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
     const { data: productsData, isLoading } = useProducts();
+
+ 
     const [selectedExchange, setSelectedExchange] = useState(null);
     const [exchangeQuantity, setExchangeQuantity] = useState(1);
     const [showPaymentModal, setShowPaymentModal] = useState(false);

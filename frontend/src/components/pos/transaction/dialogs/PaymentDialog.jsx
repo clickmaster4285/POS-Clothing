@@ -7,6 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,9 @@ export function PaymentDialog({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Process Payment</DialogTitle>
+                    <DialogDescription>          {/* ← add this */}
+                        Enter the amount received from the customer. Change will be calculated automatically.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">

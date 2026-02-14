@@ -62,13 +62,13 @@ const TransactionTable = ({
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex gap-1">
-                                        <button
+                                        {/* <button
                                             onClick={() => onViewReceipt(txn)}
                                             className="p-1.5 rounded hover:bg-muted"
                                             title="View Receipt"
                                         >
                                             <Eye size={14} />
-                                        </button>
+                                        </button> */}
                                         <button
                                             onClick={() => onViewReturn(txn)}
                                             className="p-1.5 rounded hover:bg-muted"

@@ -95,7 +95,7 @@ const ReceiptView = ({ selectedTxn, onBack, formatDate, statusColor }) => {
                 </div>
             </div>
 
-            {/* Receipt Delivery Methods */}
+           {/* Receipt Delivery Methods */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-card rounded-lg border p-4">
                     <h4 className="text-sm font-semibold mb-2">Email Receipt</h4>
@@ -117,7 +117,7 @@ const ReceiptView = ({ selectedTxn, onBack, formatDate, statusColor }) => {
                     </div>
                 </div>
             </div>
-
+ 
             {/* Action Buttons */}
             <div className="flex flex-col-reverse xs:flex-row justify-end gap-3 mt-6">
                 <button

@@ -20,6 +20,7 @@ export const getHeldTransactions = async () => {
 
 // 🔹 CREATE transaction
 export const createTransaction = async (data) => {
+  console.log("dta" , data)
   const res = await api.post("/transactions/create", data);
   return res.data;
 };

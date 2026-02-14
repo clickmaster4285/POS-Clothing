@@ -19,7 +19,7 @@ const locationRoutes = require("./location.routes");
 const customers = require("./pos_routes/customer.routes")
 const trasaction = require('./pos_routes/transaction.routes')
 const returnExchange = require('./pos_routes/returnExchange.routes')
-
+const discount = require('./pos_routes/discountPromotion.routes')
 
 router.use('/auth', auth);
 router.use('/users', user);
@@ -36,6 +36,7 @@ router.use('/suppliers', supplier);
 router.use("/locations", locationRoutes);
 router.use('/customers', customers);
 router.use('/transactions', trasaction);
-router.use('/returnExchange' , returnExchange)
+router.use('/returnExchange', returnExchange)
+router.use('/discount' , discount)
 
 module.exports = router;

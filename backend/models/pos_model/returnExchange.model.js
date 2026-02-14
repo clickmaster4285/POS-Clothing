@@ -50,18 +50,22 @@ const returnExchangeSchema = new mongoose.Schema(
   },
 
   // Payment information
-  payment: {
-    method: { type: String, required: true },
-
-    // For normal sale/exchange
+payment: {
+  method: { type: String, required: true },
+  amountTendered: { type: Number, default: 0 },
+  changeDue: { type: Number, default: 0 },
+  appliedCredit: { type: Number, default: 0 },
+  additionalPayment: {
+    method: { type: String },
+    amount: { type: Number, default: 0 },
     amountTendered: { type: Number, default: 0 },
-    changeDue: { type: Number, default: 0 },
-
-    // For exchange handling
-    appliedCredit: { type: Number, default: 0 },     // credit from returned items
-    additionalPayment: { type: Number, default: 0 }, // extra money customer pays for more expensive item
-    refundAmount: { type: Number, default: 0 }       // money refunded to customer
+    change: { type: Number, default: 0 },
+    timestamp: { type: Date }
   },
+  refundAmount: { type: Number, default: 0 },
+  originalPaymentMethod: { type: String }
+},
+
 
   // Optional notes about return/exchange
   notes: { type: String }

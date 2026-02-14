@@ -51,12 +51,12 @@ const TransactionCard = ({
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
+                    {/* <button
                         onClick={() => onViewReceipt(txn)}
                         className="p-2 bg-primary/10 text-primary rounded-lg"
                     >
                         <Eye size={16} />
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => onViewReturn(txn)}
                         className="p-2 bg-primary text-card rounded-lg"

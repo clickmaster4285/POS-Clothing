@@ -5,6 +5,7 @@ import {
   createReturnExchange,
   voidReturnExchange,
   updateReturnExchange,
+  getTransactionFullDetails
 } from "@/api/pos/returnExchange.api";
 
 // 🔹 Fetch all return/exchanges
@@ -54,5 +55,13 @@ export const useUpdateReturnExchange = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returnExchanges"] });
     },
+  });
+};
+
+export const useTransactionFullDetails = (transactionId) => {
+  return useQuery({
+    queryKey: ["transactionFullDetails", transactionId],
+    queryFn: () => getTransactionFullDetails(transactionId),
+    enabled: !!transactionId,
   });
 };

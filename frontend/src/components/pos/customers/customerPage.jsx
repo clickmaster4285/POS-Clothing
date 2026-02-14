@@ -191,8 +191,8 @@ const CustomerInformation = () => {
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Tier</TableHead>
                                 <TableHead>Loyalty Points</TableHead>
-                                <TableHead>Packages</TableHead>
-                                <TableHead>Lifetime Value</TableHead>
+                                <TableHead>Redeemed Points</TableHead>
+                                
                                 <TableHead className="w-[80px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -203,8 +203,8 @@ const CustomerInformation = () => {
                                     <TableCell>{customer.email}</TableCell>
                                     <TableCell><Badge variant="outline">{customer.loyaltyProgram}</Badge></TableCell>
                                     <TableCell>{customer.loyaltyPoints || 0}</TableCell>
-                                    <TableCell>{customer.packages || "-"}</TableCell>
-                                    <TableCell>${customer.lifetimeValue || 0}</TableCell>
+                                    <TableCell>{customer.redeemedPoints || 0}</TableCell>
+                                   
                                     <TableCell>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

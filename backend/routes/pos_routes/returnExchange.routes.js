@@ -8,7 +8,8 @@ router.use(auth);
 // Get all return/exchange transactions
 router.get("/", returnExchangeController.getAllReturnExchanges);
 
-// Get all return/exchange for a specific original transaction
+// Get al
+// l return/exchange for a specific original transaction
 router.get("/original/:originalTransactionId", returnExchangeController.getByOriginalTransaction);
 
 // Create a new return/exchange
@@ -19,5 +20,10 @@ router.patch("/void/:id", returnExchangeController.voidReturnExchange);
 
 // Update a return/exchange (payment adjustment, notes, etc.)
 router.patch("/update/:id", returnExchangeController.updateReturnExchange);
+
+
+router.get("/detail/:id", returnExchangeController.getTransactionFullDetails);
+
+
 
 module.exports = router;

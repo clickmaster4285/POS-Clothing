@@ -6,7 +6,7 @@ import React, {
     useMemo,
 } from "react";
 import { useCreateTransaction } from "@/hooks/pos_hooks/useTransaction";
-
+import { useAuth } from "@/hooks/useAuth"
 /* ===========================
    Helpers
 =========================== */
@@ -55,6 +55,8 @@ export function TransactionProvider({ children }) {
     const { mutateAsync: createTransaction, isLoading: isSaving } =
         useCreateTransaction();
 
+    const { user: currentUser, role } = useAuth();
+  
     const [cartItems, setCartItems] = useState([]);
     const [status, setStatus] = useState("active");
     const [transactionNumber, setTransactionNumber] = useState(
@@ -62,6 +64,11 @@ export function TransactionProvider({ children }) {
     );
     const [paymentDetails, setPaymentDetails] = useState(null);
     const [currentStep, setCurrentStep] = useState(0);
+
+
+    const [overallDiscountPercent, setOverallDiscountPercent] = useState(0);
+    const [overallDiscountAmount, setOverallDiscountAmount] = useState(0);
+
 
     // Loyalty
     const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -71,6 +78,8 @@ export function TransactionProvider({ children }) {
     const [pointsRedeemed, setPointsRedeemed] = useState(0);
 
     const [heldTransactions, setHeldTransactions] = useState([]);
+    const [selectedBranch, setSelectedBranch] = useState(null);
+
     /* ===========================
        Cart Actions
     =========================== */
@@ -132,15 +141,29 @@ export function TransactionProvider({ children }) {
     const totals = useMemo(() => {
         const baseTotals = calculateTotals(cartItems);
 
-        // Apply loyalty discount to get final total
-        const finalGrandTotal = baseTotals.grandTotal - (loyaltyDiscount || 0);
+        // Calculate overall discount amount
+        const overallDiscAmount = cartItems.reduce((total, item) => {
+            if (!item.discountPercent || item.discountPercent === 0) {
+                const lineTotal = item.unitPrice * item.quantity;
+                return total + (lineTotal * (overallDiscountPercent / 100));
+            }
+            return total;
+        }, 0);
+
+        setOverallDiscountAmount(overallDiscAmount); // sync state
+
+        // Apply loyalty discount and overall discount
+        const finalGrandTotal = baseTotals.grandTotal - (loyaltyDiscount || 0) - overallDiscAmount;
 
         return {
             ...baseTotals,
-            grandTotal: finalGrandTotal, // Include loyalty discount
-            grandTotalBeforeLoyalty: baseTotals.grandTotal // Optional
+            grandTotal: finalGrandTotal,
+            grandTotalBeforeLoyalty: baseTotals.grandTotal,
+            overallDiscountAmount: overallDiscAmount,
+            overallDiscountPercent,
         };
-    }, [cartItems, loyaltyDiscount]);
+    }, [cartItems, loyaltyDiscount, overallDiscountPercent]);
+
 
 
     const fullTransactionPayload = useMemo(
@@ -165,6 +188,9 @@ export function TransactionProvider({ children }) {
                 redeemPoints,
             },
             timestamp: new Date().toISOString(),
+            branch: currentUser.role === "admin"
+                ? selectedBranch?._id
+                : currentUser.branch_id
         }),
         [
             transactionNumber,
@@ -225,6 +251,10 @@ export function TransactionProvider({ children }) {
             status: "held",
             customer: selectedCustomer || null,
             holdReason: reason,
+            branch:
+                currentUser.role === "admin"
+                    ? selectedBranch?._id
+                    : currentUser.branch_id,
             timestamp: new Date().toISOString(),
         };
 
@@ -287,6 +317,14 @@ export function TransactionProvider({ children }) {
                 heldTransactions,
                 holdTransactionLocally,
                 retrieveHeldTransaction,
+
+                selectedBranch,
+                setSelectedBranch,
+
+                overallDiscountPercent,
+                setOverallDiscountPercent,
+                overallDiscountAmount,
+
             }}
         >
             {children}

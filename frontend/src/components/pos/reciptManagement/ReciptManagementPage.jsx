@@ -5,7 +5,7 @@ import {
     Printer, QrCode, Check, X, Plus, Minus, Filter, Download
 } from "lucide-react";
 import {
-    useTransactions,
+    useTransactions
 } from "@/hooks/pos_hooks/useTransaction";
 import ReceiptPrinter from "./ReceiptPrinter"; // Add this import
 import { Card } from "@/components/ui/card";

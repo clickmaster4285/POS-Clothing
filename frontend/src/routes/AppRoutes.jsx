@@ -23,6 +23,8 @@ import DiscountsPromotions from '../pages/pos/DiscountAndPromotions';
 import TransactionPage from '../pages/pos/Transaction'
 import ReturnsExchanges from '../pages/pos/ReturnExchange'
 import ReciptManagement from '../pages/pos/RecieptManagement'
+import UserSettings from '../pages/UserSettings'
+
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -287,6 +289,18 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
+            <Route
+                path={`/${role}/settings/general`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <UserSettings />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
         </Routes>
     );
 };

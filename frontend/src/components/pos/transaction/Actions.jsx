@@ -75,49 +75,49 @@ export function Actions() {
                 setShowHold(true);
             },
         },
-        {
-            label: "Void Transaction",
-            icon: XCircle,
-            color: "bg-destructive text-white",
-            onClick: () => {
-                if (cartItems.length === 0) {
-                    toast({ title: "No active transaction", variant: "destructive" });
-                    return;
-                }
-                setShowVoidTxn(true);
-            },
-        },
-        {
-            label: "Void Item",
-            icon: XSquare,
-            color: "bg-orange-600 text-white",
-            onClick: () => {
-                if (cartItems.length === 0) {
-                    toast({ title: "Cart is empty", variant: "destructive" });
-                    return;
-                }
-                setShowVoidItem(true);
-            },
-        },
-        {
-            label: "Customer Lookup",
-            icon: UserSearch,
-            color: "bg-secondary text-secondary-foreground",
-            onClick: () => setShowCustomerLookup(true),
-        },
+        // {
+        //     label: "Void Transaction",
+        //     icon: XCircle,
+        //     color: "bg-destructive text-white",
+        //     onClick: () => {
+        //         if (cartItems.length === 0) {
+        //             toast({ title: "No active transaction", variant: "destructive" });
+        //             return;
+        //         }
+        //         setShowVoidTxn(true);
+        //     },
+        // },
+        // {
+        //     label: "Void Item",
+        //     icon: XSquare,
+        //     color: "bg-orange-600 text-white",
+        //     onClick: () => {
+        //         if (cartItems.length === 0) {
+        //             toast({ title: "Cart is empty", variant: "destructive" });
+        //             return;
+        //         }
+        //         setShowVoidItem(true);
+        //     },
+        // },
+        // {
+        //     label: "Customer Lookup",
+        //     icon: UserSearch,
+        //     color: "bg-secondary text-secondary-foreground",
+        //     onClick: () => setShowCustomerLookup(true),
+        // },
     ];
 
     return (
         <div className="space-y-6">
             <h2 className="text-xl font-bold text-foreground">Actions</h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
+            <div className="grid grid-cols-2 gap-4">
                 {actions.map((action) => (
                     <button
                         key={action.label}
                         onClick={action.onClick}
                         className={cn(
-                            "flex flex-col items-center justify-center gap-3 p-6 rounded-2xl shadow hover:shadow-lg transition-all hover:scale-105 w-full max-w-[200px] text-center",
+                            "flex flex-col items-center justify-center gap-3 p-6 rounded-2xl shadow hover:shadow-lg transition-all hover:scale-105 w-full text-center",
                             action.color
                         )}
                     >
@@ -126,6 +126,8 @@ export function Actions() {
                     </button>
                 ))}
             </div>
+
+
 
             {/* Dialogs */}
             <HoldDialog open={showHold} onOpenChange={setShowHold} />

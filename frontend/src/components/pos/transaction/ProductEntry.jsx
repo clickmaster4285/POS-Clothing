@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useStockByBranch } from '@/hooks/inv_hooks/useStock'
 
 export function ProductEntry() {
-    const { addToCart, setCurrentStep, cartItems, transactionNumber, status } = useTransaction();
+    const { addToCart, setCurrentStep, cartItems, transactionNumber, status, selectedBranch, clearCart } = useTransaction();
     const [query, setQuery] = useState('');
     const [selectedStockItem, setSelectedStockItem] = useState(null);
     const [selectedSize, setSelectedSize] = useState('');
@@ -50,7 +50,10 @@ export function ProductEntry() {
     };
 
     const { user: currentUser, role } = useAuth();
-    const branchId = currentUser?.branch_id
+    
+    const branchId = currentUser.role === "admin"
+        ? selectedBranch?._id
+        : currentUser.branch_id;
 
     // Fetch stock for the current user's branch
     const { data: branchStockData, isLoading: branchStockLoading, error: branchStockError } = useStockByBranch(branchId);
@@ -220,6 +223,7 @@ export function ProductEntry() {
 
     const totalCartItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
     const defaultStockItems = branchStock.slice(0, 6);
+   
 
     return (
         <div className="space-y-4 sm:space-y-6">
@@ -230,7 +234,7 @@ export function ProductEntry() {
                     <h2 className="text-base sm:text-lg font-bold text-primary break-all">{transactionNumber}</h2>
                     <p className="text-xs sm:text-sm text-muted-foreground capitalize">Status: {status}</p>
                 </div>
-                <Button
+                <div className='flex gap-2'>   <Button
                     variant="outline"
                     onClick={() => setCurrentStep(1)}
                     className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90 text-white border-0"
@@ -245,6 +249,22 @@ export function ProductEntry() {
                         </Badge>
                     )}
                 </Button>
+                    <Button
+                        variant="destructive"
+                        onClick={() => {
+                            if (cartItems.length === 0) {
+                                toast({ title: 'Cart is already empty', variant: 'destructive' });
+                                return;
+                            }
+                            if (confirm('Are you sure you want to clear the cart?')) {
+                                clearCart(); // Make sure this exists in your context
+                                toast({ title: 'Cart cleared successfully' });
+                            }
+                        }}
+                        className="w-full sm:w-auto"
+                    >
+                        Clear Cart
+                    </Button></div>
             </div>
 
             {/* Search & Barcode - Stack on Mobile */}

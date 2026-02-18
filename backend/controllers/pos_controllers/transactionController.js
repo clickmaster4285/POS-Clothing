@@ -2,23 +2,14 @@ const { Transaction } = require("../../models/pos_model/transaction.model");
 const mongoose = require("mongoose");
 const { Stock } = require('../../models/inv_model/stock.model')
 
-
+const Branch = require("../../models/branch.model")
 
 
 // GET all transactions
 const getAllTransactions = async (req, res) => {
-  const user = req.user; // logged-in user
-
   try {
-    if (!user?.branch_id) {
-      return res.status(400).json({
-        success: false,
-        message: "User does not have a branch assigned",
-      });
-    }
-
-    // Fetch only transactions for this branch
-    const transactions = await Transaction.find({ branch: user.branch_id }).sort({ createdAt: -1 });
+    // Fetch all transactions, sorted by newest first
+    const transactions = await Transaction.find().sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -32,8 +23,84 @@ const getAllTransactions = async (req, res) => {
 };
 
 
-// GET transactions by branch ID
 
+// controllers/transactionController.js
+
+exports.getTransactionsByBranch = async (req, res) => {
+  try {
+    const user = req.user; // logged-in user
+    if (!user?.branch_id) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not have a branch assigned",
+      });
+    }
+
+    const branchId = user.branch_id;
+    const { status, search, startDate, endDate, page = 1, limit = 50 } = req.query;
+
+    // Build query
+    let query = { branch: branchId };
+
+    if (status) query.status = status; // e.g., 'completed', 'pending'
+    if (startDate || endDate) query.createdAt = {};
+    if (startDate) query.createdAt.$gte = new Date(startDate);
+    if (endDate) query.createdAt.$lte = new Date(endDate);
+
+    // Search by transaction number
+    if (search) {
+      query.transactionNumber = { $regex: search, $options: "i" };
+    }
+
+    // Count total for pagination
+    const total = await Transaction.countDocuments(query);
+
+    // Fetch transactions with pagination & sorting
+    const transactions = await Transaction.find(query)
+      .populate({
+        path: "createdBy",
+        select: "name email",
+      })
+      .populate({
+        path: "cartItems.product",
+        select: "productName sku",
+      })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    // Optional: Calculate summary stats for this branch
+    const completedTransactions = transactions.filter(tx => tx.status === "completed");
+    const totalSales = completedTransactions.reduce(
+      (sum, tx) => sum + tx.cartItems.reduce((sub, item) => sub + (item.totalPrice || 0), 0),
+      0
+    );
+    const totalItemsSold = completedTransactions.reduce(
+      (sum, tx) => sum + tx.cartItems.reduce((sub, item) => sub + (item.quantity || 0), 0),
+      0
+    );
+
+    res.status(200).json({
+      success: true,
+      count: transactions.length,
+      transactions,
+      summary: {
+        totalTransactions: total,
+        totalSales,
+        totalItemsSold,
+      },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
 
 
 
@@ -44,7 +111,15 @@ const createTransaction = async (req, res) => {
 
     // Get user and branch
     const user = req.user; // auth middleware sets req.user
-    const branchId = user.branch_id;
+   let branchId;
+
+// Admin can select any branch
+if (user.role === "admin") {
+    branchId = payload.branch;
+} else {
+    // Manager or normal user uses their own branch
+    branchId = user.branch_id;
+}
 
     if (!branchId) {
       return res.status(400).json({

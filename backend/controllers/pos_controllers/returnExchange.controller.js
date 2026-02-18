@@ -56,9 +56,7 @@ const createReturnExchange = async (req, res) => {
     const userId = req.user._id;        // Logged-in user
     const branchId = req.user.branch_id; // User branch
 
-    console.log("=== Create Return/Exchange ===");
-    console.log("Payload type:", payload.type);
-    console.log("Items:", payload.items);
+   
 
     // 1️⃣ Create Return/Exchange Record
     const txnNumber = `RE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -67,19 +65,19 @@ const createReturnExchange = async (req, res) => {
       ...payload
     });
     await newReturn.save();
-    console.log("Created ReturnExchange record:", newReturn._id);
+   
 
     // 2️⃣ Link to Original Transaction
     if (payload.originalTransactionId) {
       await Transaction.findByIdAndUpdate(payload.originalTransactionId, {
         $push: { returnExchangeIds: newReturn._id }
       });
-      console.log("Linked to original transaction:", payload.originalTransactionId);
+    
     }
 
     // 3️⃣ Update Stock
     for (const item of payload.items) {
-      console.log(`\nProcessing item: ${item.productId} Quantity: ${item.quantity}`);
+    
 
       // Check if variantId is present
       if (!item.variantId) {
@@ -89,7 +87,7 @@ const createReturnExchange = async (req, res) => {
 
       // --- RETURN ---
       if (payload.type === "return") {
-        console.log("Type is RETURN, finding stock...");
+       
         const stockDoc = await Stock.findOne({
           product: item.productId,
           variantId: item.variantId,
@@ -98,7 +96,7 @@ const createReturnExchange = async (req, res) => {
         });
 
         if (stockDoc) {
-          console.log("Stock found:", stockDoc._id);
+       
           stockDoc.currentStock += item.quantity;
           stockDoc.availableStock += item.quantity;
           stockDoc.history.push({
@@ -108,7 +106,7 @@ const createReturnExchange = async (req, res) => {
             timestamp: new Date()
           });
           await stockDoc.save();
-          console.log(`✅ Stock updated for RETURN: +${item.quantity}`);
+          
         } else {
           console.error(`❌ No stock record found for RETURN item: ${item.productId} ${item.color}`);
         }
@@ -134,7 +132,7 @@ const createReturnExchange = async (req, res) => {
             timestamp: new Date()
           });
           await originalStock.save();
-          console.log(`✅ Original item returned to stock: +${item.quantity}`);
+         
         } else {
           console.error(`❌ No stock record found for original item in EXCHANGE: ${item.originalProductId} ${item.color}`);
         }
@@ -157,7 +155,7 @@ const createReturnExchange = async (req, res) => {
             timestamp: new Date()
           });
           await newStock.save();
-          console.log(`✅ New exchanged item deducted from stock: -${item.quantity}`);
+        
         } else {
           console.error(`❌ No stock record found for new item in EXCHANGE: ${item.productId} ${item.color}`);
         }

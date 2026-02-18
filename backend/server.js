@@ -10,8 +10,8 @@ const indexRoutes = require('./routes/index.routes');
 const { initializeAdminAccount } = require('./config/bootstrap');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -69,9 +69,9 @@ async function startServer() {
     await connectDatabase();
     await initializeAdminAccount(); 
 
-    app.listen(PORT, () => {
+    app.listen(PORT,HOST, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📊 Health check available at http://localhost:${PORT}`);
+      console.log(`📊 Health check available at http://${HOST}:${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

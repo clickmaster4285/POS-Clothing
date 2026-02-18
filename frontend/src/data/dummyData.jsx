@@ -62,3 +62,123 @@ export const exchangeItems = [
     { id: "EX-3", name: "Wireless Mouse Pro", price: "$39.99", barcode: "FX-90787" },
     { id: "EX-4", name: "Wireless Mouse Pad", price: "$12.99", barcode: "FX-90788" },
 ];
+
+
+
+
+
+// Simulated delay
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// --- USER PROFILE ---
+let currentUser = {
+    id: "usr_001",
+    firstName: "James",
+    lastName: "Carter",
+    email: "james.carter@posstore.com",
+    phone: "+1 (555) 234-5678",
+    role: "Store Manager",
+    storeLocation: "Downtown Branch - 142 Main St",
+    employeeId: "EMP-2024-0042",
+    avatar: null,
+    joinDate: "2023-03-15",
+    language: "English",
+    timezone: "America/New_York",
+    currency: "USD",
+};
+
+export async function fetchUserProfile() {
+    await delay(300);
+    return { ...currentUser };
+}
+
+export async function updateUserProfile(updates) {
+    await delay(500);
+    currentUser = { ...currentUser, ...updates };
+    return { ...currentUser };
+}
+
+// --- SECURITY ---
+let securitySettings = {
+    twoFactorEnabled: true,
+    lastPasswordChange: "2024-12-10",
+    sessionTimeout: 30,
+    loginNotifications: true,
+};
+
+export async function fetchSecuritySettings(){
+    await delay(300);
+    return { ...securitySettings };
+}
+
+export async function updateSecuritySettings(updates){
+    await delay(500);
+    securitySettings = { ...securitySettings, ...updates };
+    return { ...securitySettings };
+}
+
+export async function changePassword(currentPassword, newPassword) {
+    await delay(800);
+    if (currentPassword === "wrong") {
+        return { success: false, message: "Current password is incorrect." };
+    }
+    securitySettings.lastPasswordChange = new Date().toISOString().split("T")[0];
+    return { success: true, message: "Password changed successfully." };
+}
+
+// --- NOTIFICATIONS ---
+let notifications = {
+    emailNotifications: true,
+    smsNotifications: false,
+    salesAlerts: true,
+    inventoryAlerts: true,
+    systemUpdates: true,
+    dailyReports: false,
+    weeklyReports: true,
+};
+
+export async function fetchNotificationPreferences(){
+    await delay(300);
+    return { ...notifications };
+}
+
+export async function updateNotificationPreferences(updates){
+    await delay(500);
+    notifications = { ...notifications, ...updates };
+    return { ...notifications };
+}
+
+// --- LOGIN HISTORY ---
+const loginHistory = [
+    { id: "1", date: "2025-02-17 09:15 AM", device: "Chrome on Windows", location: "New York, NY", ip: "192.168.1.105", status: "success" },
+    { id: "2", date: "2025-02-16 06:42 PM", device: "POS Terminal #3", location: "Downtown Branch", ip: "10.0.0.45", status: "success" },
+    { id: "3", date: "2025-02-16 02:10 PM", device: "Safari on iPhone", location: "New York, NY", ip: "74.125.68.100", status: "success" },
+    { id: "4", date: "2025-02-15 11:30 AM", device: "Chrome on Windows", location: "Brooklyn, NY", ip: "192.168.1.105", status: "failed" },
+    { id: "5", date: "2025-02-14 08:00 AM", device: "POS Terminal #1", location: "Downtown Branch", ip: "10.0.0.41", status: "success" },
+];
+
+export async function fetchLoginHistory() {
+    await delay(300);
+    return [...loginHistory];
+}
+
+// --- STORE/ROLE OPTIONS (for dropdowns) ---
+export const storeLocations = [
+    "Downtown Branch - 142 Main St",
+    "Mall Outlet - Westfield Center",
+    "Airport Kiosk - Terminal 2",
+    "Warehouse - 88 Industrial Ave",
+];
+
+export const roles = [
+    "Store Manager",
+    "Cashier",
+    "Sales Associate",
+    "Inventory Manager",
+    "Regional Manager",
+    "Admin",
+];
+
+export const languages = ["English", "Spanish", "French", "German", "Chinese", "Arabic"];
+export const timezones = ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Europe/London", "Asia/Tokyo"];
+export const currencies = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];

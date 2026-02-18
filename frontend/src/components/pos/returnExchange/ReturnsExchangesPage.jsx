@@ -59,7 +59,7 @@ const ReturnsExchangesPage = () => {
                     (exchangedItemIds.includes(item.productId) ? 1 : 0); // subtract exchanged qty
 
                 if (remainingQty <= 0) return null; // skip fully returned or exchanged
-                console.log("items in use effect", item)
+               
                 return {
                     id: item.id || item.productId || `item-${index}`,
                     name: item.name,
@@ -131,8 +131,7 @@ const ReturnsExchangesPage = () => {
         }
 
         const returnTotal = items.reduce((acc, item) => acc + item.price * item.qty, 0);
-        console.log("items", items)
-        console.log("selectedTxn", selectedTxn)
+       
         const payload = {
             type: "return",
             mode: "normal",
@@ -172,7 +171,7 @@ const ReturnsExchangesPage = () => {
             },
             notes: `Return processed - Reason: ${finalReason}`
         };
-        console.log("payload", payload)
+       
         try {
             await createReturnExchangeMutation.mutateAsync(payload);
             toast.success("Return processed successfully!");
@@ -330,7 +329,7 @@ const ReturnsExchangesPage = () => {
                 returnItems={selectedReturnItems}
                 onBack={() => setView("return")}
                 onComplete={async (data) => {
-                    console.log("data", data)
+                   
                     try {
                         const payload = {
                             type: "exchange",
@@ -359,7 +358,7 @@ const ReturnsExchangesPage = () => {
                             payment: data.payment,
                             notes: "Exchange processed via POS"
                         };
-                        console.log("payload", payload)
+                     
                         await createReturnExchangeMutation.mutateAsync(payload);
 
                         toast.success("Exchange saved successfully!");

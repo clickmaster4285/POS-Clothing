@@ -139,7 +139,7 @@ export default function Sidebar() {
             icon: Settings,
             children: [
                 { title: "General", href: `/${role}/settings/general` },
-                { title: "Users", href: `/${role}/settings/users` },
+              
             ],
         },
         // { title: "Self-Checkout", href: `/${role}/self-checkout`, icon: MonitorSmartphone },

@@ -13,6 +13,7 @@ import {
     useUpdatePromotion,
     useDeletePromotion,
 } from "@/hooks/pos_hooks/useDiscountPromotion";
+import { CustomerSelectionCard } from './CustomerSelectionCard';
 
 export function ShoppingCart() {
     const {
@@ -33,6 +34,9 @@ export function ShoppingCart() {
         setPointsRedeemed,
         pointsEarned,
         setPointsEarned,
+        overallDiscountPercent,
+        setOverallDiscountPercent,
+        overallDiscountAmount
     } = useTransaction();
 
     const { data: customers = [], isLoading } = useCustomers();
@@ -40,7 +44,8 @@ export function ShoppingCart() {
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState('');
 
-    
+
+ 
 
     const {
         data: response,
@@ -49,6 +54,29 @@ export function ShoppingCart() {
     const promotions = response?.success && Array.isArray(response.data)
         ? response.data
         : [];
+
+
+    
+
+
+    // Calculate discount only for items without existing discount
+    // const overallDiscountAmount = useMemo(() => {
+    //     if (!cartItems || cartItems.length === 0) return 0;
+
+    //     return cartItems.reduce((total, item) => {
+    //         // Only apply to items without any applied discount
+    //         if (!item.discountPercent || item.discountPercent === 0) {
+    //             const unitPrice = Number(item.unitPrice) || 0;
+    //             const quantity = Number(item.quantity) || 1;
+    //             const lineTotal = unitPrice * quantity;
+    //             return total + (lineTotal * (overallDiscountPercent / 100));
+    //         }
+    //         return total;
+    //     }, 0);
+    // }, [cartItems, overallDiscountPercent]);
+
+
+
 
 
     // Function to check if a promotion applies to a cart item
@@ -290,7 +318,9 @@ export function ShoppingCart() {
             pointsRedeemedCalc = loyaltyDisc * 100;
         }
 
-        const finalTotalCalc = subtotal - totalDiscount - loyaltyDisc + totalTax;
+        // Include overallDiscountAmount here
+        const finalTotalCalc = subtotal - totalDiscount - loyaltyDisc - overallDiscountAmount + totalTax;
+
         const pointsEarnedCalc = Math.floor(finalTotalCalc / 1000) * 100;
 
         const currentPoints = selectedCustomer ? Number(selectedCustomer.loyaltyPoints) || 0 : 0;
@@ -304,7 +334,8 @@ export function ShoppingCart() {
         setEffectivePointsEarned(pointsEarnedCalc);
         setEffectivePointsRedeemed(pointsRedeemedCalc);
         setEffectiveNewBalance(newBalance);
-    }, [cartItems, totals, selectedCustomer, redeemPoints]);
+    }, [cartItems, totals, selectedCustomer, redeemPoints, overallDiscountAmount]);
+
 
     // Sync calculated values with context
     useEffect(() => {
@@ -368,7 +399,7 @@ export function ShoppingCart() {
             <h2 className="text-xl font-bold">Shopping Cart</h2>
 
             {/* Customer Selection Card */}
-            <Card className="overflow-hidden">
+            {/* <Card className="overflow-hidden">
                 <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
@@ -440,7 +471,19 @@ export function ShoppingCart() {
                         </div>
                     )}
                 </CardContent>
-            </Card>
+            </Card> */}
+
+
+            <CustomerSelectionCard
+                customers={customers}
+                selectedCustomer={selectedCustomer}
+                setSelectedCustomer={setSelectedCustomer}
+                redeemPoints={redeemPoints}
+                setRedeemPoints={setRedeemPoints}
+                effectiveLoyaltyDiscount={effectiveLoyaltyDiscount}
+                handleRedeemPoints={handleRedeemPoints}
+            />
+
 
             {/* Promotions Card - Coupon Code Input */}
             <Card>
@@ -506,7 +549,7 @@ export function ShoppingCart() {
                                 const gross = unitPrice * quantity;
                                 const disc = gross * (discountPercent / 100);
                                 const lineTotal = gross - disc;
-
+                                
                                 return (
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name || 'Product'}</TableCell>
@@ -515,9 +558,9 @@ export function ShoppingCart() {
                                             <div className="flex items-center gap-2">
                                                 <span
                                                     className="w-4 h-4 rounded-full border"
-                                                    style={{ backgroundColor: item.color?.code || item.color?.name?.toLowerCase() || '#ccc' }}
+                                                    style={{ backgroundColor: item.colore || item.color.toLowerCase() || '#ccc' }}
                                                 />
-                                                {item.color?.name || 'N/A'}
+                                                {item.color || 'N/A'}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
@@ -586,6 +629,28 @@ export function ShoppingCart() {
                             <span>-{formatCurrency(totals.totalDiscount)}</span>
                         </div>
                     )}
+
+                    <div className="flex items-center justify-between text-sm space-x-2">
+                        <label className="flex-1">Overall Discount % (optional)</label>
+                        <Input
+                            type="number"
+                            value={overallDiscountPercent}
+                            min={0}
+                            max={100}
+                            step={0.01}
+                            onChange={(e) => setOverallDiscountPercent(Number(e.target.value) || 0)}
+                            className="w-20 text-right"
+                        />
+                    </div>
+
+                    {overallDiscountAmount > 0 && (
+                        <div className="flex justify-between text-blue-600 font-semibold bg-blue-50 py-1 px-2 rounded -mx-2">
+                            <span>Overall Discount ({overallDiscountPercent}%)</span>
+                            <span>-{formatCurrency(overallDiscountAmount)}</span>
+                        </div>
+                    )}
+
+
 
                     {redeemPoints && effectiveLoyaltyDiscount > 0 && (
                         <div className="flex justify-between text-primary font-semibold bg-primary/5 py-1 px-2 rounded -mx-2">

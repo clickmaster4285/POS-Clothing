@@ -58,30 +58,30 @@ export function QuickActions() {
             color: 'bg-blue-500 text-white',
             onClick: () => setShowRetrieve(true),
         },
-        // {
-        //     label: 'Void Transaction',
-        //     icon: XCircle,
-        //     color: 'bg-destructive text-white',
-        //     onClick: () => {
-        //         if (cartItems.length === 0) {
-        //             toast({ title: 'No active transaction', variant: 'destructive' });
-        //             return;
-        //         }
-        //         setShowVoidTxn(true);
-        //     },
-        // },
-        // {
-        //     label: 'Void Item',
-        //     icon: XSquare,
-        //     color: 'bg-orange-600 text-white',
-        //     onClick: () => {
-        //         if (cartItems.length === 0) {
-        //             toast({ title: 'Cart is empty', variant: 'destructive' });
-        //             return;
-        //         }
-        //         setShowVoidItem(true);
-        //     },
-        // },
+        {
+            label: 'Void Transaction',
+            icon: XCircle,
+            color: 'bg-destructive text-white',
+            onClick: () => {
+                if (cartItems.length === 0) {
+                    toast({ title: 'No active transaction', variant: 'destructive' });
+                    return;
+                }
+                setShowVoidTxn(true);
+            },
+        },
+        {
+            label: 'Void Item',
+            icon: XSquare,
+            color: 'bg-orange-600 text-white',
+            onClick: () => {
+                if (cartItems.length === 0) {
+                    toast({ title: 'Cart is empty', variant: 'destructive' });
+                    return;
+                }
+                setShowVoidItem(true);
+            },
+        },
         // {
         //     label: 'Customer Lookup',
         //     icon: UserSearch,
@@ -128,15 +128,38 @@ export function QuickActions() {
                         </div>
                     </div>
 
-                    {/* Optional: Show subtotal for more context on larger screens */}
+                    {/* Detailed Transaction Breakdown */}
                     {cartItems.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-dashed flex justify-between text-xs text-muted-foreground sm:hidden">
-                            <span>Subtotal:</span>
-                            <span>${(totals?.subtotal || 0).toFixed(2)}</span>
+                        <div className="mt-3 pt-3 border-t border-dashed space-y-1 text-xs sm:text-sm text-muted-foreground">
+                            <div className="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span>${(totals?.subtotal || 0).toFixed(2)}</span>
+                            </div>
+
+                            {totals?.totalDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Item Discounts:</span>
+                                    <span>- ${(totals?.totalDiscount || 0).toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {totals?.loyaltyDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Loyalty Discount:</span>
+                                    <span>- ${(totals?.loyaltyDiscount || 0).toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Final Total */}
+                            <div className="flex justify-between pt-2 border-t border-dashed font-semibold text-primary">
+                                <span>Grand Total:</span>
+                                <span>${(totals?.grandTotal || 0).toFixed(2)}</span>
+                            </div>
                         </div>
                     )}
                 </CardContent>
             </Card>
+
 
             {/* Action Grid - Responsive Layout */}
             <div className="space-y-3 sm:space-y-4">
@@ -206,3 +229,4 @@ export function QuickActions() {
         </div>
     );
 }
+

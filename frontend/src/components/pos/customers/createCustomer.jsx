@@ -9,7 +9,9 @@ import { useCreateCustomer, useUpdateCustomer, useCustomer } from "@/hooks/pos_h
 import { useAuth } from "@/hooks/useAuth"
 import { Checkbox } from "@/components/ui/checkbox"
 
-const CreateCustomer = () => {
+const CreateCustomer = ({ isModal = false,
+    onCustomerAdded,
+    onClose }) => {
     const navigate = useNavigate()
     const { id } = useParams() // if id exists, we're editing
     const [showSuccess, setShowSuccess] = useState(false)
@@ -70,26 +72,40 @@ const CreateCustomer = () => {
     }
 
     const handleSubmit = async () => {
-        if (!validate()) return
+        if (!validate()) return;
 
         try {
+            // EDIT MODE
             if (id) {
-                // Update
-                await updateMutation.mutateAsync({ id, data: form })
-                toast.success("Customer updated successfully!")
-                navigate(-1)
-            } else {
-                // Create
-                await createMutation.mutateAsync(form)
-             
-                toast.success("Customer created successfully!")
-                setShowSuccess(true)
-                navigate(`/${currentUser?.role}/pos/customer-info`)
+                const updatedCustomer = await updateMutation.mutateAsync({ id, data: form });
+
+                if (isModal) {
+                    onCustomerAdded?.(updatedCustomer);
+                    return; // 🔥 STOP HERE
+                }
+
+                toast.success("Customer updated successfully!");
+                navigate(-1);
+                return;
             }
+
+            // CREATE MODE
+            const newCustomer = await createMutation.mutateAsync(form);
+
+            if (isModal) {
+                onCustomerAdded?.(newCustomer);
+               
+                return; 
+            }
+
+            toast.success("Customer created successfully!");
+            setShowSuccess(true);
+
         } catch (err) {
-            toast.error(err?.response?.data?.error || "Something went wrong")
+            toast.error(err?.response?.data?.error || "Something went wrong");
         }
-    }
+    };
+
 
     const updateField = (field, value) => {
         setForm((prev) => ({ ...prev, [field]: value }))
@@ -133,7 +149,8 @@ const CreateCustomer = () => {
     }
 
     return (
-        <div>
+
+        <>  {isModal && (<>
             <div className="flex items-center text-xs text-muted-foreground mb-4 gap-1">
                 <span>Home</span><span>›</span><span>Point of Sale</span><span>›</span>
                 <span>Customer Information</span><span>›</span>
@@ -291,7 +308,10 @@ const CreateCustomer = () => {
 
                 <div className="flex justify-end gap-3">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => {
+                            if (isModal && onClose) onClose();
+                            else navigate(-1);
+                        }}
                         className="px-6 py-2 border rounded-lg text-sm font-medium hover:bg-muted transition-colors"
                     >
                         Cancel
@@ -304,7 +324,7 @@ const CreateCustomer = () => {
                     </button>
                 </div>
             </div>
-        </div>
+        </>)}</>
     )
 }
 

@@ -2,69 +2,129 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Key, Loader2, Monitor, MapPin, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Shield, Key, Loader2, Monitor, MapPin, Clock, CheckCircle2, XCircle, User, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
-import {
-    fetchSecuritySettings,
-    updateSecuritySettings,
-    changePassword,
-    fetchLoginHistory,
-  
-} from "@/data/dummyData";
+import { useUpdateProfile } from "@/hooks/useSettings";
+import { useAuth } from "@/hooks/useAuth"; // Assuming you have an auth hook
 
 export default function SecuritySettings() {
-    const [settings, setSettings] = useState (null);
-    const [history, setHistory] = useState ([]);
-    const [loading, setLoading] = useState(true);
+    const { user: authUser } = useAuth(); // Get current user from auth context
+    const updateProfile = useUpdateProfile();
 
+    // Profile fields
+    const [firstName, setFirstName] = useState(authUser?.firstName || "");
+    const [lastName, setLastName] = useState(authUser?.lastName || "");
+    const [email, setEmail] = useState(authUser?.email || "");
+    const [phone, setPhone] = useState(authUser?.phone || "");
+
+    // Password fields
     const [currentPassword, setCurrentPassword] = useState("");
+    const [oldPassword, setOldPassword] = useState(""); // For password change
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [changingPassword, setChangingPassword] = useState(false);
 
+    // UI states
+    const [loading, setLoading] = useState(false);
+    const [profileChanged, setProfileChanged] = useState(false);
+    const [passwordChanged, setPasswordChanged] = useState(false);
+
+    // Track profile changes
     useEffect(() => {
-        Promise.all([fetchSecuritySettings(), fetchLoginHistory()]).then(([sec, hist]) => {
-            setSettings(sec);
-            setHistory(hist);
-            setLoading(false);
-        });
-    }, []);
+        const hasProfileChanges =
+            firstName !== (authUser?.firstName || "") ||
+            lastName !== (authUser?.lastName || "") ||
+            email !== (authUser?.email || "") ||
+            phone !== (authUser?.phone || "");
+        setProfileChanged(hasProfileChanges);
+    }, [firstName, lastName, email, phone, authUser]);
 
-    const handleToggle = async (field, value) => {
-        if (!settings) return;
-        const updated = await updateSecuritySettings({ [field]: value });
-        setSettings(updated);
-        toast.success("Security settings updated");
-    };
+    // Track password changes
+    useEffect(() => {
+        setPasswordChanged(!!(newPassword || oldPassword || confirmPassword));
+    }, [newPassword, oldPassword, confirmPassword]);
 
-    const handleChangePassword = async () => {
-        if (!newPassword || newPassword.length < 8) {
-            toast.error("Password must be at least 8 characters");
+    const handleProfileUpdate = async () => {
+        // Validate email if changed
+        console.log("here")
+        if (email !== authUser?.email) {
+            const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(email)) {
+                toast.error("Invalid email format");
+                return;
+            }
+        }
+
+        // If email or phone is changed, currentPassword is required
+        if ((email !== authUser?.email || phone !== authUser?.phone) && !currentPassword) {
+            toast.error("Current password required to change email or phone");
             return;
         }
+console.log("here")
+        const payload = {
+            firstName: firstName !== authUser?.firstName ? firstName : undefined,
+            lastName: lastName !== authUser?.lastName ? lastName : undefined,
+            email: email !== authUser?.email ? email : undefined,
+            phone: phone !== authUser?.phone ? phone : undefined,
+            currentPassword: (email !== authUser?.email || phone !== authUser?.phone) ? currentPassword : undefined,
+        };
+        console.log("payload", payload)
+        // Remove undefined values
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+        if (Object.keys(payload).length === 0) {
+            toast.info("No changes to update");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await updateProfile.mutateAsync(payload);
+            toast.success("Profile updated successfully");
+            setCurrentPassword(""); // Clear password field after successful update
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordChange = async () => {
+        if (!oldPassword) {
+            toast.error("Old password required");
+            return;
+        }
+
+        if (!newPassword || newPassword.length < 8) {
+            toast.error("New password must be at least 8 characters");
+            return;
+        }
+
         if (newPassword !== confirmPassword) {
             toast.error("Passwords do not match");
             return;
         }
-        setChangingPassword(true);
-        const result = await changePassword(currentPassword, newPassword);
-        setChangingPassword(false);
-        if (result.success) {
-            toast.success(result.message);
-            setCurrentPassword("");
+
+        setLoading(true);
+        try {
+            const result = await updateProfile.mutateAsync({
+                oldPassword,
+                newPassword
+            });
+            toast.success("Password updated successfully");
+
+            // Clear password fields
+            setOldPassword("");
             setNewPassword("");
             setConfirmPassword("");
-            // Refresh settings
-            const updated = await fetchSecuritySettings();
-            setSettings(updated);
-        } else {
-            toast.error(result.message);
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to update password");
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading || !settings) {
+    if (!authUser) {
         return (
             <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -74,108 +134,143 @@ export default function SecuritySettings() {
 
     return (
         <div className="space-y-6">
+            {/* Profile Information */}
+            <div className="rounded-xl bg-card p-5 border border-border">
+                <div className="flex items-center gap-2 mb-4">
+                    <User className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold text-card-foreground">Profile Information</h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">First Name</Label>
+                        <Input
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder="John"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Last Name</Label>
+                        <Input
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Doe"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Email</Label>
+                        <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="john@example.com"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Phone</Label>
+                        <Input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="+1234567890"
+                        />
+                    </div>
+                </div>
+
+                {/* Current Password field - only shown when changing email/phone */}
+                {(email !== authUser?.email || phone !== authUser?.phone) && (
+                    <div className="mt-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">
+                                Current Password <span className="text-destructive">*</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                    (Required to change email or phone)
+                                </span>
+                            </Label>
+                            <Input
+                                type="password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                placeholder="Enter your current password"
+                                className="max-w-md"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {profileChanged && (
+                    <div className="mt-4 flex justify-end">
+                        <Button
+                            onClick={handleProfileUpdate}
+                            disabled={loading || updateProfile.isPending}
+                            size="sm"
+                        >
+                            {(loading || updateProfile.isPending) && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                            )}
+                            Update Profile
+                        </Button>
+                    </div>
+                )}
+            </div>
+
             {/* Change Password */}
             <div className="rounded-xl bg-card p-5 border border-border">
                 <div className="flex items-center gap-2 mb-4">
                     <Key className="h-4 w-4 text-primary" />
                     <h3 className="text-sm font-semibold text-card-foreground">Change Password</h3>
                 </div>
+
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Current Password</Label>
-                        <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="••••••••" />
+                        <Label className="text-xs text-muted-foreground">Old Password</Label>
+                        <Input
+                            type="password"
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            placeholder="••••••••"
+                        />
                     </div>
+
                     <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">New Password</Label>
-                        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
+                        <Input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="••••••••"
+                        />
                     </div>
+
                     <div className="space-y-1.5">
                         <Label className="text-xs text-muted-foreground">Confirm New Password</Label>
-                        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                        <Input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                        />
                     </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                    Last changed: {new Date(settings.lastPasswordChange).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                </p>
-                <div className="mt-4 flex justify-end">
-                    <Button onClick={handleChangePassword} disabled={changingPassword} size="sm">
-                        {changingPassword && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-                        Update Password
-                    </Button>
-                </div>
-            </div>
 
-            {/* Security Options */}
-            <div className="rounded-xl bg-card p-5 border border-border">
-                <div className="flex items-center gap-2 mb-4">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-card-foreground">Security Options</h3>
-                </div>
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-card-foreground">Two-Factor Authentication</p>
-                            <p className="text-xs text-muted-foreground">Add an extra layer of security to your account</p>
-                        </div>
-                        <Switch checked={settings.twoFactorEnabled} onCheckedChange={(v) => handleToggle("twoFactorEnabled", v)} />
-                    </div>
-                    <div className="border-t border-border" />
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-card-foreground">Login Notifications</p>
-                            <p className="text-xs text-muted-foreground">Get notified when someone logs into your account</p>
-                        </div>
-                        <Switch checked={settings.loginNotifications} onCheckedChange={(v) => handleToggle("loginNotifications", v)} />
-                    </div>
-                    <div className="border-t border-border" />
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-card-foreground">Session Timeout</p>
-                            <p className="text-xs text-muted-foreground">Auto-lock POS after inactivity</p>
-                        </div>
-                        <select
-                            value={settings.sessionTimeout}
-                            onChange={(e) => handleToggle("sessionTimeout", Number(e.target.value))}
-                            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                {passwordChanged && (
+                    <div className="mt-4 flex justify-end">
+                        <Button
+                            onClick={handlePasswordChange}
+                            disabled={loading || updateProfile.isPending || !oldPassword || !newPassword || newPassword !== confirmPassword}
+                            size="sm"
                         >
-                            <option value={15}>15 min</option>
-                            <option value={30}>30 min</option>
-                            <option value={60}>1 hour</option>
-                            <option value={120}>2 hours</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Login History */}
-            <div className="rounded-xl bg-card p-5 border border-border">
-                <h3 className="text-sm font-semibold text-card-foreground mb-4">Recent Login Activity</h3>
-                <div className="space-y-3">
-                    {history.map((login) => (
-                        <div key={login.id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-4 py-3">
-                            <div className="flex items-center gap-3">
-                                <Monitor className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-sm font-medium text-card-foreground">{login.device}</p>
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{login.location}</span>
-                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{login.date}</span>
-                                        <span>IP: {login.ip}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {login.status === "success" ? (
-                                <Badge variant="secondary" className="bg-success/10 text-success border-0 text-[11px]">
-                                    <CheckCircle2 className="h-3 w-3 mr-1" /> Success
-                                </Badge>
-                            ) : (
-                                <Badge variant="secondary" className="bg-destructive/10 text-destructive border-0 text-[11px]">
-                                    <XCircle className="h-3 w-3 mr-1" /> Failed
-                                </Badge>
+                            {(loading || updateProfile.isPending) && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                             )}
-                        </div>
-                    ))}
-                </div>
+                            Update Password
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

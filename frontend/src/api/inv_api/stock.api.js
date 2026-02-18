@@ -36,6 +36,7 @@ export const recieveStock = async ({ branchId, data }) => {
 
 // ADJUST stock
 export const adjustStock = async ({ branchId, data }) => {
+  console.log("API call to adjust stock with data:", data,branchId);
   const res = await api.post(`/stock/${branchId}/adjust`, data);
   return res.data;
 };

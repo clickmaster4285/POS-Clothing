@@ -18,26 +18,25 @@ const StaffCreatePage = () => {
     createUserMutation,
     updateUserMutation,
     isEditMode,
-    currentUser, 
-  } = useUsersHook(); 
+    currentUser,
+  } = useUsersHook();
 
   const { data: branchesData, isLoading: branchesLoading } = useBranches();
   const branches = branchesData?.data || [];
 
   if (isUserLoading || branchesLoading) {
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <Dialog>
-        <DialogHeader>
-          <DialogTitle>Add New Staff</DialogTitle>
-          <DialogDescription>
-            Add a new staff member to your organization.
-          </DialogDescription>
-        </DialogHeader>
-      </Dialog>
+    <div className='bg-white p-2 rounded-md'>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Add New Employee</h1>
+        <p className="text-muted-foreground">
+          Fill in the details below to create a new employee account.
+        </p>
+      </div>
+
       <StaffForm
         formData={formData}
         updateFormField={updateFormField}
@@ -54,5 +53,6 @@ const StaffCreatePage = () => {
     </div>
   );
 };
+
 
 export default StaffCreatePage;

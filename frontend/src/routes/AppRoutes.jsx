@@ -12,6 +12,15 @@ import StockManagementPage from "../pages/Inventory/StockManagement";
 import SupplierPage from '../pages/Suppliers';
 import UserPage from '../pages/User';
 import StaffCreatePage from '../pages/users/create/page';
+
+import PayrollIntegration from '../pages/users/payroll/PayrollIntegration';
+
+
+import PerformanceManagement from '../pages/users/performance/PerformanceManagement';
+
+import ShiftManagement from '../pages/users/shifts/ShiftManagement';
+
+
 import StaffFormPage from '../pages/users/[id]/edit/page'
 import StaffDetailPage from '../pages/users/[id]/page'
 import CustomerPage from '../pages/pos/customer/Customers';
@@ -220,6 +229,36 @@ const AppRoutes = () => {
                 }
             />
 
+            <Route
+                path={`/${role}/user-management/payroll`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <PayrollIntegration />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/user-management/performance`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <PerformanceManagement />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/user-management/shifts`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <ShiftManagement />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
 
             <Route
                 path={`/${role}/supplier`}

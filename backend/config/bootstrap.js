@@ -3,6 +3,7 @@ const User = require('../models/user.model');
 const { generateUserId } = require('../utils/userIdGenerator');
 const { hashPassword } = require('../utils/password');
 const { PERMISSIONS } = require('./permissions'); 
+const Settings = require('../models/settings.model');
 
 const initializeAdminAccount = async () => {
   const {
@@ -10,7 +11,8 @@ const initializeAdminAccount = async () => {
     ADMIN_LAST_NAME,
     ADMIN_EMAIL,
     ADMIN_PASSWORD,
-    ADMIN_ROLE = 'admin', 
+    ADMIN_ROLE = 'admin',
+    COMPANY_NAME = 'My Company'
   } = process.env;
 
   if (!ADMIN_FIRST_NAME || !ADMIN_LAST_NAME || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
@@ -20,57 +22,81 @@ const initializeAdminAccount = async () => {
   }
 
   try {
-    const existingAdmin = await User.findOne({
-      role: ADMIN_ROLE, 
-      isDeleted: false,
-    });
-
-    if (existingAdmin) {
-      console.log('✅ Admin user already exists.');
-      const allPermissions = PERMISSIONS.map(p => p.id);
-      const existingPermissionsSet = new Set(existingAdmin.permissions);
-      const permissionsToAdd = allPermissions.filter(p => !existingPermissionsSet.has(p));
-
-      if (permissionsToAdd.length > 0) {
-        existingAdmin.permissions = [...existingAdmin.permissions, ...permissionsToAdd];
-        await existingAdmin.save();
-        console.log(`✅ Updated admin user with new permissions: ${permissionsToAdd.join(', ')}`);
-      } else {
-        console.log('Admin user permissions are already up to date.');
-      }
-      return;
-    }
-
-    console.log('No admin user found. Creating default admin...');
 
     const allPermissions = PERMISSIONS.map(p => p.id);
 
-    const hashedPassword = await hashPassword(ADMIN_PASSWORD);
+    let adminUser = await User.findOne({
+      role: ADMIN_ROLE,
+      isDeleted: false,
+    });
 
-    const userId = generateUserId({
+    // ✅ If Admin Exists → Update Permissions Only
+    if (adminUser) {
+      console.log('✅ Admin user already exists.');
+
+      const existingPermissionsSet = new Set(adminUser.permissions);
+      const permissionsToAdd = allPermissions.filter(
+        p => !existingPermissionsSet.has(p)
+      );
+
+      if (permissionsToAdd.length > 0) {
+        adminUser.permissions = [
+          ...adminUser.permissions,
+          ...permissionsToAdd
+        ];
+        await adminUser.save();
+        console.log(
+          `✅ Updated admin user with new permissions: ${permissionsToAdd.join(', ')}`
+        );
+      } else {
+        console.log('Admin user permissions are already up to date.');
+      }
+
+    } 
+    // ✅ If Admin Does NOT Exist → Create Admin
+    else {
+
+      console.log('No admin user found. Creating default admin...');
+
+      const hashedPassword = await hashPassword(ADMIN_PASSWORD);
+
+      const userId = generateUserId({
         firstName: ADMIN_FIRST_NAME,
         lastName: ADMIN_LAST_NAME,
         role: ADMIN_ROLE,
-    });
-    
-    const adminUser = new User({
+      });
+
+      adminUser = new User({
         userId,
         firstName: ADMIN_FIRST_NAME,
         lastName: ADMIN_LAST_NAME,
         email: ADMIN_EMAIL,
         password: hashedPassword,
         role: ADMIN_ROLE,
-        permissions: allPermissions, 
+        permissions: allPermissions,
         isActive: true,
       });
 
-    await adminUser.save();
+      await adminUser.save();
 
-    console.log('✅ Default admin user created successfully.');
-    
+      console.log('✅ Default admin user created successfully.');
+    }
+
+    // ✅ ALWAYS Ensure Settings Exist
+    const existingSettings = await Settings.findOne();
+
+    if (!existingSettings) {
+      await Settings.create({
+        companyName: COMPANY_NAME // required field
+      });
+
+      console.log('✅ Default settings initialized.');
+    } else {
+      console.log('Settings already initialized.');
+    }
+
   } catch (error) {
-    console.error('❌ Error during admin user initialization:', error.message);
-    // Exit gracefully without exposing sensitive details
+    console.error('❌ Error during system initialization:', error.message);
     process.exit(1);
   }
 };

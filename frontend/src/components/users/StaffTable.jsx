@@ -1,6 +1,6 @@
 'use client';
 
-import { useNavigate } from "react-router-dom";
+import {  useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { MoreVertical, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { formatPhoneNumberForDisplay } from "@/utils/formatters";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export const StaffTable = ({
   users,
@@ -23,11 +24,12 @@ export const StaffTable = ({
   getStatusBadge,
   getStatusVariant,
   getRoleLabel,
-  canUpdateStaff, 
-  canDeleteStaff, 
-  currentUserRole, 
 }) => {
   const navigate = useNavigate();
+  const { employee, currentUserRole } = usePermissions();
+
+  const canUpdateStaff = employee.database.update;
+  const canDeleteStaff = employee.database.delete;
 
   return (
     <div className="rounded-md border">
@@ -50,7 +52,7 @@ export const StaffTable = ({
                 <UserAvatar user={user} size="sm" />
               </TableCell>
               <TableCell className="font-medium">
-                {`${user.firstName} ${user.lastName? user.lastName:""}`}
+                {`${user.firstName} ${user.lastName ? user.lastName : ""}`}
               </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{formatPhoneNumberForDisplay(user.phone)}</TableCell>
@@ -68,7 +70,7 @@ export const StaffTable = ({
                 </Badge>
               </TableCell>
               <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                {(canUpdateStaff || canDeleteStaff) && ( 
+                {(canUpdateStaff || canDeleteStaff) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">

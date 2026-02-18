@@ -15,10 +15,14 @@ const {
   toggleBranchStatus
 } = require("../controllers/branch.controller");
 
-router.post("/", auth, checkPermission("branches:create"), createBranch);
-router.get("/", auth, checkPermission("branches:read"), getAllBranches);
-router.get("/:id", auth, checkPermission("branches:read"), getBranchById);
-router.put("/:id", auth, checkPermission("branches:update"), updateBranch);
-router.delete("/:id", auth, checkPermission("branches:delete"), toggleBranchStatus);
+const BranchPermissions = PERMISSIONS_OBJECT.BRANCH.BRANCH_MANAGEMENT;
+
+router.use(auth);
+router.post("/", checkPermission([BranchPermissions.CREATE]), createBranch);
+router.get("/", checkPermission([BranchPermissions.READ]), getAllBranches);
+
+router.get("/:id", checkPermission([BranchPermissions.READ]), getBranchById);
+router.put("/:id", checkPermission([BranchPermissions.UPDATE]), updateBranch);
+router.delete("/:id", auth, checkPermission([BranchPermissions.DELETE]), toggleBranchStatus);
 
 module.exports = router;

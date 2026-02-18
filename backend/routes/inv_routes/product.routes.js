@@ -1,34 +1,79 @@
 const express = require('express');
 const router = express.Router();
-
-// Import controllers
 const productController = require('../../controllers/inv_controllers/productController');
 const auth = require('../../middlewares/auth');
+const checkPermission = require('../../middlewares/checkPermission');
+const { productUpload } = require('../../middlewares/upload');
+const { PERMISSIONS_OBJECT } = require('../../config/permissions');
 const upload = require('../../middlewares/upload');
 
+// Local constant for easier permission management
+const ProductPermissions = PERMISSIONS_OBJECT.INVENTORY.PRODUCT_DATABASE;
 
-const checkPermission = require('../../middlewares/checkPermission');
-const { PERMISSIONS_OBJECT } = require('../../config/permissions');
+// Create a new product
+router.post(
+  '/',
+  auth,
+  checkPermission([ProductPermissions.CREATE]),
+upload.array("images", 10),// replaces upload.array("images", 10)
+  productController.createProduct
+);
 
+// Get all products
+router.get(
+  '/',
+  auth,
+  checkPermission([ProductPermissions.READ]),
+  productController.getProducts
+);
 
-router.use(auth);
+// Get a single product by ID
+router.get(
+  '/:id',
+  auth,
+  checkPermission([ProductPermissions.READ]),
+  productController.getProductById
+);
 
-router.post('/', checkPermission('products:create'), upload.array("images", 10)
-, productController.createProduct);
+// Update a product by ID
+router.put(
+  '/:id',
+  auth,
+  checkPermission([ProductPermissions.UPDATE]),
+ upload.array("images", 10),
+  productController.updateProduct
+);
 
-router.get('/',checkPermission('products:read'), productController.getProducts);
+// Delete a product by ID
+router.delete(
+  '/:id',
+  auth,
+  checkPermission([ProductPermissions.DELETE]),
+  productController.deleteProduct
+);
 
-router.get('/:id',checkPermission('products:read'), productController.getProductById);
+// Add a variant to a product
+router.post(
+  '/:id/variants',
+  auth,
+  checkPermission([ProductPermissions.CREATE]),
+  productController.addProductVariant
+);
 
-router.put('/:id', checkPermission('products:update'), upload.array("images", 10)
-, productController.updateProduct);
+// Update variant price
+router.put(
+  '/:productId/variants/:variantId/price',
+  auth,
+  checkPermission([ProductPermissions.UPDATE]),
+  productController.updateVariantPrice
+);
 
-router.delete('/:id', checkPermission('products:delete'), productController.deleteProduct);
-
-router.post('/:id/variants',checkPermission('products:create'), productController.addProductVariant);
-
-router.put('/:productId/variants/:variantId/price', checkPermission('products:update'), productController.updateVariantPrice);
-
-router.patch('/:productId/:variantId', checkPermission('products:update'), productController.updateVariantQuantity);
+// Update variant quantity
+router.patch(
+  '/:productId/:variantId',
+  auth,
+  checkPermission([ProductPermissions.UPDATE]),
+  productController.updateVariantQuantity
+);
 
 module.exports = router;

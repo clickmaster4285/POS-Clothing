@@ -1,7 +1,7 @@
 // frontend/components/shared-components/staff/StaffDetailPage.jsx
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Mail, Phone, Edit, Trash2, CheckCircle, XCircle, ChevronLeft } from 'lucide-react';
@@ -31,7 +31,7 @@ const getStatusVariant = (user) => (user.isActive ? 'success' : 'destructive');
 
 export const StaffDetailPage = () => {
   const { id } = useParams(); 
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { can } = usePermissions();
 
@@ -123,14 +123,15 @@ export const StaffDetailPage = () => {
       await deleteStaffMutation.mutateAsync(staff._id);
       toast.success('Staff member deleted successfully.', { id: toastId });
       setIsDeleteDialogOpen(false);
-      router.back(); // Go back to staff list after deletion
+      navigate(-1);
+// Go back to staff list after deletion
     } catch (err) {
       toast.error('Failed to delete staff member.', {
         id: toastId,
         description: err.message || 'An unexpected error occurred.',
       });
     }
-  }, [staff, currentUser, deleteStaffMutation, router]);
+  }, [staff, currentUser, deleteStaffMutation, navigate]);
 
 
   // Permissions for actions
@@ -164,7 +165,7 @@ export const StaffDetailPage = () => {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.back()} className="gap-2">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ChevronLeft className="h-4 w-4" /> Back to Staff List
         </Button>
         <div className="flex gap-2">

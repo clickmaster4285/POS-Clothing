@@ -32,6 +32,7 @@ const CreateCustomer = ({ isModal = false,
         communicationPush: false,
         preferences: "",
     })
+    const [createdCustomer, setCreatedCustomer] = useState(null)
 
     const [errors, setErrors] = useState({})
 
@@ -71,42 +72,69 @@ const CreateCustomer = ({ isModal = false,
         return Object.keys(errs).length === 0
     }
 
+    // const handleSubmit = async () => {
+    //     if (!validate()) return;
+
+    //     try {
+    //         // EDIT MODE
+    //         if (id) {
+    //             const updatedCustomer = await updateMutation.mutateAsync({ id, data: form });
+
+    //             if (isModal) {
+    //                 onCustomerAdded?.(updatedCustomer);
+    //                 onClose?.(); // ✅ ADD THIS LINE - Close the modal
+    //                 return;
+    //             }
+
+    //             toast.success("Customer updated successfully!");
+    //             navigate(-1);
+    //             return;
+    //         }
+
+    //         // CREATE MODE
+    //         const newCustomer = await createMutation.mutateAsync(form);
+
+    //         if (isModal) {
+    //             onCustomerAdded?.(newCustomer);
+    //             onClose?.(); // ✅ ADD THIS LINE - Close the modal
+    //             return;
+    //         }
+
+    //         toast.success("Customer created successfully!");
+    //         setShowSuccess(true);
+
+    //     } catch (err) {
+    //         toast.error(err?.response?.data?.error || "Something went wrong");
+    //     }
+    // };
+
     const handleSubmit = async () => {
         if (!validate()) return;
 
         try {
-            // EDIT MODE
+            let customerResult;
             if (id) {
-                const updatedCustomer = await updateMutation.mutateAsync({ id, data: form });
-
-                if (isModal) {
-                    onCustomerAdded?.(updatedCustomer);
-                    onClose?.(); // ✅ ADD THIS LINE - Close the modal
-                    return;
-                }
-
+                // EDIT
+                customerResult = await updateMutation.mutateAsync({ id, data: form });
                 toast.success("Customer updated successfully!");
-                navigate(-1);
-                return;
+            } else {
+                // CREATE
+                customerResult = await createMutation.mutateAsync(form);
+                toast.success("Customer created successfully!");
             }
 
-            // CREATE MODE
-            const newCustomer = await createMutation.mutateAsync(form);
+            setCreatedCustomer(customerResult);
 
-            if (isModal) {
-                onCustomerAdded?.(newCustomer);
-                onClose?.(); // ✅ ADD THIS LINE - Close the modal
-                return;
-            }
+            // Notify parent table
+            if (isModal) onCustomerAdded?.(customerResult);
 
-            toast.success("Customer created successfully!");
-            setShowSuccess(true);
-
+            // Close modal or navigate
+            if (isModal) onClose?.();
+            else navigate(-1);
         } catch (err) {
             toast.error(err?.response?.data?.error || "Something went wrong");
         }
-    };
-
+    }
 
     const updateField = (field, value) => {
         setForm((prev) => ({ ...prev, [field]: value }))
@@ -151,7 +179,7 @@ const CreateCustomer = ({ isModal = false,
 
     return (
 
-        <>  {isModal && (<>
+        <>  {!isModal && (<>
             <div className="flex items-center text-xs text-muted-foreground mb-4 gap-1">
                 <span>Home</span><span>›</span><span>Point of Sale</span><span>›</span>
                 <span>Customer Information</span><span>›</span>

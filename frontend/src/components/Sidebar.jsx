@@ -106,6 +106,9 @@ export default function Sidebar() {
             icon: UserCog,
             children: [
                 { title: "All Employees", href: `/${role}/user-management` },
+                { title: "Shift Management", href: `/${role}/user-management/shifts` },
+                { title: "Payroll Integration", href: `/${role}/user-management/payroll` },
+                { title: "Performance Management", href: `/${role}/user-management/performance` },
             ],
         },
         {
@@ -138,7 +141,7 @@ export default function Sidebar() {
             title: "Settings",
             icon: Settings,
             children: [
-                { title: "General", href: `/${role}/settings/general` },
+                { title: "Profile & Company Settings", href: `/${role}/settings/general` },
               
             ],
         },

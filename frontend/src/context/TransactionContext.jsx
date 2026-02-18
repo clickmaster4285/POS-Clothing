@@ -206,21 +206,27 @@ export function TransactionProvider({ children }) {
         ]
     );
 
+ 
+
     /* ===========================
        Save Transaction
     =========================== */
 
-    const saveTransaction = useCallback(async () => {
+    const saveTransaction = useCallback(async (paymentDetailsParam = null) => {
         if (cartItems.length === 0) {
             throw new Error("Cart is empty");
         }
 
-        if (!paymentDetails) {
+        // Use the passed payment details or fall back to state
+        const finalPaymentDetails = paymentDetailsParam || paymentDetails;
+
+        if (!finalPaymentDetails) {
             throw new Error("Payment not completed");
         }
 
         const payload = {
             ...fullTransactionPayload,
+            payment: finalPaymentDetails, // Override with the passed payment details
             status: "completed",
         };
 
@@ -230,7 +236,7 @@ export function TransactionProvider({ children }) {
         return response;
     }, [
         cartItems,
-        paymentDetails,
+        paymentDetails, // Keep this dependency
         fullTransactionPayload,
         createTransaction,
         resetTransaction,

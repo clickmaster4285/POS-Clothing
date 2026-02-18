@@ -223,8 +223,7 @@ export function HoldDialog({ open, onOpenChange }) {
             {/* Customer Creation Modal */}
             {showCustomerModal && (
                 <Dialog open={showCustomerModal} onOpenChange={setShowCustomerModal}>
-                    {/* 🔥 Custom Overlay */}
-                    <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40" />
+                
 
                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 rounded-2xl z-50">
                         <div className="h-full max-h-[90vh] overflow-y-auto p-6">
@@ -244,7 +243,6 @@ export function HoldDialog({ open, onOpenChange }) {
                     </DialogContent>
                 </Dialog>
             )}
-
         </>
     )
 }

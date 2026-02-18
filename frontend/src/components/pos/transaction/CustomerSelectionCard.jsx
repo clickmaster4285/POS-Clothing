@@ -73,7 +73,7 @@ export function CustomerSelectionCard({
                      
                       <button
                             onClick={() => setShowAddCustomerModal(true)}
-                            className="px-2 py-1 bg-primary text-white rounded-md flex items-center gap-1 text-sm"
+                            className="px-2 py-2 bg-primary text-white rounded-md flex items-center gap-1 text-sm"
                         >
                             <Plus size={14} /> Add Customer
                         </button>

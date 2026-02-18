@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Make sure useEffect is imported
 import {
     CreditCard,
     PauseCircle,
-    XCircle,
-    XSquare,
-    UserSearch,
 } from "lucide-react";
 
 import { useTransaction } from "@/context/TransactionContext";
@@ -14,6 +11,7 @@ import { VoidTransactionDialog } from "@/components/pos/transaction/dialogs/Void
 import { VoidItemDialog } from "@/components/pos/transaction/dialogs/VoidItemDialog";
 import { PaymentDialog } from "@/components/pos/transaction/dialogs/PaymentDialog";
 import { CustomerLookupDialog } from "@/components/pos/transaction/dialogs/CustomerLookupDialog";
+import ReceiptPrinter from "@/components/pos/reciptManagement/ReceiptPrinter";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +20,11 @@ export function Actions() {
         cartItems,
         saveTransaction,
         setPaymentDetails,
+        transactionNumber,
+        selectedCustomer,
+        totals,
+        pointsEarned,
+        pointsRedeemed,
     } = useTransaction();
 
     const [showHold, setShowHold] = useState(false);
@@ -30,20 +33,183 @@ export function Actions() {
     const [showVoidItem, setShowVoidItem] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [showCustomerLookup, setShowCustomerLookup] = useState(false);
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [completedTransaction, setCompletedTransaction] = useState(null);
+
+    // Use useEffect to open receipt ONLY when completedTransaction has data
+    useEffect(() => {
+        if (completedTransaction) {
+            console.log("Transaction data available, opening receipt:", completedTransaction);
+            setShowReceipt(true);
+        }
+    }, [completedTransaction]);
+
+
+    const generateReceiptHTML = (transaction) => {
+        const customerName = transaction.customer
+            ? `${transaction.customer.customerFirstName || ''} ${transaction.customer.customerLastName || ''}`.trim()
+            : "Walk-in Customer";
+
+        return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Receipt - ${transaction.transactionNumber || "N/A"}</title>
+<style>
+  /* Remove browser print margins */
+  @page { margin: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    line-height: 1.15;
+    margin: 0;
+    padding: 0;
+    width: 50mm; /* Thermal printer width */
+  }
+  .receipt {
+    width: 50mm;
+    padding: 3px 5px;
+    margin: 0;
+  }
+  .center { text-align: center; }
+  .left { text-align: left; }
+  .right { text-align: right; }
+  hr { border: none; border-top: 1px dashed #000; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; word-wrap: break-word; }
+  th, td { padding: 1px 0; font-size: 8px; }
+  th { text-align: left; }
+  td.qty { text-align: center; width: 12%; }
+  td.amount { text-align: right; width: 25%; }
+  td.name { width: 63%; word-wrap: break-word; }
+  .totals p {
+    display: flex;
+    justify-content: space-between;
+    margin: 1px 0;
+    font-weight: bold;
+  }
+  .footer { text-align: center; font-size: 7px; margin-top: 2px; line-height: 1.1; }
+</style>
+</head>
+<body>
+<div class="receipt">
+  <h2 class="center">FASHION STORE</h2>
+  <p class="center">123 Fashion Avenue, NY CITY</p>
+  <p class="center">Tel: (212) 555-0123</p>
+  <hr />
+  <p>Receipt #: ${transaction.transactionNumber}</p>
+  <p>Customer: ${customerName}</p>
+  <hr />
+  <table>
+    <thead>
+      <tr>
+        <th class="name">Item</th>
+        <th class="qty">Qty</th>
+        <th class="amount">Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${transaction.cartItems?.map(item => `
+      <tr>
+        <td class="name">${item.name}</td>
+        <td class="qty">${item.quantity}</td>
+        <td class="amount">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
+      </tr>
+      `).join('')}
+    </tbody>
+  </table>
+  <hr />
+  <div class="totals">
+    <p><span>Subtotal</span><span>$${transaction.totals?.subtotal?.toFixed(2)}</span></p>
+    ${transaction.totals?.totalDiscount > 0 ? `<p><span>Discount</span><span>-$${transaction.totals.totalDiscount.toFixed(2)}</span></p>` : ''}
+    <p><span>Total</span><span>$${transaction.totals?.grandTotal?.toFixed(2)}</span></p>
+    <p><span>Payment</span><span>${transaction.payment?.paymentMethod?.toUpperCase()}</span></p>
+    ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDue ? `<p><span>Change</span><span>$${transaction.payment.changeDue.toFixed(2)}</span></p>` : ''}
+    ${transaction.loyalty?.pointsEarned > 0 ? `<p><span>Points Earned</span><span>${transaction.loyalty.pointsEarned}</span></p>` : ''}
+  </div>
+  <hr />
+  <div class="footer">
+    <p>Thank You For Shopping With Us!</p>
+    <p>www.fashionstore.com</p>
+  </div>
+</div>
+</body>
+</html>
+`;
+    };
+
+
+
+
 
     const handlePaymentSuccess = async (paymentData) => {
-     
         try {
             setPaymentDetails(paymentData);
-            await saveTransaction();
-            toast({ title: "Transaction Completed" });
+
+            // Save transaction
+            const savedTransaction = await saveTransaction(paymentData);
+            const transactionData = savedTransaction?.transaction || savedTransaction;
+
+            const receiptData = {
+                transactionNumber: transactionData?.transactionNumber || transactionNumber,
+                timestamp: transactionData?.timestamp || new Date().toISOString(),
+                customer: transactionData?.customer || (selectedCustomer ? {
+                    customerFirstName: selectedCustomer.firstName,
+                    customerLastName: selectedCustomer.lastName,
+                    customerEmail: selectedCustomer.email,
+                    customerId: selectedCustomer._id
+                } : null),
+                cartItems: transactionData?.cartItems || cartItems.map(item => ({
+                    ...item,
+                    unitPrice: Number(item.unitPrice) || 0
+                })),
+                totals: transactionData?.totals || {
+                    subtotal: Number(totals?.subtotal) || 0,
+                    totalDiscount: Number(totals?.totalDiscount) || 0,
+                    grandTotal: Number(totals?.grandTotal) || 0
+                },
+                payment: transactionData?.payment || {
+                    amountTendered: Number(paymentData.amountTendered) || 0,
+                    changeDue: Number(paymentData.changeDue) || 0,
+                    paymentMethod: paymentData.paymentMethod || 'cash',
+                    amountPaid: Number(paymentData.amountPaid) || 0
+                },
+                loyalty: transactionData?.loyalty || {
+                    pointsEarned: Number(pointsEarned) || 0,
+                    pointsRedeemed: Number(pointsRedeemed) || 0,
+                }
+            };
+
             setShowPayment(false);
+            toast({ title: "Transaction Completed" });
+
+            // Generate HTML and print
+            const printHTML = generateReceiptHTML(receiptData);
+            const printWindow = window.open("", "_blank");
+            if (printWindow) {
+                printWindow.document.write(printHTML);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+            }
+
         } catch (err) {
+            console.error("Transaction save failed:", err);
             toast({
                 title: "Failed to save transaction",
+                description: err.message,
                 variant: "destructive",
             });
         }
+    };
+
+
+    const handleCloseReceipt = () => {
+        setShowReceipt(false);
+        // Clear completed transaction after a small delay to avoid UI flicker
+        setTimeout(() => {
+            setCompletedTransaction(null);
+        }, 300);
     };
 
     const actions = [
@@ -75,36 +241,6 @@ export function Actions() {
                 setShowHold(true);
             },
         },
-        // {
-        //     label: "Void Transaction",
-        //     icon: XCircle,
-        //     color: "bg-destructive text-white",
-        //     onClick: () => {
-        //         if (cartItems.length === 0) {
-        //             toast({ title: "No active transaction", variant: "destructive" });
-        //             return;
-        //         }
-        //         setShowVoidTxn(true);
-        //     },
-        // },
-        // {
-        //     label: "Void Item",
-        //     icon: XSquare,
-        //     color: "bg-orange-600 text-white",
-        //     onClick: () => {
-        //         if (cartItems.length === 0) {
-        //             toast({ title: "Cart is empty", variant: "destructive" });
-        //             return;
-        //         }
-        //         setShowVoidItem(true);
-        //     },
-        // },
-        // {
-        //     label: "Customer Lookup",
-        //     icon: UserSearch,
-        //     color: "bg-secondary text-secondary-foreground",
-        //     onClick: () => setShowCustomerLookup(true),
-        // },
     ];
 
     return (
@@ -127,8 +263,6 @@ export function Actions() {
                 ))}
             </div>
 
-
-
             {/* Dialogs */}
             <HoldDialog open={showHold} onOpenChange={setShowHold} />
             <RetrieveDialog open={showRetrieve} onOpenChange={setShowRetrieve} />
@@ -143,6 +277,15 @@ export function Actions() {
                 open={showCustomerLookup}
                 onOpenChange={setShowCustomerLookup}
             />
+
+            {/* Receipt Printer - Only render when there's data AND we want to show it */}
+            {completedTransaction && (
+                <ReceiptPrinter
+                    transaction={completedTransaction}
+                    open={showReceipt}
+                    onClose={handleCloseReceipt}
+                />
+            )}
         </div>
     );
 }

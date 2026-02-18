@@ -81,7 +81,8 @@ const CreateCustomer = ({ isModal = false,
 
                 if (isModal) {
                     onCustomerAdded?.(updatedCustomer);
-                    return; // 🔥 STOP HERE
+                    onClose?.(); // ✅ ADD THIS LINE - Close the modal
+                    return;
                 }
 
                 toast.success("Customer updated successfully!");
@@ -94,8 +95,8 @@ const CreateCustomer = ({ isModal = false,
 
             if (isModal) {
                 onCustomerAdded?.(newCustomer);
-               
-                return; 
+                onClose?.(); // ✅ ADD THIS LINE - Close the modal
+                return;
             }
 
             toast.success("Customer created successfully!");

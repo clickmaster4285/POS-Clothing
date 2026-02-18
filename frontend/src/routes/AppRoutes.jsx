@@ -46,6 +46,14 @@ const AppRoutes = () => {
                     </AuthLayout>
                 }
             />
+            <Route
+                path="/"
+                element={
+                    <AuthLayout>
+                        <Auth />
+                    </AuthLayout>
+                }
+            />
 
             {/* Role-based protected routes */}
             <Route

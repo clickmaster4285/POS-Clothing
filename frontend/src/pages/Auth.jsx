@@ -3,12 +3,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'; // added Eye/EyeOff if you want password toggle
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Loading from './Loading';
-// import BackgroundBeams from '@/components/ui/BackgroundBeams'; // optional - keep if you like it
 
 const Auth = () => {
     const navigate = useNavigate();
@@ -77,11 +76,11 @@ const Auth = () => {
         <div className="min-h-screen flex">
             {/* Left - Login Form */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-                
+
                 <div className="w-full max-w-md space-y-8">
                     {/* Logo / Brand */}
                     <div className="flex flex-col items-center">
-                        <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                             GroceryStore
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
@@ -146,13 +145,13 @@ const Auth = () => {
                                 <input
                                     type="checkbox"
                                     id="remember"
-                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                                 <Label htmlFor="remember" className="text-muted-foreground">
                                     Remember me
                                 </Label>
                             </div>
-                            <a href="#" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                            <a href="#" className="text-primary hover:text-primary/90 font-medium">
                                 Forgot password?
                             </a>
                         </div>
@@ -165,7 +164,7 @@ const Auth = () => {
 
                         <Button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-11"
+                            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/90 text-white h-11"
                             disabled={loginMutation.isPending}
                         >
                             {loginMutation.isPending ? (
@@ -203,7 +202,7 @@ const Auth = () => {
 
                     <p className="text-center text-sm text-muted-foreground mt-8">
                         Don't have an account?{' '}
-                        <a href="/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                        <a href="/register" className="text-primary hover:text-primary/90 font-medium">
                             Register now
                         </a>
                     </p>
@@ -211,7 +210,7 @@ const Auth = () => {
             </div>
 
             {/* Right - Dashboard Preview / Marketing */}
-            <div className="hidden lg:block lg:w-1/2 bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-700 relative overflow-hidden">
+            <div className="hidden lg:block lg:w-1/2 bg-gradient-to-br from-primary/80 via-primary/70 to-primary/90 relative overflow-hidden">
                 {/* Optional subtle background pattern / noise */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.12)_0%,transparent_50%)]" />
@@ -224,7 +223,7 @@ const Auth = () => {
                             <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-extrabold leading-tight tracking-tight">
                                 Run your grocery business
                                 <br />
-                                <span className="bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent">
+                                <span className="bg-gradient-to-r from-white via-gray/40 to-white bg-clip-text text-transparent">
                                     smarter — not harder
                                 </span>
                             </h1>
@@ -234,29 +233,8 @@ const Auth = () => {
                             </p>
                         </div>
 
-                        {/* Stats / KPI cards */}
-                        {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mt-4">
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/15 shadow-lg">
-                                <p className="text-2xl lg:text-3xl font-bold">PKR 2.84M</p>
-                                <p className="text-sm text-blue-100/90 mt-1">This Month Sales</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/15 shadow-lg">
-                                <p className="text-2xl lg:text-3xl font-bold">1,847</p>
-                                <p className="text-sm text-blue-100/90 mt-1">Orders</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/15 shadow-lg">
-                                <p className="text-2xl lg:text-3xl font-bold">92%</p>
-                                <p className="text-sm text-blue-100/90 mt-1">On-time Delivery</p>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/15 shadow-lg">
-                                <p className="text-2xl lg:text-3xl font-bold">₨ 48.2K</p>
-                                <p className="text-sm text-blue-100/90 mt-1">Avg. Order Value</p>
-                            </div>
-                        </div> */}
-
                         {/* Mini dashboard preview */}
-                        <div className="mt-8 bg-white/8 backdrop-blur-md rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
-                            {/* Fake header bar */}
+                        <div className="mt-8 bg-card backdrop-blur-md rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
                             <div className="h-10 bg-black/30 flex items-center px-4 gap-2">
                                 <div className="w-3 h-3 rounded-full bg-red-400/80" />
                                 <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
@@ -264,48 +242,38 @@ const Auth = () => {
                                 <div className="ml-4 text-xs opacity-70">GroceryStore • Today’s Overview</div>
                             </div>
 
-                            {/* Content area */}
                             <div className="p-6 pb-8">
                                 <div className="flex items-baseline justify-between mb-6">
                                     <div>
-                                        <p className="text-sm text-white/70">Revenue Today</p>
-                                        <p className="text-3xl font-bold">PKR 184,920</p>
+                                        <p className="text-sm text-primary">Revenue Today</p>
+                                        <p className="text-3xl font-bold text-primary">PKR 184,920</p>
                                     </div>
-                                    <div className="text-green-400 font-medium">+18.4%</div>
+                                    {/* <div className="text-green-400 font-medium">+18.4%</div> */}
                                 </div>
 
-                                {/* Fake chart – pure CSS sparkline / area chart look */}
                                 <div className="relative h-40 mb-6">
                                     <div className="absolute inset-0 flex items-end gap-1.5 px-1">
-                                        {[
-                                            35, 42, 38, 55, 68, 72, 65, 82, 95, 88, 76, 92,
-                                            105, 118, 112, 135, 148, 155, 142, 168, 185, 172, 198, 215,
-                                        ].map((height, i) => (
-                                            <div
-                                                key={i}
-                                                className="flex-1 bg-gradient-to-t from-blue-400/60 to-blue-300/30 rounded-t-sm transition-all"
-                                                style={{ height: `${height * 0.7}%` }}
-                                            />
-                                        ))}
+                                        {[35, 42, 38, 55, 68, 72, 65, 82, 95, 88, 76, 92,
+                                            105, 118, 112, 135, 148, 155, 142, 168, 185, 172, 198, 215].map((height, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex-1 bg-gradient-to-t from-primary/60 to-primary/30 rounded-t-sm transition-all"
+                                                    style={{ height: `${height * 0.7}%` }}
+                                                />
+                                            ))}
                                     </div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/40 to-transparent pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent pointer-events-none" />
                                 </div>
 
-                                {/* Fake recent orders row */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm opacity-80">
-                                        <span>Latest orders • showing 3 of 47</span>
-                                        <span className="text-blue-300 hover:text-blue-200 cursor-pointer">View all →</span>
+                                        <span className='text-primary'>Latest orders • showing 3 of 47</span>
+                                        <span className="text-primary/70 hover:text-primary/50 cursor-pointer">View all →</span>
                                     </div>
-                                
-                                      
-                                      
-                                      
                                 </div>
                             </div>
                         </div>
 
-                        {/* Trust line */}
                         <p className="text-center text-sm opacity-75 ">
                             Trusted by 4,200+ grocery stores, mini-marts & supermarkets across Pakistan
                         </p>

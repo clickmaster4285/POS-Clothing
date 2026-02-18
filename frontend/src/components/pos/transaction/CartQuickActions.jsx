@@ -12,7 +12,7 @@ export function CartQuickActions({
     const totalCartItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
     return (
-        <div className={`flex gap-2 mt-3 ${className}`}>
+        <div className={`flex gap-2 mt-4 border-t-2 pt-4 ${className}`}>
             {showAdd && (
                 <Button
                     onClick={() => {
@@ -39,7 +39,7 @@ export function CartQuickActions({
                     variant="destructive"
                     onClick={clearCart}
                     disabled={cartItems.length === 0}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg"
+                    className="flex-1 flex items-center text-xl justify-center gap-2 py-12 px-3 rounded-lg"
                 >
                     <Trash2 className="w-4 h-4" />
                     Clear Cart

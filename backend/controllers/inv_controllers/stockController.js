@@ -377,7 +377,7 @@ exports.getAllStock = async (req, res) => {
 
 exports.adjustStock = async (req, res) => {
   try {
-    console.log("Adjust stock request body:", req.body);
+
     const { branchId } = req.params;
     const { adjustmentType, reason, items, remarks } = req.body;
 
@@ -397,7 +397,7 @@ exports.adjustStock = async (req, res) => {
       adjustmentType,
       reason,
       items,
-      adjustedBy: req.user.id,
+      adjustedBy: req.user._id,
       remarks,
       status: "pending",
     });

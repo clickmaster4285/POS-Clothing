@@ -10,7 +10,7 @@ import { useMemo } from "react";
 
 export const PersonalDetails = ({ formData, updateFormField }) => {
   
-  console.log('Form Data in PersonalDetails:', formData); // Debugging log
+ 
   // Memoized lists for location selection
   const countries = useMemo(() => 
     Country.getAllCountries().map(c => ({ label: c.name, value: c.isoCode })), []);

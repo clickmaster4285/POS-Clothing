@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const { Stock } = require('../../models/inv_model/stock.model')
 
 const Branch = require("../../models/branch.model")
+const Customer = require("../../models/pos_model/customer.model");
 
 
 // GET all transactions
@@ -107,7 +108,7 @@ exports.getTransactionsByBranch = async (req, res) => {
 const createTransaction = async (req, res) => {
   try {
     const payload = req.body;
-
+  
 
     // Get user and branch
     const user = req.user; // auth middleware sets req.user
@@ -204,7 +205,33 @@ if (user.role === "admin") {
     const transaction = new Transaction(transactionData);
     await transaction.save();
 
-  
+    //------------customer loyality points update-----------------
+   
+if (payload.customer?.customerId) {
+  const customer = await Customer.findById(payload.customer.customerId);
+
+  if (customer) {
+    const pointsEarned = payload.loyalty?.pointsEarned || 0;
+    const pointsRedeemed = payload.loyalty?.pointsRedeemed || 0;
+
+    // Add earned points
+    customer.loyaltyPoints += pointsEarned;
+
+    // Subtract redeemed points
+    if (pointsRedeemed > 0) {
+      customer.loyaltyPoints -= pointsRedeemed;
+      customer.redeemedPoints += pointsRedeemed;
+    }
+
+    // Prevent negative loyalty
+    if (customer.loyaltyPoints < 0) {
+      customer.loyaltyPoints = 0;
+    }
+
+    await customer.save();
+  }
+}
+
 
     res.status(201).json({ success: true, transaction });
   } catch (err) {

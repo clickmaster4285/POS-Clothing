@@ -99,6 +99,18 @@ const AppRoutes = () => {
             />
 
             <Route
+                path={`/${role}/customer/customer-info`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+
+            <Route
                 path={`/${role}/pos/create`}
                 element={
                     <ProtectedRoute>
@@ -135,6 +147,17 @@ const AppRoutes = () => {
 
             <Route
                 path={`/${role}/pos/discounts`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <DiscountsPromotions />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path={`/${role}/customer/loyalty`}
                 element={
                     <ProtectedRoute>
                         <MainLayout>
@@ -259,6 +282,7 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
 
             <Route
                 path={`/${role}/supplier`}

@@ -21,6 +21,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: "USD"
   },
+  currencySymbol: {
+    type: String,
+    default: "$"
+  },
 
   language: {
     type: String,

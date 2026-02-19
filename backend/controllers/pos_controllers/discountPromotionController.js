@@ -7,7 +7,11 @@ const {
 exports.createPromotion = async (req, res) => {
   try {
     const promotionData = req.body;
-
+    
+// Convert empty string to null
+if (promotionData.couponCode === "") {
+  promotionData.couponCode = null;
+}
     const promotion = new DiscountPromotion(promotionData);
     await promotion.save();
 

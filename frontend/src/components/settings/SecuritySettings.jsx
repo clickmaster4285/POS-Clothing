@@ -46,7 +46,7 @@ export default function SecuritySettings() {
 
     const handleProfileUpdate = async () => {
         // Validate email if changed
-        console.log("here")
+       
         if (email !== authUser?.email) {
             const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
             if (!emailRegex.test(email)) {
@@ -60,7 +60,7 @@ export default function SecuritySettings() {
             toast.error("Current password required to change email or phone");
             return;
         }
-console.log("here")
+
         const payload = {
             firstName: firstName !== authUser?.firstName ? firstName : undefined,
             lastName: lastName !== authUser?.lastName ? lastName : undefined,
@@ -68,7 +68,7 @@ console.log("here")
             phone: phone !== authUser?.phone ? phone : undefined,
             currentPassword: (email !== authUser?.email || phone !== authUser?.phone) ? currentPassword : undefined,
         };
-        console.log("payload", payload)
+        
         // Remove undefined values
         Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 

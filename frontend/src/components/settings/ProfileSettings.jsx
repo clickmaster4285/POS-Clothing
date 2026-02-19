@@ -10,6 +10,7 @@ import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 
 // NPM packages for dropdowns
 import currencyCodes from "currency-codes";
+import getSymbolFromCurrency from "currency-symbol-map";
 import ISO6391 from "iso-639-1";
 import moment from "moment-timezone";
 
@@ -27,6 +28,7 @@ export default function ProfileSettings() {
         logo: null,
         tax: 0,
         currency: "USD",
+        currencySymbol: "$", // New field for currency symbol
         language: "en",
         timezone: "UTC",
     });
@@ -35,9 +37,10 @@ export default function ProfileSettings() {
         if (settings) {
             setForm({
                 companyName: settings.companyName || "",
-                logo: null, // We'll handle file separately
+                logo: null,
                 tax: settings.tax || 0,
                 currency: settings.currency || "USD",
+                currencySymbol: settings.currencySymbol || getSymbolFromCurrency(settings.currency) || "$",
                 language: settings.language || "en",
                 timezone: settings.timezone || "UTC",
             });
@@ -46,6 +49,23 @@ export default function ProfileSettings() {
 
     const handleChange = (field, value) => {
         setForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    // Handle currency change - auto-update symbol
+    const handleCurrencyChange = (e) => {
+        const selectedCurrency = e.target.value;
+        const symbol = getSymbolFromCurrency(selectedCurrency) || selectedCurrency;
+
+        setForm((prev) => ({
+            ...prev,
+            currency: selectedCurrency,
+            currencySymbol: symbol, // Auto-detect and set symbol
+        }));
+    };
+
+    // Optional: Allow manual override of symbol
+    const handleSymbolChange = (e) => {
+        handleChange("currencySymbol", e.target.value);
     };
 
     const handleLogoChange = (e) => {
@@ -59,8 +79,9 @@ export default function ProfileSettings() {
 
         // append fields
         formData.append("companyName", form.companyName);
-        formData.append("tax", form.tax);
+        formData.append("tax", form.tax.toString());
         formData.append("currency", form.currency);
+        formData.append("currencySymbol", form.currencySymbol); // Send symbol to backend
         formData.append("language", form.language);
         formData.append("timezone", form.timezone);
 
@@ -103,7 +124,7 @@ export default function ProfileSettings() {
                     </Avatar>
                     <label className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors">
                         <Camera className="h-3.5 w-3.5" />
-                        <input type="file" className="hidden" onChange={handleLogoChange} />
+                        <input type="file" className="hidden" onChange={handleLogoChange} accept="image/*" />
                     </label>
                 </div>
                 <div>
@@ -133,6 +154,9 @@ export default function ProfileSettings() {
                         <Label className="text-xs text-muted-foreground">Tax (%)</Label>
                         <Input
                             type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
                             value={form.tax}
                             onChange={(e) => handleChange("tax", e.target.value)}
                         />
@@ -142,15 +166,31 @@ export default function ProfileSettings() {
                         <Label className="text-xs text-muted-foreground">Currency</Label>
                         <select
                             value={form.currency}
-                            onChange={(e) => handleChange("currency", e.target.value)}
+                            onChange={handleCurrencyChange}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                             {currencies.map((c) => (
                                 <option key={c} value={c}>
-                                    {c}
+                                    {c} - {getSymbolFromCurrency(c) || '?'}
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* New Currency Symbol Field */}
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">
+                            Currency Symbol
+                        </Label>
+                        <Input
+                            value={form.currencySymbol}
+                            onChange={handleSymbolChange}
+                            placeholder="Auto-detected"
+                            className="font-mono"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Auto-detected from currency code.
+                        </p>
                     </div>
 
                     <div className="space-y-1.5">

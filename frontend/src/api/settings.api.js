@@ -19,7 +19,7 @@ export const updateSettings = async (formData) => {
 };
 
 export const updateProfile = async (payload) => {
-    console.log("Updating profile with payload:", payload);
+
   const res = await api.put(`/settings/profile`, payload);
   return res.data;
 };

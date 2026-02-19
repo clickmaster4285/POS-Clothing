@@ -9,7 +9,7 @@ import { useGetPermissions, useCreateUser, useUpdateUser, useGetUserById } from 
 export const useUsersHook = (userId = null) => {
     const navigate = useNavigate();
     const params = useParams();
-    console.log("params",params)
+   
     const { user: currentUser } = useAuth();
     const { employee, isAdmin, can } = usePermissions();
 

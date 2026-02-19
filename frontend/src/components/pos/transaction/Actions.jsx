@@ -39,7 +39,7 @@ export function Actions() {
     // Use useEffect to open receipt ONLY when completedTransaction has data
     useEffect(() => {
         if (completedTransaction) {
-            console.log("Transaction data available, opening receipt:", completedTransaction);
+          
             setShowReceipt(true);
         }
     }, [completedTransaction]);
@@ -142,6 +142,7 @@ export function Actions() {
 
 
 
+    // In handlePaymentSuccess function - replace the printing section
     const handlePaymentSuccess = async (paymentData) => {
         try {
             setPaymentDetails(paymentData);
@@ -180,18 +181,30 @@ export function Actions() {
                 }
             };
 
+            // Close payment dialog first
             setShowPayment(false);
+
+            // Show success message
             toast({ title: "Transaction Completed" });
 
-            // Generate HTML and print
-            const printHTML = generateReceiptHTML(receiptData);
-            const printWindow = window.open("", "_blank");
-            if (printWindow) {
-                printWindow.document.write(printHTML);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-            }
+            // Small delay to ensure dialog is fully closed before printing
+            setTimeout(() => {
+                // Generate HTML and print
+                const printHTML = generateReceiptHTML(receiptData);
+                const printWindow = window.open("", "_blank");
+                if (printWindow) {
+                    printWindow.document.write(printHTML);
+                    printWindow.document.close();
+
+                    // Don't call focus() immediately - let the print dialog handle it
+                    // Remove printWindow.focus() line
+
+                    // Use requestAnimationFrame to ensure print dialog doesn't steal focus
+                    requestAnimationFrame(() => {
+                        printWindow.print();
+                    });
+                }
+            }, 300); // 300ms delay
 
         } catch (err) {
             console.error("Transaction save failed:", err);

@@ -33,6 +33,7 @@ exports.getSettings = async (req, res) => {
 };
 
 exports.updateSettings = async (req, res) => {
+
   try {
     let settings = await Settings.findOne();
     if (!settings) {

@@ -93,14 +93,14 @@ export default function Sidebar() {
                
             ],
         },
-        // {
-        //     title: "Customers",
-        //     icon: Users,
-        //     children: [
-        //         { title: "All Customers", href: `/${role}/customers/all` },
-        //         { title: "Loyalty Programs", href: `/${role}/customers/loyalty` },
-        //     ],
-        // },
+        {
+            title: "Customers",
+            icon: Users,
+            children: [
+                { title: "All Customers", href: `/${role}/customer/customer-info` },
+                { title: "Loyalty Programs", href: `/${role}/customer/loyalty` },
+            ],
+        },
         {
             title: "Employees",
             icon: UserCog,

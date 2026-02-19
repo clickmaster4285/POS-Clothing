@@ -40,6 +40,10 @@ import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 
+import TerminalDetailPage from "@/pages/terminals/[id]/TerminalDetailPage";
+import TerminalListPage from "@/pages/terminals/TerminalPage";
+import TerminalActionsPage from "@/pages/terminals/TerminalActionPage";
+
 const AppRoutes = () => {
     const { user, isAuthenticated } = useAuth();
     const role = user?.role?.toLowerCase() || 'customer'; // default role
@@ -367,6 +371,42 @@ const AppRoutes = () => {
                     <ProtectedRoute>
                         <MainLayout>
                             <UserSettings />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            
+            <Route
+                path={`/${role}/terminals`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <TerminalListPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            
+            <Route
+                path={`/${role}/terminals/:id`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <TerminalDetailPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            
+            <Route
+                path={`/${role}/terminals/actions`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <TerminalActionsPage />
                         </MainLayout>
                     </ProtectedRoute>
                 }

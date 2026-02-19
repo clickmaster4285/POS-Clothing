@@ -53,6 +53,7 @@ const SYSTEM_HIERARCHY = [
       'Shift Management',
       'Payroll Integration',
       'Performance Management',
+        'Terminal Management',
     ],
   },
   {

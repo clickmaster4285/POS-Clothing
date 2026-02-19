@@ -7,16 +7,16 @@ const terminalSchema = new mongoose.Schema(
     branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
     location: { type: String },
 
-    // Users: employee or supplier
+    // Users: employee or supplier with dynamic ref
     users: [
       {
         userId: {
           type: mongoose.Schema.Types.ObjectId,
           required: true,
-          refPath: "users.roleRef", // dynamic reference
+          refPath: 'users.roleRef' // Dynamic reference based on roleRef field
         },
         role: { type: String, enum: ["employee", "supplier"], required: true },
-        roleRef: { type: String, required: true, enum: ["User", "Supplier"] }, // dynamic collection
+        roleRef: { type: String, required: true, enum: ["User", "Supplier"] }, // Points to which collection
       },
     ],
 
@@ -26,7 +26,7 @@ const terminalSchema = new mongoose.Schema(
         userId: {
           type: mongoose.Schema.Types.ObjectId,
           required: true,
-          refPath: "actions.roleRef",
+          refPath: 'actions.roleRef' // Dynamic reference for actions too
         },
         role: { type: String, enum: ["employee", "supplier"], required: true },
         roleRef: { type: String, required: true, enum: ["User", "Supplier"] },

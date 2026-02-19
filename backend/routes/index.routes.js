@@ -21,6 +21,7 @@ const trasaction = require('./pos_routes/transaction.routes')
 const returnExchange = require('./pos_routes/returnExchange.routes')
 const discount = require('./pos_routes/discountPromotion.routes')
 const settings = require('./settings.routes')
+const terminal = require('./terminal.routes')
 
 router.use('/auth', auth);
 router.use('/users', user);
@@ -40,5 +41,6 @@ router.use('/transactions', trasaction);
 router.use('/returnExchange', returnExchange)
 router.use('/discount', discount);
 router.use('/settings', settings);
+router.use('/terminals', terminal);
 
 module.exports = router;

@@ -19,6 +19,7 @@ import {
     Truck,
     Menu,
     X,
+    Monitor,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/context/SidebarContext";
@@ -28,12 +29,21 @@ export default function Sidebar() {
     const { user, logout } = useAuth();
     const { collapsed: sidebarCollapsed, setCollapsed } = useSidebar();
 
+   // console.log("User role in Sidebar:", user);
+
     const role = user?.role?.toLowerCase() || "customer";
+    const userPermissions = user?.permissions || [];
 
     const [expandedItems, setExpandedItems] = useState([]);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const DESKTOP_BREAKPOINT = 1024;
+
+    // Helper function to check if user has permission for a module
+    const hasPermission = (permissionString) => {
+        if (user?.role === 'admin') return true; // Admin sees everything
+        return userPermissions.includes(permissionString);
+    };
 
     useEffect(() => {
         const handleResize = () => {
@@ -66,87 +76,195 @@ export default function Sidebar() {
         return false;
     };
 
+    // Original nav items with exact same paths - now with permission mappings
     const navItems = [
-        { title: "Dashboard", href: `/${role}/dashboard`, icon: LayoutDashboard },
+        {
+            title: "Dashboard",
+            href: `/${role}/dashboard`,
+            icon: LayoutDashboard,
+            permission: "dashboard:main_dashboard:read"
+        },
         {
             title: "Point Of Sale",
             icon: ShoppingCart,
             children: [
-               
-                { title: "Customer Information", href: `/${role}/pos/customer-info` },
-                { title: "Discounts & Promotions", href: `/${role}/pos/discounts` },
-                { title: "Transaction", href: `/${role}/pos/transaction` },
-                { title: "Receipt Management", href: `/${role}/pos/receipts` },
-                // { title: "Special Items", href: `/${role}/pos/special-items` },
-                { title: "Returns & Exchanges", href: `/${role}/pos/returns` },
-              
+                {
+                    title: "Transaction",
+                    href: `/${role}/pos/transaction`,
+                    permission: "point_of_sale:transaction:read"
+                },
+                {
+                    title: "Customer Information",
+                    href: `/${role}/pos/customer-info`,
+                    permission: "point_of_sale:customer_information:read"
+                },
+                {
+                    title: "Discounts & Promotions",
+                    href: `/${role}/pos/discounts`,
+                    permission: "point_of_sale:discounts_promotions:read"
+                },
+                {
+                    title: "Receipt Management",
+                    href: `/${role}/pos/receipts`,
+                    permission: "point_of_sale:receipt_management:read"
+                },
+                {
+                    title: "Returns & Exchanges",
+                    href: `/${role}/pos/returns`,
+                    permission: "point_of_sale:returns_exchanges:read"
+                },
             ],
         },
         {
             title: "Inventory",
             icon: Package,
             children: [
-                { title: "Categories & Brands", href: `/${role}/inventory/categories` },
-                { title: "Products", href: `/${role}/inventory/products` },
-                { title: "Stock Management", href: `/${role}/inventory/stock` },
-                { title: "Barcode Management", href: `/${role}/inventory/barcode-management` },
-               
+                {
+                    title: "Categories & Brands",
+                    href: `/${role}/inventory/categories`,
+                    permission: "inventory:categories_departments:read"
+                },
+                {
+                    title: "Products",
+                    href: `/${role}/inventory/products`,
+                    permission: "inventory:product_database:read"
+                },
+                {
+                    title: "Stock Management",
+                    href: `/${role}/inventory/stock`,
+                    permission: "inventory:stock_management:read"
+                },
+                {
+                    title: "Barcode Management",
+                    href: `/${role}/inventory/barcode-management`,
+                    permission: "inventory:product_database:read" // Using product database permission
+                },
             ],
         },
         {
             title: "Customers",
             icon: Users,
             children: [
-                { title: "All Customers", href: `/${role}/customer/customer-info` },
-                { title: "Loyalty Programs", href: `/${role}/customer/loyalty` },
+                {
+                    title: "All Customers",
+                    href: `/${role}/customer/customer-info`,
+                    permission: "customer_management:customer_database:read"
+                },
+                {
+                    title: "Loyalty Programs",
+                    href: `/${role}/customer/loyalty`,
+                    permission: "customer_management:loyalty_program:read"
+                },
             ],
         },
         {
             title: "Employees",
             icon: UserCog,
             children: [
-                { title: "All Employees", href: `/${role}/user-management` },
-                { title: "Shift Management", href: `/${role}/user-management/shifts` },
-                { title: "Payroll Integration", href: `/${role}/user-management/payroll` },
-                { title: "Performance Management", href: `/${role}/user-management/performance` },
+                {
+                    title: "All Employees",
+                    href: `/${role}/user-management`,
+                    permission: "employee:employee_database:read"
+                },
+                {
+                    title: "Shift Management",
+                    href: `/${role}/user-management/shifts`,
+                    permission: "employee:shift_management:read"
+                },
+                {
+                    title: "Payroll Integration",
+                    href: `/${role}/user-management/payroll`,
+                    permission: "employee:payroll_integration:read"
+                },
+                {
+                    title: "Performance Management",
+                    href: `/${role}/user-management/performance`,
+                    permission: "employee:performance_management:read"
+                },
+            ],
+        },
+        {
+            title: "Terminals",
+            icon: Monitor,
+            children: [
+                {
+                    title: "All Terminals",
+                    href: `/${role}/terminals`,
+                    permission: "terminal:terminal_management:read"
+                },
+                {
+                    title: "Terminals Actions & History",
+                    href: `/${role}/terminals/actions`,
+                    permission: "terminal:terminal_actions_history:read"
+                },
+               
             ],
         },
         {
             title: "Reports & Analytics",
             icon: BarChart3,
             children: [
-                { title: "Sales Reports", href: `/${role}/reports/sales` },
-                { title: "Inventory Reports", href: `/${role}/reports/inventory` },
+                {
+                    title: "Sales Reports",
+                    href: `/${role}/reports/sales`,
+                    permission: "reporting_analytics:sales_reports:read"
+                },
+                {
+                    title: "Inventory Reports",
+                    href: `/${role}/reports/inventory`,
+                    permission: "reporting_analytics:inventory_reports:read"
+                },
             ],
         },
-        { title: "Branches", href: `/${role}/branches`, icon: Building2 },
-        { title: "Supplier", href: `/${role}/supplier`, icon: Truck },
-        // {
-        //     title: "Promotions",
-        //     icon: Tag,
-        //     children: [
-        //         { title: "Active Promotions", href: `/${role}/promotions/active` },
-        //         { title: "Create Promotion", href: `/${role}/promotions/create` },
-        //     ],
-        // },
-        // {
-        //     title: "Cash Management",
-        //     icon: Wallet,
-        //     children: [
-        //         { title: "Cash Registers", href: `/${role}/cash/registers` },
-        //         { title: "Transactions", href: `/${role}/cash/transactions` },
-        //     ],
-        // },
+        {
+            title: "Branches",
+            href: `/${role}/branches`,
+            icon: Building2,
+            permission: "branch:branch_management:read"
+        },
+        {
+            title: "Supplier",
+            href: `/${role}/supplier`,
+            icon: Truck,
+            permission: "inventory:vendor_management:read"
+        },
         {
             title: "Settings",
             icon: Settings,
             children: [
-                { title: "Profile & Company Settings", href: `/${role}/settings/general` },
-              
+                {
+                    title: "Profile & Company Settings",
+                    href: `/${role}/settings/general`,
+                    permission: "settings:store_settings:read"
+                },
             ],
         },
-        // { title: "Self-Checkout", href: `/${role}/self-checkout`, icon: MonitorSmartphone },
     ];
+
+    // Filter nav items based on permissions
+    const filterNavItems = (items) => {
+        return items.filter(item => {
+            // If it's a parent item with children
+            if (item.children) {
+                // Filter children based on permissions
+                const filteredChildren = item.children.filter(child =>
+                    hasPermission(child.permission)
+                );
+
+                // Only show parent if at least one child has permission
+                if (filteredChildren.length > 0) {
+                    item.children = filteredChildren;
+                    return true;
+                }
+                return false;
+            }
+
+            // For single items without children
+            return hasPermission(item.permission);
+        });
+    };
+
+    const filteredNavItems = filterNavItems(navItems);
 
     // Decide if toggle button should be visible
     const showToggleButton = windowWidth < DESKTOP_BREAKPOINT || sidebarCollapsed;
@@ -185,7 +303,7 @@ export default function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto px-3 py-4">
                 <ul className="space-y-1">
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.href, item.children);
                         const expanded = expandedItems.includes(item.title);

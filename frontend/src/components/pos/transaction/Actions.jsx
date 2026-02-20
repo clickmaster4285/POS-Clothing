@@ -14,6 +14,7 @@ import { CustomerLookupDialog } from "@/components/pos/transaction/dialogs/Custo
 import ReceiptPrinter from "@/components/pos/reciptManagement/ReceiptPrinter";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/useSettings";
 
 export function Actions() {
     const {
@@ -27,6 +28,7 @@ export function Actions() {
         pointsRedeemed,
     } = useTransaction();
 
+    const { data: settings, isLoading, refetch } = useSettings();
     const [showHold, setShowHold] = useState(false);
     const [showRetrieve, setShowRetrieve] = useState(false);
     const [showVoidTxn, setShowVoidTxn] = useState(false);
@@ -93,7 +95,7 @@ export function Actions() {
 </head>
 <body>
 <div class="receipt">
-  <h2 class="center">FASHION STORE</h2>
+  <h2 class="center">${settings?.companyName || "STORE"}</h2>
   <p class="center">123 Fashion Avenue, NY CITY</p>
   <p class="center">Tel: (212) 555-0123</p>
   <hr />

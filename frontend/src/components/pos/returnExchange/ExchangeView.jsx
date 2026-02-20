@@ -59,6 +59,8 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
         toast.success("Exchange payment completed");
     };
 
+    const isExchangeValid = selectedExchange && exchangeTotal >= returnTotal;
+    
     if (isLoading) return (
         <div className="flex justify-center items-center h-64">
             <p>Loading products...</p>
@@ -299,28 +301,27 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                 Proceed to Payment (${priceDifference.toFixed(2)})
                             </button>
                         ) : (
-                            <button
-                                onClick={() => onComplete({
-                                    returnItems,
-                                    exchangeItem: selectedExchange,
-                                    exchangeQuantity,
-                                    returnTotal,
-                                    exchangeTotal,
-                                    priceDifference,
-                                    payment: isRefundDue ? {
-                                        method: "refund",
-                                        amount: Math.abs(priceDifference),
-                                        refundAmount: Math.abs(priceDifference)
-                                    } : {
-                                        method: "exchange",
-                                        amount: 0
-                                    }
-                                })}
-                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:opacity-90 transition font-medium"
-                                disabled={isExtraPayment && !paymentComplete}
-                            >
-                                {isRefundDue ? 'Process Exchange with Refund' : 'Complete Exchange'}
-                            </button>
+                                <button
+                                    onClick={() => onComplete({
+                                        returnItems,
+                                        exchangeItem: selectedExchange,
+                                        exchangeQuantity,
+                                        returnTotal,
+                                        exchangeTotal,
+                                        priceDifference,
+                                        payment: {
+                                            method: "exchange",
+                                            amount: 0
+                                        }
+                                    })}
+                                    className={`px-6 py-2 rounded-lg transition font-medium ${!isExchangeValid
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-green-600 text-white hover:opacity-90'
+                                        }`}
+                                    disabled={!isExchangeValid}
+                                >
+                                    Complete Exchange
+                                </button>
                         )}
                     </div>
                 </div>

@@ -8,10 +8,15 @@ import {
     SheetTitle,
     SheetClose,
 } from "@/components/ui/sheet";
+import { useSettings } from "@/hooks/useSettings";
 
 const ReceiptPrinter = ({ transaction, open, onClose }) => {
-    if (!transaction) return null;
+  if (!transaction) return null;
+  
 
+  const { data: settings, isLoading, refetch } = useSettings();
+
+  
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -292,7 +297,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
 <body>
   <div class="receipt">
     <div class="header">
-      <div class="store-name">FASHION STORE</div>
+      <div class="store-name">${settings?.companyName || "STORE"}</div>
       <div class="store-details">
         123 Fashion Avenue<br>
         New York, NY 10001<br>
@@ -414,7 +419,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
     const handleDownloadTXT = () => {
         // Simple text receipt
         const textReceipt = `
-FASHION STORE
+${settings?.companyName }
 123 Fashion Avenue, New York, NY 10001
 Tel: (212) 555-0123
 ================================
@@ -462,10 +467,10 @@ www.fashionstore.com
                         <div className="text-center mb-6">
                             {/* Replace with real logo if available */}
                             {/* <img src="/logo.png" alt="Fashion Store" className="h-10 mx-auto mb-2" /> */}
-                            <h2 className="text-xl font-bold text-gray-900">FASHION STORE</h2>
+                            <h2 className="text-xl font-bold text-gray-900">{settings?.companyName || "STORE"}</h2>
                             <p className="text-xs text-gray-600 mt-1">123 Fashion Avenue, New York, NY 10001</p>
                             <p className="text-xs text-gray-600">Tel: (212) 555-0123</p>
-                            <p className="text-xs text-gray-500 mt-1">Tax ID: 12-3456789</p> {/* Optional but common */}
+                         {/* Optional but common */}
                         </div>
 
                         {/* Meta info – often left/right split or stacked */}

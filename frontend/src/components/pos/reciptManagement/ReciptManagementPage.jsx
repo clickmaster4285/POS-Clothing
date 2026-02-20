@@ -9,6 +9,7 @@ import {
 } from "@/hooks/pos_hooks/useTransaction";
 import ReceiptPrinter from "./ReceiptPrinter"; // Add this import
 import { Card } from "@/components/ui/card";
+import { useSettings } from "@/hooks/useSettings";
 
 const ReciptManagementPage = () => {
     const [view, setView] = useState("list");
@@ -17,6 +18,8 @@ const ReciptManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showReceiptPrinter, setShowReceiptPrinter] = useState(false); // Add this
 
+    const { data: settings } = useSettings();
+    console.log("settings in receipt management", settings)
     const { data: transactionData, isLoading } = useTransactions();
 
     // Get transactions array from the data and filter only completed transactions
@@ -268,7 +271,7 @@ const ReciptManagementPage = () => {
                         <h3 className="font-semibold mb-4">Receipt Preview</h3>
                         <div className="bg-muted/50 rounded-lg p-4 sm:p-6">
                             <div className="text-center mb-4">
-                                <p className="font-bold text-sm sm:text-base mb-1">FASHION STORE</p>
+                                <p className="font-bold text-sm sm:text-base mb-1">{settings?.companyName || "STORE"}</p>
                                 <p className="text-xs text-muted-foreground">123 Fashion Avenue, New York, NY 10001</p>
                                 <p className="text-xs text-muted-foreground">Tel: (212) 555-0123</p>
                             </div>

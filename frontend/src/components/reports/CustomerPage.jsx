@@ -11,84 +11,79 @@ const CustomerPage = ({ customers }) => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { data: transactionsData } = useTransactionsByCustomer(customers?._id);
+    // Only fetch transactions when a customer is selected
+    const { data: transactionsData, isLoading: transactionsLoading } =
+        useTransactionsByCustomer(selectedCustomer?.id, {
+            enabled: !!selectedCustomer?.id && isModalOpen // Only fetch when modal is open and customer is selected
+        });
 
-    console.log("transactionsData", transactionsData)
-    const transactions = transactionsData?.data || [];
+ 
+    const transactions = transactionsData?.transactions || [];
+    console.log("transactionsData", transactions)
+    const kpiData = useMemo(() => {
+        const totalCustomers = customers?.length;
+        const loyaltyMembers = customers?.filter(c => c.loyaltyPoints > 0).length;
 
-      const kpiData = useMemo(() => {
-          const totalCustomers = customers?.length;
-          const loyaltyMembers = customers?.filter(c => c.loyaltyPoints > 0).length;
-  
-          const newCustomers = customers.filter(c => {
-              const created = new Date(c.createdAt);
-              const now = new Date();
-              const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-              return diffDays <= 30;
-          }).length;
-  
-          // Compute average spend
-          const totalSpent = customers.reduce((acc, customer) => {
-              const custTransactions = transactions.filter(t => t.customerId === customer._id);
-              const grandTotal = custTransactions.reduce((sum, t) => sum + (t.totals?.grandTotal || 0), 0);
-              return acc + grandTotal;
-          }, 0);
-  
-          const avgSpend = totalCustomers ? (totalSpent / totalCustomers).toFixed(2) : 0;
-  
-          return { totalCustomers, newCustomers, avgSpend, loyaltyMembers };
-      }, [customers, transactions]);
-  
-      // === Customer Growth Trend ===
-      const customerGrowth = useMemo(() => {
-          // count of customers per month
-          const months = Array.from({ length: 12 }, (_, i) => {
-              const date = new Date();
-              date.setMonth(i);
-              const monthStr = date.toLocaleString("default", { month: "short" });
-              const count = customers.filter(c => new Date(c.createdAt).getMonth() === i).length;
-              return { month: monthStr, customers: count };
-          });
-          return months;
-      }, [customers]);
-  
-      // === Retention Data ===
-      const retentionData = useMemo(() => {
-          const loyalty = customers.filter(c => c.loyaltyPoints > 0).length;
-          const nonLoyalty = customers.length - loyalty;
-          return [
-              { name: "Loyalty Members", value: loyalty },
-              { name: "Non Loyalty", value: nonLoyalty },
-          ];
-      }, [customers]);
-  
+        const newCustomers = customers.filter(c => {
+            const created = new Date(c.createdAt);
+            const now = new Date();
+            const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+            return diffDays <= 30;
+        }).length;
+
+        // For KPI calculations, we might need to fetch all transactions or use a different approach
+        // For now, we'll calculate based on the customers data only
+        const avgSpend = 0; // You might want to handle this differently
+
+        return { totalCustomers, newCustomers, avgSpend, loyaltyMembers };
+    }, [customers]);
+
+    // === Customer Growth Trend ===
+    const customerGrowth = useMemo(() => {
+        const months = Array.from({ length: 12 }, (_, i) => {
+            const date = new Date();
+            date.setMonth(i);
+            const monthStr = date.toLocaleString("default", { month: "short" });
+            const count = customers.filter(c => new Date(c.createdAt).getMonth() === i).length;
+            return { month: monthStr, customers: count };
+        });
+        return months;
+    }, [customers]);
+
+    // === Retention Data ===
+    const retentionData = useMemo(() => {
+        const loyalty = customers.filter(c => c.loyaltyPoints > 0).length;
+        const nonLoyalty = customers.length - loyalty;
+        return [
+            { name: "Loyalty Members", value: loyalty },
+            { name: "Non Loyalty", value: nonLoyalty },
+        ];
+    }, [customers]);
 
     const topCustomers = useMemo(() => {
+        // For top customers, we'll show basic info without transaction data
         return customers.map(c => {
-            const custTransactions = transactions.filter(t => t.customerId === c._id);
-            const totalSpent = custTransactions.reduce((sum, t) => sum + (t.totals?.grandTotal || 0), 0);
-            const lastVisit = custTransactions.reduce((latest, t) => {
-                const tDate = new Date(t.createdAt);
-                return tDate > latest ? tDate : latest;
-            }, new Date(0));
-
             return {
                 id: c._id,
                 name: `${c.firstName} ${c.lastName}`,
                 email: c.email,
                 phone: c.phone,
                 loyaltyPoints: c.loyaltyPoints,
-                orders: custTransactions.length,
-                totalSpent,
-                lastVisit: lastVisit > new Date(0) ? lastVisit.toLocaleDateString() : "-",
-                transactions: custTransactions,
+                orders: 0, // You might want to fetch this from a separate endpoint
+                totalSpent: 0, // You might want to fetch this from a separate endpoint
+                lastVisit: "-",
             };
-        }).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10);
-    }, [customers, transactions]);
+        }).slice(0, 10);
+    }, [customers]);
 
     const handleCustomerClick = (customer) => {
         setSelectedCustomer(customer);
         setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedCustomer(null);
     };
 
     const formatCurrency = (amount) => {
@@ -119,9 +114,9 @@ const CustomerPage = ({ customers }) => {
             </div>
 
             {/* Top Customers List */}
-            <Card className="w-full max-w-md">
+            <Card className="w-full">
                 <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Top Customers</CardTitle>
+                    <CardTitle className="text-lg font-semibold">Customers</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
                     <ul className="space-y-2">
@@ -133,10 +128,10 @@ const CustomerPage = ({ customers }) => {
                             >
                                 <div>
                                     <span className="font-medium text-gray-800 block">{customer.name}</span>
-                                    <span className="text-xs text-gray-500">{customer.orders} orders</span>
+                                    <span className="text-xs text-gray-500">{customer.email}</span>
                                 </div>
-                                <span className="text-sm font-semibold text-green-600">
-                                    {formatCurrency(customer.totalSpent)}
+                                <span className="text-sm text-gray-600">
+                                    Points: {customer.loyaltyPoints}
                                 </span>
                             </li>
                         ))}
@@ -153,7 +148,7 @@ const CustomerPage = ({ customers }) => {
                                 {selectedCustomer?.name}'s Transactions
                             </h2>
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={handleCloseModal}
                                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                             >
                                 <X className="h-5 w-5" />
@@ -179,16 +174,25 @@ const CustomerPage = ({ customers }) => {
                                         </div>
                                         <div>
                                             <p className="text-sm text-gray-500">Total Spent</p>
-                                            <p className="font-medium">{formatCurrency(selectedCustomer.totalSpent)}</p>
+                                            <p className="font-medium">
+                                                {formatCurrency(
+                                                    transactions.reduce((sum, t) => sum + (t.totals?.grandTotal || 0), 0)
+                                                )}
+                                            </p>
                                         </div>
                                     </div>
 
                                     {/* Transactions */}
                                     <div>
                                         <h3 className="text-lg font-medium mb-3">Transaction History</h3>
-                                        {selectedCustomer.transactions?.length > 0 ? (
+                                        {transactionsLoading ? (
+                                            <div className="text-center py-8">
+                                                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                                                <p className="mt-2 text-gray-500">Loading transactions...</p>
+                                            </div>
+                                        ) : transactions.length > 0 ? (
                                             <div className="space-y-3">
-                                                {selectedCustomer.transactions.map((transaction, index) => (
+                                                {transactions.map((transaction, index) => (
                                                     <div
                                                         key={transaction._id || index}
                                                         className="border rounded-lg p-4 hover:shadow-md transition-shadow"

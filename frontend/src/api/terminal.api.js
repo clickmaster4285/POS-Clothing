@@ -19,16 +19,11 @@ export const createTerminal = async (data) => {
 };
 
 // UPDATE terminal
-export const updateTerminal = async ({ terminalId, data }) => {
-  const res = await api.put(`/terminals/${terminalId}`, data);
+export const updateTerminal = async ({ id, data }) => {
+  const res = await api.put(`/terminals/${id}`, data);
   return res.data;
 };
 
-// DELETE terminal
-export const deleteTerminal = async (terminalId) => {
-  const res = await api.delete(`/terminals/${terminalId}`);
-  return res.data;
-};
 
 // ADD user to terminal
 export const addUserToTerminal = async ({ id, data }) => {

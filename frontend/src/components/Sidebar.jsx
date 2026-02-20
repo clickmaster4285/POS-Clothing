@@ -192,11 +192,11 @@ export default function Sidebar() {
                     href: `/${role}/terminals`,
                     permission: "terminal:terminal_management:read"
                 },
-                {
-                    title: "Terminals Actions & History",
-                    href: `/${role}/terminals/actions`,
-                    permission: "terminal:terminal_actions_history:read"
-                },
+                // {
+                //     title: "Terminals Actions & History",
+                //     href: `/${role}/terminals/actions`,
+                //     permission: "terminal:terminal_actions_history:read"
+                // },
                
             ],
         },
@@ -213,6 +213,21 @@ export default function Sidebar() {
                     title: "Inventory Reports",
                     href: `/${role}/reports/inventory`,
                     permission: "reporting_analytics:inventory_reports:read"
+                },
+                {
+                    title: "Product Performance",
+                    href: `/${role}/reports/product-performance`,
+                    permission: "reporting_analytics:product_performance:read"
+                },
+                {
+                    title: "Customers Reports",
+                    href: `/${role}/reports/customers`,
+                    permission: "reporting_analytics:customer_reports:read"
+                },
+                {
+                    title: "Financial Analysis",
+                    href: `/${role}/reports/financial`,
+                    permission: "reporting_analytics:financial_analysis:read"
                 },
             ],
         },

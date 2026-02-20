@@ -215,7 +215,7 @@ const PromotionModal = ({
                             />
                         </div>
 
-                        <div className="col-span-2">
+                        {/* <div className="col-span-2">
                             <label className="text-sm font-medium mb-1 block">Quantity Rules</label>
                             <input
                                 type="text"
@@ -225,7 +225,7 @@ const PromotionModal = ({
                                 placeholder="e.g., Min 2 items, No minimum"
                                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                             />
-                        </div>
+                        </div> */}
 
                         {/* Validity Period */}
                         <div>

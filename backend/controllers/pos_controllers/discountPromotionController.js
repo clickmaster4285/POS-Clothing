@@ -8,16 +8,34 @@ exports.createPromotion = async (req, res) => {
   try {
     const promotionData = req.body;
     
-// Convert empty string to null
-if (promotionData.couponCode === "") {
-  promotionData.couponCode = null;
-}
+    // Convert empty string to null
+    if (promotionData.couponCode === "") {
+      promotionData.couponCode = null;
+    }
+    
     const promotion = new DiscountPromotion(promotionData);
     await promotion.save();
 
     res.status(201).json({ success: true, data: promotion });
   } catch (error) {
-    console.error(error);
+    console.error("Error creating promotion:", error);
+    
+    // Handle duplicate key error specifically
+    if (error.code === 11000 && error.keyPattern?.couponCode) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "This coupon code is already in use. Please choose a different code." 
+      });
+    }
+    
+    // Handle other validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+    
     res.status(500).json({ success: false, message: "Failed to create promotion" });
   }
 };

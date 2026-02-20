@@ -4,7 +4,7 @@ import {
   getTerminalById,
   createTerminal,
   updateTerminal,
-  deleteTerminal,
+  
   addUserToTerminal,
   removeUserFromTerminal,
   recordTerminalAction,
@@ -46,13 +46,13 @@ export const useUpdateTerminal = () => {
 };
 
 // 🔹 Delete terminal
-export const useDeleteTerminal = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteTerminal,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["terminals"] }),
-  });
-};
+// export const useDeleteTerminal = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: deleteTerminal,
+//     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["terminals"] }),
+//   });
+// };
 
 // 🔹 Add user to terminal
 // In your useTerminal hook file

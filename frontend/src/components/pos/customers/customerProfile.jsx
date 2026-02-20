@@ -15,7 +15,13 @@ const CustomerProfile = () => {
 
     // Fetch transactions for this customer
     const { data: transactionsData, isLoading: transactionsLoading } = useTransactionsByCustomer(customer?._id);
+
+
     const transactions = transactionsData?.transactions || [];
+
+
+    console.log("transactionsData:", transactionsData);
+
 
     if (isLoading) return <div>Loading customer...</div>;
     if (isError || !customer) return <div>Customer not found.</div>;

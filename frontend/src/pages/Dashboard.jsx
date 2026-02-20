@@ -442,7 +442,7 @@ export default function Dashboard() {
                             <p className="text-xs text-muted-foreground">Today {!isAdmin && `- ${currentBranchName}`}</p>
                         </div>
                     </div>
-                    <div className="h-64 mt-3">
+                    <div className="h-64  w-full mt-3">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={hourlySales}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 14%, 90%)" vertical={false} />
@@ -485,7 +485,7 @@ export default function Dashboard() {
                     <h3 className="text-sm font-semibold text-card-foreground mb-2">Sales by Payment Method</h3>
                     <p className="text-xs text-muted-foreground mb-2">{currentBranchName}</p>
                     <div className="h-64 flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" aspect={2}>
                             <PieChart>
                                 <Pie
                                     data={paymentBreakdown}

@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUpDown, CheckCircle, Plus, XCircle } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "sonner" // ✅ FIX 1: Added missing toast import
 
 export function AdjustmentForm({
     adjustForm,
@@ -23,6 +25,7 @@ export function AdjustmentForm({
     getStatusColor
 }) {
 
+    const { user } = useAuth()
 
     const handleRowChange = (index, field, value) => {
         const updatedItems = [...adjustForm.items]
@@ -52,6 +55,47 @@ export function AdjustmentForm({
         setAdjustForm({ ...adjustForm, items: updatedItems })
     }
 
+    // ✅ FIX 2: Helper function to get available stock for a selected product/variant/color
+    const getAvailableStock = (productId, variantId, color) => {
+        if (!productId || !variantId || !color) return 0;
+
+        const product = products.find(p => p._id === productId);
+        if (!product) return 0;
+
+        const variant = product.variants?.find(v => v._id === variantId);
+        if (!variant) return 0;
+
+        const colorStock = variant.stockByAttribute?.find(attr => attr.color === color);
+        return colorStock?.quantity || 0;
+    };
+
+    const handleQuantityChange = (index, value) => {
+        const row = adjustForm.items[index];
+        const numValue = value === "" ? "" : Number(value);
+
+        // Don't validate if field is empty or zero
+        if (numValue === "" || numValue === 0) {
+            handleRowChange(index, "quantity", value);
+            return;
+        }
+
+        // For remove operations, validate against available stock
+        if (adjustForm.type === "remove") {
+            const availableStock = getAvailableStock(row.product, row.variant, row.color);
+
+            // Only validate if we have all selections and available stock info
+            if (row.product && row.variant && row.color) {
+                if (numValue > availableStock) {
+                    toast.error(`Cannot remove more than ${availableStock} items`);
+                    return; // Don't update if validation fails
+                }
+            }
+        }
+
+        // For add operations OR when validation passes for remove, update the quantity
+        handleRowChange(index, "quantity", value);
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Form Section */}
@@ -78,25 +122,27 @@ export function AdjustmentForm({
                             </Select>
                         </div>
 
-                        {/* Branch */}
-                        <div className="space-y-2">
-                            <Label>Branch *</Label>
-                            <Select
-                                value={adjustForm.branch}
-                                onValueChange={(value) => setAdjustForm({ ...adjustForm, branch: value })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select branch" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {branches.map(branch => (
-                                        <SelectItem key={branch._id} value={branch._id}>
-                                            {branch.branch_name || branch.name || "Unnamed Branch"}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {/* Branch - Only for admin */}
+                        {user?.role === "admin" && (
+                            <div className="space-y-2">
+                                <Label>Branch (Optional)</Label>
+                                <Select
+                                    value={adjustForm.branch}
+                                    onValueChange={(value) => setAdjustForm({ ...adjustForm, branch: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select branch" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {branches.map(branch => (
+                                            <SelectItem key={branch._id} value={branch._id}>
+                                                {branch.branch_name || branch.name || "Unnamed Branch"}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
 
                         {/* Items Rows */}
                         <div className="space-y-4">
@@ -106,6 +152,9 @@ export function AdjustmentForm({
 
                                 const selectedVariant = variants.find(v => v._id === row.variant)
                                 const colors = selectedVariant?.stockByAttribute || []
+
+                                // Get available stock for this combination
+                                const availableStock = getAvailableStock(row.product, row.variant, row.color);
 
                                 return (
                                     <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
@@ -189,29 +238,24 @@ export function AdjustmentForm({
                                                 type="number"
                                                 min="1"
                                                 value={row.quantity}
-                                                onChange={e => {
-                                                    const val = Number(e.target.value)
-                                                    // Get the total stock for this product-variant-color
-                                                    const totalStock = colors.find(c => c.color === row.color)?.quantity || 0
-
-                                                    if (adjustForm.type === "remove" && val > totalStock) {
-                                                        // Prevent entering more than available
-                                                        toast.error(`Cannot remove more than ${totalStock}`)
-                                                        return
-                                                    }
-
-                                                    handleRowChange(index, "quantity", val)
-                                                }}
+                                                onChange={e => handleQuantityChange(index, e.target.value)}
                                                 placeholder="Quantity"
+                                                disabled={!row.color} // Disable until color is selected
                                             />
-                                            {/* Show total quantity next to input */}
+                                            {/* Show stock information when color is selected */}
                                             {row.color && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Current Stock: {colors.find(c => c.color === row.color)?.quantity || 0}
+                                                <p className={`text-xs ${adjustForm.type === "remove"
+                                                        ? availableStock > 0 ? "text-amber-600" : "text-red-500"
+                                                        : "text-muted-foreground"
+                                                    }`}>
+                                                    {adjustForm.type === "remove"
+                                                        ? availableStock > 0
+                                                            ? `Available to remove: ${availableStock}`
+                                                            : "No stock available to remove"
+                                                        : `Current stock: ${availableStock}`}
                                                 </p>
                                             )}
                                         </div>
-
 
                                         {/* Remove Row */}
                                         <div className="flex items-center gap-2">
@@ -237,16 +281,24 @@ export function AdjustmentForm({
                             </Button>
                         </div>
 
-                        {/* Reason */}
+                        {/* Reason - Required for remove operations */}
                         <div className="space-y-2">
-                            <Label htmlFor="reason">Reason *</Label>
+                            <Label htmlFor="reason">
+                                Reason {adjustForm.type === "remove" && <span className="text-red-500">*</span>}
+                            </Label>
                             <Textarea
                                 id="reason"
                                 value={adjustForm.reason}
                                 onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })}
-                                placeholder="Enter reason for adjustment"
+                                placeholder={adjustForm.type === "remove"
+                                    ? "Enter reason for removing stock (required)"
+                                    : "Enter reason for adjustment (optional)"}
                                 rows={3}
+                                required={adjustForm.type === "remove"}
                             />
+                            {adjustForm.type === "remove" && !adjustForm.reason && (
+                                <p className="text-xs text-red-500">Reason is required for stock removal</p>
+                            )}
                         </div>
 
                         <div className="flex gap-3 pt-4">
@@ -269,7 +321,15 @@ export function AdjustmentForm({
                         <CardTitle className="text-lg">Adjustments History</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {/* Existing adjustments table stays the same */}
+                        {/* Your existing adjustments table */}
+                        {adjustments.length > 0 ? (
+                            <div className="space-y-2">
+                                {/* Add your adjustments list/table here */}
+                                <p className="text-sm text-muted-foreground">Recent adjustments will appear here</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No adjustments yet</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>

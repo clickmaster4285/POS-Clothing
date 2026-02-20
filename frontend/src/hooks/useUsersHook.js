@@ -128,7 +128,7 @@ export const useUsersHook = (userId = null) => {
         if (isAdmin) return;
         const hasAccess = isEditMode ? employee.database.update : employee.database.create;
         if (currentUser && !hasAccess) {
-            navigate('/forbidden');
+            navigate('/');
         }
     }, [currentUser, isEditMode, navigate, employee.database, isAdmin]);
 

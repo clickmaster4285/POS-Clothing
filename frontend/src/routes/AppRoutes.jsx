@@ -10,7 +10,7 @@ import PurchaseOrdersPage from "../pages/Inventory/PurchaseOrder";
 import StockAuditPage from "../pages/Inventory/StockAudit";
 import StockManagementPage from "../pages/Inventory/StockManagement";
 import SupplierPage from '../pages/Suppliers';
-import UserPage from '../pages/User';
+import UserPage from '../pages/users/User';
 import StaffCreatePage from '../pages/users/create/page';
 
 import PayrollIntegration from '../pages/users/payroll/PayrollIntegration';
@@ -43,9 +43,16 @@ import { useAuth } from "@/hooks/useAuth";
 import TerminalDetailPage from "@/pages/terminals/[id]/TerminalDetailPage";
 import TerminalListPage from "@/pages/terminals/TerminalPage";
 import TerminalActionsPage from "@/pages/terminals/TerminalActionPage";
+import CustomerAnalysis from "@/pages/ReportAndAnalysis/CustomerAnalysis";
+import InventoryAnalysis from "@/pages/ReportAndAnalysis/InventoryAnalysis";
+import FinancialAnalysis from "@/pages/ReportAndAnalysis/FinancialAnalysis";
+import ProductPerformance from "@/pages/ReportAndAnalysis/ProductPerformance";
+import SaleSummary from "@/pages/ReportAndAnalysis/SaleSummary";
 
 const AppRoutes = () => {
     const { user, isAuthenticated } = useAuth();
+    // if (!isAuthenticated) return null;
+
     const role = user?.role?.toLowerCase() || 'customer'; // default role
 
     return (
@@ -411,6 +418,64 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
+
+
+
+
+
+
+            <Route
+                path={`/${role}/reports/customers`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <CustomerAnalysis />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/reports/financial`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <FinancialAnalysis />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/reports/inventory`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <InventoryAnalysis />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/reports/product-performance`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <ProductPerformance />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path={`/${role}/reports/sales`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <SaleSummary />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
 
         </Routes>
     );

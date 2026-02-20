@@ -374,26 +374,44 @@ exports.getAllStock = async (req, res) => {
 };
 
 
-
 exports.adjustStock = async (req, res) => {
   try {
-
     const { branchId } = req.params;
     const { adjustmentType, reason, items, remarks } = req.body;
+
+    const user = req.user;
+    let finalBranchId;
+
+    // ✅ ROLE BASED BRANCH ASSIGNMENT
+    if (user.role === "admin") {
+      if (!branchId) {
+        return res.status(400).json({ error: "Branch is required for admin" });
+      }
+      finalBranchId = branchId;
+    } else if (user.role === "manager") {
+      if (!user.branch_id) {
+        return res.status(400).json({ error: "Manager has no assigned branch" });
+      }
+      finalBranchId = user.branch_id;
+    } else {
+      return res.status(403).json({ error: "Unauthorized role" });
+    }
 
     const validTypes = ["add", "remove", "damage"];
     if (!validTypes.includes(adjustmentType)) {
       return res.status(400).json({ success: false, message: "Invalid adjustment type" });
     }
 
-    const branchDoc = await Branch.findById(branchId);
-    if (!branchDoc) return res.status(404).json({ success: false, message: "Branch not found" });
+    // ✅ Use finalBranchId here
+    const branchDoc = await Branch.findById(finalBranchId);
+    if (!branchDoc) {
+      return res.status(404).json({ success: false, message: "Branch not found" });
+    }
 
     const branchLocation = `${branchDoc.branch_name}, ${branchDoc.address.city}`;
 
-    // Create a new StockAdjustment document
     const adjustment = new StockAdjustment({
-      branch: branchId,
+      branch: finalBranchId,
       adjustmentType,
       reason,
       items,
@@ -402,42 +420,42 @@ exports.adjustStock = async (req, res) => {
       status: "pending",
     });
 
-    // Process each item
     for (const item of items) {
-      // 1️⃣ Update or create Stock for branch + variant
+
       let stock = await Stock.findOne({
         product: item.product,
         variantId: item.variantId,
-        branch: branchId,
+        branch: finalBranchId,  // ✅ FIXED
         color: item.color,
       });
 
-      // 2️⃣ Update product variant's stockByAttribute
       const product = await Product.findById(item.product);
       if (!product) throw new Error(`Product ${item.product} not found`);
 
       const variant = product.variants.id(item.variantId);
       if (!variant) throw new Error(`Variant ${item.variantId} not found`);
 
-      // Find the color attribute
-      let attrIndex = variant.stockByAttribute.findIndex(attr => attr.color === item.color);
-      
+      let attrIndex = variant.stockByAttribute.findIndex(
+        attr => attr.color === item.color
+      );
+
+      // ===============================
+      // ADD STOCK
+      // ===============================
       if (adjustmentType === "add") {
-        // ADD: Remove from product (warehouse), Add to branch stock
+
         if (attrIndex === -1 || variant.stockByAttribute[attrIndex].quantity < item.quantity) {
-          throw new Error(`Insufficient stock in warehouse for product ${item.product}, variant ${item.variantId}, color ${item.color}`);
+          throw new Error(`Insufficient warehouse stock`);
         }
-        
-        // Remove from product warehouse stock
+
         variant.stockByAttribute[attrIndex].quantity -= item.quantity;
-        variant.quantity = (Number(variant.quantity) || 0) - Number(item.quantity);
-        
-        // Add to branch stock
+        variant.quantity -= Number(item.quantity);
+
         if (!stock) {
           stock = await Stock.create({
             product: item.product,
             variantId: item.variantId,
-            branch: branchId,
+            branch: finalBranchId,  // ✅ FIXED
             location: branchLocation,
             currentStock: item.quantity,
             availableStock: item.quantity,
@@ -450,77 +468,73 @@ exports.adjustStock = async (req, res) => {
           stock.availableStock += item.quantity;
         }
 
-        // Stock history for product (warehouse) - negative
         variant.stockHistory.push({
           date: new Date(),
           color: item.color || "Default",
-          quantityChange: -Number(item.quantity), // Negative for removing from warehouse
+          quantityChange: -Number(item.quantity),
           reason: `Transferred to branch: ${reason}`,
           changedBy: req.user.id,
         });
+      }
 
-      } else if (adjustmentType === "remove") {
-        // REMOVE: Add to product (warehouse), Remove from branch stock
+      // ===============================
+      // REMOVE STOCK
+      // ===============================
+      else if (adjustmentType === "remove") {
+
         if (!stock || stock.currentStock < item.quantity) {
-          throw new Error(`Insufficient stock in branch for product ${item.product}, variant ${item.variantId}, color ${item.color}`);
+          throw new Error(`Insufficient branch stock`);
         }
-        
-        // Remove from branch stock
+
         stock.currentStock -= item.quantity;
         stock.availableStock -= item.quantity;
-        
-        // Add to product warehouse stock
+
         if (attrIndex === -1) {
-          variant.stockByAttribute.push({ 
-            color: item.color || "Default", 
-            quantity: item.quantity 
+          variant.stockByAttribute.push({
+            color: item.color || "Default",
+            quantity: item.quantity,
           });
         } else {
           variant.stockByAttribute[attrIndex].quantity += item.quantity;
         }
-        
-        variant.quantity = (Number(variant.quantity) || 0) + Number(item.quantity);
-        
-        // Stock history for product (warehouse) - positive
+
+        variant.quantity += Number(item.quantity);
+
         variant.stockHistory.push({
           date: new Date(),
           color: item.color || "Default",
-          quantityChange: Number(item.quantity), // Positive for adding to warehouse
+          quantityChange: Number(item.quantity),
           reason: `Returned from branch: ${reason}`,
           changedBy: req.user.id,
         });
+      }
 
-      } else if (adjustmentType === "damage") {
-        // DAMAGE: Remove from branch stock only (mark as damaged)
+      // ===============================
+      // DAMAGE STOCK
+      // ===============================
+      else if (adjustmentType === "damage") {
+
         if (!stock || stock.currentStock < item.quantity) {
-          throw new Error(`Insufficient stock in branch for damage`);
+          throw new Error(`Insufficient stock for damage`);
         }
-        
-        // Remove from branch stock and mark as damaged
+
         stock.currentStock -= item.quantity;
         stock.availableStock -= item.quantity;
         stock.damagedStock += item.quantity;
-        
-        // DAMAGE does NOT affect product warehouse stock
-        
-        // Stock history for product (warehouse) - no change
+
         variant.stockHistory.push({
           date: new Date(),
           color: item.color || "Default",
-          quantityChange: 0, // No change to warehouse stock
+          quantityChange: 0,
           reason: `Damaged at branch: ${reason}`,
           changedBy: req.user.id,
         });
       }
 
-      // Save stock if it exists
       if (stock) await stock.save();
-      
-      // Save product changes
       await product.save();
     }
 
-    // Mark adjustment completed
     adjustment.status = "completed";
     adjustment.approvalDate = new Date();
     adjustment.approvedBy = req.user.id;
@@ -528,11 +542,13 @@ exports.adjustStock = async (req, res) => {
     await adjustment.save();
 
     res.status(201).json({ success: true, data: adjustment });
+
   } catch (error) {
     console.error("Adjust stock error:", error.message);
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 exports.transferStock = async (req, res) => {
   try {

@@ -41,8 +41,8 @@ export const useAuth = () => {
     setAuthErrorRedirector((status) => {
       if (status === 401) {
         logout();
-      } else if (status === 403 && window.location.pathname !== '/forbidden') {
-        navigate('/forbidden', { replace: true });
+      } else if (status === 403 && window.location.pathname !== '/') {
+        navigate('/', { replace: true });
       }
     });
   }, [logout, navigate]);

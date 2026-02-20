@@ -1,6 +1,8 @@
 // controllers/pos_controllers/customer.controller.js
 const Customer = require("../../models/pos_model/customer.model");
+const { Transaction } = require("../../models/pos_model/transaction.model");
 
+const mongoose = require("mongoose");
 // GET all active customers
 const getCustomers = async (req, res) => {
   try {
@@ -25,7 +27,46 @@ const getCustomerById = async (req, res) => {
 // CREATE customer
 const createCustomer = async (req, res) => {
   try {
-    const { firstName, email, phonePrimary, ...rest } = req.body;
+ 
+
+    const { firstName, email, phonePrimary, branch, ...rest } = req.body;
+
+    if (!firstName || !email || !phonePrimary) {
+      return res.status(400).json({ error: "Required fields are missing" });
+    }
+
+    const user = req.user;
+    let finalBranchId;
+
+   
+
+    // ✅ ROLE BASED BRANCH ASSIGNMENT
+    if (user.role === "admin") {
+      // Admin must provide branch from frontend
+      if (!branch) {
+        return res.status(400).json({ error: "Branch is required for admin" });
+      }
+      finalBranchId = branch;
+    } else if (user.role === "manager") {
+      // Manager uses their assigned branch from token
+      if (!user.branch_id) {
+        return res.status(400).json({ error: "Manager has no assigned branch" });
+      }
+      finalBranchId = user.branch_id;
+    } else {
+      return res.status(403).json({ error: "Unauthorized role" });
+    }
+
+    console.log("Final branch ID being used:", finalBranchId);
+
+    // ✅ CHECK IF EMAIL ALREADY EXISTS
+    const existingCustomer = await Customer.findOne({ email });
+
+    if (existingCustomer) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
+    // ✅ GENERATE IDS
     const customerId = `CUST-${Math.floor(10000 + Math.random() * 90000)}`;
     const loyaltyCardNumber = `LYL-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
@@ -35,14 +76,18 @@ const createCustomer = async (req, res) => {
       email,
       customerId,
       loyaltyCardNumber,
-        loyaltyPoints: 0,      
-  redeemedPoints: 0, 
+      loyaltyPoints: 0,
+      redeemedPoints: 0,
+      branch: finalBranchId,
       ...rest,
     });
 
     await customer.save();
+
     res.status(201).json(customer);
+
   } catch (err) {
+    console.error("Error in createCustomer:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -72,10 +117,14 @@ const toggleCustomerStatus = async (req, res) => {
 };
 
 
+
+
+
 module.exports = {
   getCustomers,
   getCustomerById,
   createCustomer,
   updateCustomer,
   toggleCustomerStatus,
+
 };

@@ -21,7 +21,8 @@ const discountPromotionSchema = new mongoose.Schema(
       type: String,
       trim: true,
       unique: true, // ensures no two promotions share the same code
-      sparse: true, // allows multiple null/undefined values
+         sparse: true, // allows multiple null/undefined values
+       default: null
     },
 
     // Targeted Items
@@ -40,6 +41,9 @@ const discountPromotionSchema = new mongoose.Schema(
       type: String,
       enum: ["Fixed", "Percentage"],
     },
+
+    branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch',  },
+      
     amountValue: {
       type: Number,
       min: 0,

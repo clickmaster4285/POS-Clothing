@@ -18,6 +18,12 @@ router.post(
   terminalCtrl.createTerminal
 );
 
+router.put(
+  "/:id",
+  checkPermission([TerminalPermissions.UPDATE]),
+  terminalCtrl.updateTerminalDetails 
+);
+
 router.get(
   "/",
   checkPermission([TerminalPermissions.READ]),
@@ -36,6 +42,8 @@ router.put(
   checkPermission([TerminalPermissions.UPDATE]),
   terminalCtrl.addUserToTerminal
 );
+
+
 
 router.delete(
   "/:id/users/:userId",

@@ -47,3 +47,8 @@ export const getTransactionsByCustomer = async (customerId) => {
   const res = await api.get(`/transactions/${customerId}`);
   return res.data;
 };
+
+export const getAllCustomersWithTransactions = async () => {
+  const res = await api.get(`/transactions/customers`);
+  return res.data;
+};

@@ -22,6 +22,7 @@ redeemedPoints: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     customerId: { type: String, unique: true },
     loyaltyCardNumber: { type: String, unique: true },
+    branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch'},
   },
   { timestamps: true }
 );

@@ -8,6 +8,8 @@ import { toast } from "sonner"
 import { useCreateCustomer, useUpdateCustomer, useCustomer } from "@/hooks/pos_hooks/useCustomer"
 import { useAuth } from "@/hooks/useAuth"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useBranches } from "@/hooks/useBranches"
+
 
 const CreateCustomer = ({ isModal = false,
     onCustomerAdded,
@@ -16,6 +18,10 @@ const CreateCustomer = ({ isModal = false,
     const { id } = useParams() // if id exists, we're editing
     const [showSuccess, setShowSuccess] = useState(false)
     const { user: currentUser } = useAuth()
+
+    const isPageMode = isModal ||!isModal && window.location.pathname.includes('/create');
+
+
     const [form, setForm] = useState({
         firstName: "",
         lastName: "",
@@ -31,6 +37,7 @@ const CreateCustomer = ({ isModal = false,
         communicationSms: false,
         communicationPush: false,
         preferences: "",
+        branch: "",
     })
     const [createdCustomer, setCreatedCustomer] = useState(null)
 
@@ -40,6 +47,10 @@ const CreateCustomer = ({ isModal = false,
     const createMutation = useCreateCustomer()
     const updateMutation = useUpdateCustomer()
     const { data: customerData } = useCustomer(id)
+
+    const { data: branchesData } = useBranches();
+    const branches = branchesData?.data || [];
+
 
     // Prefill form if editing
     useEffect(() => {
@@ -59,6 +70,7 @@ const CreateCustomer = ({ isModal = false,
                 communicationSms: customerData.communicationSms ?? false,
                 communicationPush: customerData.communicationPush ?? false,
                 preferences: customerData.preferences || "",
+                branch: customerData.branch || "",
             })
         }
     }, [customerData])
@@ -179,7 +191,7 @@ const CreateCustomer = ({ isModal = false,
 
     return (
 
-        <>  {!isModal && (<>
+        <>  {isPageMode && (<>
             <div className="flex items-center text-xs text-muted-foreground mb-4 gap-1">
                 <span>Home</span><span>›</span><span>Point of Sale</span><span>›</span>
                 <span>Customer Information</span><span>›</span>
@@ -222,6 +234,31 @@ const CreateCustomer = ({ isModal = false,
                     </div>
                 </div>
 
+
+                {/* Branch Selection - Admin Only */}
+                {currentUser?.role === "admin" && (
+                    <div className="mb-6">
+                        <label className="text-sm font-medium mb-1 block">
+                            Select Branch <span className="text-destructive">*</span>
+                        </label>
+
+                        <select
+                            value={form.branch}
+                            onChange={(e) => updateField("branch", e.target.value)}
+                            className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary bg-card"
+                        >
+                            <option value="">Select Branch</option>
+
+                            {branches.map((branch) => (
+                                <option key={branch._id} value={branch._id}>
+                                    {branch.branch_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {/* Phone */}
                 {/* Phone */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
@@ -231,8 +268,17 @@ const CreateCustomer = ({ isModal = false,
                         <input
                             type="tel"
                             value={form.phonePrimary}
-                            onChange={(e) => updateField("phonePrimary", e.target.value)}
-                            placeholder="(555) 000-0000"
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                // Only allow numbers and limit to 11 digits
+                                if (value === '' || /^\d+$/.test(value)) {
+                                    if (value.length <= 11) {
+                                        updateField("phonePrimary", value);
+                                    }
+                                }
+                            }}
+                            placeholder="03*********"
+                            maxLength={11}
                             className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary bg-card ${errors.phonePrimary ? "border-destructive" : ""}`}
                         />
                     </div>
@@ -241,8 +287,17 @@ const CreateCustomer = ({ isModal = false,
                         <input
                             type="tel"
                             value={form.phoneAlternate}
-                            onChange={(e) => updateField("phoneAlternate", e.target.value)}
-                            placeholder="(555) 000-0000"
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                // Only allow numbers and limit to 11 digits
+                                if (value === '' || /^\d+$/.test(value)) {
+                                    if (value.length <= 11) {
+                                        updateField("phoneAlternate", value);
+                                    }
+                                }
+                            }}
+                            placeholder="03*********"
+                            maxLength={11}
                             className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary bg-card"
                         />
                     </div>

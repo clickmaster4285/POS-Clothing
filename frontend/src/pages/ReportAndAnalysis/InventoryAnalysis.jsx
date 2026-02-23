@@ -25,8 +25,8 @@ const InventoryAnalysis = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Date Range Selector */}
-                        <Select value={dateRange} onValueChange={setDateRange}>
+                 
+                        {/* <Select value={dateRange} onValueChange={setDateRange}>
                             <SelectTrigger className="w-[160px]">
                                 <Calendar className="mr-2 h-4 w-4" />
                                 <SelectValue />
@@ -38,9 +38,9 @@ const InventoryAnalysis = () => {
                                 <SelectItem value="this-quarter">This Quarter</SelectItem>
                                 <SelectItem value="this-year">This Year</SelectItem>
                             </SelectContent>
-                        </Select>
+                        </Select> */}
 
-                        {/* Export Button */}
+                    
                         <Button className="gap-2">
                             <Download className="h-4 w-4" />
                             Export Report

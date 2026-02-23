@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Download, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,55 @@ const CustomerAnalysis = () => {
     const { user: currentUser } = useAuth();
     const { data: customers = [] } = useCustomers();
  
+
+    const { startDate, endDate } = useMemo(() => {
+        const now = new Date();
+        let start, end;
+
+        switch (dateRange) {
+            case "today":
+                start = new Date(now.setHours(0, 0, 0, 0));
+                end = new Date(now.setHours(23, 59, 59, 999));
+                break;
+            case "this-week":
+                const firstDay = now.getDate() - now.getDay();
+                start = new Date(now.setDate(firstDay));
+                start.setHours(0, 0, 0, 0);
+                end = new Date();
+                break;
+            case "this-month":
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                break;
+            case "this-quarter":
+                const quarter = Math.floor(now.getMonth() / 3);
+                start = new Date(now.getFullYear(), quarter * 3, 1);
+                end = new Date(now.getFullYear(), quarter * 3 + 3, 0, 23, 59, 59, 999);
+                break;
+            case "this-year":
+                start = new Date(now.getFullYear(), 0, 1);
+                end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                break;
+            default:
+                start = new Date(0);
+                end = new Date();
+        }
+
+        return { startDate: start, endDate: end };
+    }, [dateRange]);
+
+    const filteredCustomers = useMemo(() => {
+        if (!customers) return [];
+        return customers.filter(c => {
+            const created = new Date(c.createdAt);
+            return created >= startDate && created <= endDate;
+        });
+    }, [customers, startDate, endDate]);
+
+
+
+
+    console.log("customers", customers);
     return (
         <div className="">
             {/* Breadcrumb */}
@@ -67,7 +116,12 @@ const CustomerAnalysis = () => {
 
             {/* Content */}
             <main className="mx-auto px-4 py-4">
-                <CustomerPage dateRange={dateRange} customers={customers} />
+                <CustomerPage
+                    dateRange={dateRange}
+                    customers={filteredCustomers} // <-- pass filtered customers
+                    startDate={startDate}
+                    endDate={endDate}
+                />
             </main>
         </div>
     );

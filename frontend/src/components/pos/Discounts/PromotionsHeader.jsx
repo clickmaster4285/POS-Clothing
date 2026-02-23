@@ -1,8 +1,8 @@
 import { Search } from "lucide-react";
 
-const PromotionsHeader = ({ searchTerm, setSearchTerm }) => {
+const PromotionsHeader = ({ searchTerm, setSearchTerm, priorityFilter, setPriorityFilter }) => {
     return (
-        <div className="flex justify-between items-center mb-4">
+        <div className="bg-card p-3 rounded-md flex justify-between items-center mb-4 gap-4">
             {/* Search Input */}
             <div className="flex items-center gap-2 w-full max-w-md bg-card border rounded-lg px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-primary">
                 <Search className="text-muted-foreground" size={20} />
@@ -15,6 +15,17 @@ const PromotionsHeader = ({ searchTerm, setSearchTerm }) => {
                 />
             </div>
 
+            {/* Priority Filter */}
+            <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="border rounded-lg px-3 py-2 text-sm bg-white shadow-sm"
+            >
+                <option value="">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
         </div>
     );
 };

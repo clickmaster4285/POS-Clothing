@@ -434,7 +434,7 @@ exports.updateVariantPrice = async (req, res) => {
         retailPrice: variant.price?.retailPrice || 0,
       },
       type: "previous",
-      changedBy: req.user?.id || "system",
+      changedBy: req.user?._id || "system",
     });
 
     // Update variant price
@@ -451,7 +451,7 @@ exports.updateVariantPrice = async (req, res) => {
         retailPrice: Number(retailPrice),
       },
       type: "update",
-      changedBy: req.user?.id || "system",
+      changedBy: req.user?._id || null,
     });
 
     // Save product
@@ -534,7 +534,7 @@ exports.updateVariantQuantity = async (req, res) => {
       previousQuantity: prevQuantity,
       currentQuantity: stockItem.quantity,
       reason: reason || "No reason provided",
-      changedBy: req.user?.id || "system"
+      changedBy: req.user?._id || null
     });
 
     await product.save();

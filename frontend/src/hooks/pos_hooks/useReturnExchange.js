@@ -32,7 +32,8 @@ export const useCreateReturnExchange = () => {
     mutationFn: createReturnExchange,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returnExchanges"] });
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+       queryClient.invalidateQueries({ queryKey: ["transactionFullDetails"] });
     },
   });
 };

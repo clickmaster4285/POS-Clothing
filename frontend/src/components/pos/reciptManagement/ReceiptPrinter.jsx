@@ -9,6 +9,7 @@ import {
     SheetClose,
 } from "@/components/ui/sheet";
 import { useSettings } from "@/hooks/useSettings";
+import { useAuth } from "@/hooks/useAuth";
 
 const ReceiptPrinter = ({ transaction, open, onClose }) => {
   if (!transaction) return null;
@@ -16,7 +17,9 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
 
   const { data: settings, isLoading, refetch } = useSettings();
 
-  
+  const { user } = useAuth();
+  console.log("ReceiptPrinter user:", user);
+
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -319,7 +322,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
       </div>
       <div class="meta-row">
         <span class="meta-label">Cashier</span>
-        <span class="meta-value">John Doe (#1234)</span>
+        <span class="meta-value">${user.firstName} ${user.lastName}</span>
       </div>
     </div>
 
@@ -328,6 +331,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
         <tr>
           <th>Item</th>
           <th class="qty">Qty</th>
+            <th class="qty">Discount</th>
           <th class="amount">Price</th>
         </tr>
       </thead>
@@ -345,7 +349,8 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
               ` : ''}
             </td>
             <td class="qty">${item.quantity}</td>
-            <td class="amount">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
+            <td class="qty">${item.discountPercent || 0}%</td>
+            <td class="amount">  ${settings?.currencySymbol}${(item.unitPrice * item.quantity).toFixed(2)}</td>
           </tr>
         `).join('') || '<tr><td colspan="3" style="text-align:center; padding:8px 0;">No items</td></tr>'}
       </tbody>
@@ -354,21 +359,21 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
     <div class="totals">
       <div class="total-row">
         <span>Subtotal</span>
-        <span>$${transaction.totals?.subtotal?.toFixed(2) || '0.00'}</span>
+        <span> ${settings?.currencySymbol}${transaction.totals?.subtotal?.toFixed(2) || '0.00'}</span>
       </div>
       ${transaction.totals?.totalDiscount > 0 ? `
         <div class="total-row discount">
           <span>Discount</span>
-          <span>-$${transaction.totals.totalDiscount.toFixed(2)}</span>
+          <span> ${settings?.currencySymbol}${transaction.totals.totalDiscount.toFixed(2)}</span>
         </div>
       ` : ''}
       <div class="total-row">
         <span>Tax</span>
-        <span>$${transaction.totals?.totalTax?.toFixed(2) || '0.00'}</span>
+        <span> ${settings?.currencySymbol}${transaction.totals?.totalTax?.toFixed(2) || '0.00'}</span>
       </div>
       <div class="total-row grand-total">
         <span>Total</span>
-        <span>$${transaction.totals?.grandTotal?.toFixed(2) || '0.00'}</span>
+        <span> ${settings?.currencySymbol}${transaction.totals?.grandTotal?.toFixed(2) || '0.00'}</span>
       </div>
     </div>
 
@@ -382,7 +387,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
     <div class="footer">
       <div class="thank-you">Thank You For Shopping With Us!</div>
       <div>Returns accepted within 30 days with receipt</div>
-      <div style="margin-top:4px;">www.fashionstore.com</div>
+     
     </div>
 
     <div class="no-print">
@@ -425,23 +430,23 @@ ${settings?.phone }
 Receipt #: ${transaction.transactionNumber}
 Date: ${formatDate(transaction.timestamp)}
 Customer: ${customerName}
-Cashier: John Doe (#1234)
+Cashier: ${user.firstName} ${user.lastName}
 ================================
 ${transaction.cartItems?.map(item =>
-            `${item.name} x${item.quantity} - $${(item.unitPrice * item.quantity).toFixed(2)}`
+            `${item.name} x${item.quantity} - ${settings?.currencySymbol}${(item.unitPrice * item.quantity).toFixed(2)}`
         ).join('\n')}
 ================================
-Subtotal: $${transaction.totals?.subtotal?.toFixed(2) || '0.00'}
-${transaction.totals?.totalDiscount > 0 ? `Discount: -$${transaction.totals.totalDiscount.toFixed(2)}` : ''}
-Tax: $${transaction.totals?.totalTax?.toFixed(2) || '0.00'}
-TOTAL: $${transaction.totals?.grandTotal?.toFixed(2) || '0.00'}
+Subtotal: ${settings?.currencySymbol}${transaction.totals?.subtotal?.toFixed(2) || '0.00'}
+${transaction.totals?.totalDiscount > 0 ? `Discount: -${settings?.currencySymbol}${transaction.totals.totalDiscount.toFixed(2)}` : ''}
+Tax: ${settings?.currencySymbol}${transaction.totals?.totalTax?.toFixed(2) || '0.00'}
+TOTAL: ${settings?.currencySymbol}${transaction.totals?.grandTotal?.toFixed(2) || '0.00'}
 ================================
 Payment: ${transaction.payment?.paymentMethod?.toUpperCase()}
 ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDue ?
-                `Change: $${transaction.payment.changeDue.toFixed(2)}` : ''}
+                `Change: ${settings?.currencySymbol}${transaction.payment.changeDue.toFixed(2)}` : ''}
 ================================
 Thank You For Shopping With Us!
-www.fashionstore.com
+
         `;
 
         const blob = new Blob([textReceipt], { type: 'text/plain' });
@@ -494,7 +499,8 @@ www.fashionstore.com
                         <div className="mb-6">
                             <div className="grid grid-cols-[3fr_1fr_2fr] gap-3 text-xs font-semibold text-gray-600 uppercase border-b pb-2 mb-3">
                                 <div>Item</div>
-                                <div className="text-center">Qty</div>
+                  <div className="text-center">Qty</div>
+                  
                                 <div className="text-right">Amount</div>
                             </div>
 
@@ -515,7 +521,7 @@ www.fashionstore.com
                                     </div>
                                     <div className="text-center">{item.quantity}</div>
                                     <div className="text-right font-semibold">
-                                        ${(item.unitPrice * item.quantity).toFixed(2)}
+                                        {settings?.currencySymbol}{(item.unitPrice * item.quantity).toFixed(2)}
                                     </div>
                                 </div>
                             ))}
@@ -525,19 +531,19 @@ www.fashionstore.com
                         <div className="space-y-2.5 pt-3 border-t border-gray-300">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-700">Subtotal</span>
-                                <span>${transaction.totals?.subtotal?.toFixed(2)}</span>
+                  <span>{settings?.currencySymbol}{transaction.totals?.subtotal?.toFixed(2)}</span>
                             </div>
                             {transaction.totals?.totalDiscount > 0 && (
                                 <div className="flex justify-between text-sm text-green-700">
                                     <span>Discount</span>
-                                    <span>-${transaction.totals.totalDiscount.toFixed(2)}</span>
+                    <span>{settings?.currencySymbol}{transaction.totals.totalDiscount.toFixed(2)}</span>
                                 </div>
                             )}
                             {/* Add tax line if you track it */}
                             {/* <div className="flex justify-between text-sm"><span>Tax</span><span>$12.34</span></div> */}
                             <div className="flex justify-between items-center pt-4 text-base font-bold border-t border-gray-400">
                                 <span>Total</span>
-                                <span className="text-lg">${transaction.totals?.grandTotal?.toFixed(2)}</span>
+                  <span className="text-lg">{settings?.currencySymbol}{transaction.totals?.grandTotal?.toFixed(2)}</span>
                             </div>
                         </div>
 

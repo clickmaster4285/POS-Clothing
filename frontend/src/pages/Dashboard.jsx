@@ -29,6 +29,7 @@ import { usePromotions } from '@/hooks/pos_hooks/useDiscountPromotion';
 import { useTransactions } from "@/hooks/pos_hooks/useTransaction";
 import { useStockByBranch, useLowStockAlerts } from "@/hooks/inv_hooks/useStock";
 import { useBranches } from "@/hooks/useBranches";
+import { useSettings } from "@/hooks/useSettings";
 
 // Color constants for payment methods
 const PAYMENT_COLORS = {
@@ -42,7 +43,7 @@ export default function Dashboard() {
     const { user } = useAuth(); // Get current user from auth
     const isAdmin = user?.role === 'admin';
     const userBranchId = user?.branchId; // Assuming branchId is attached to user object
-
+    const { data: settings } = useSettings();
     // Fetch branches only for admin
     const { data: branches = [], isLoading: branchesLoading } = useBranches();
 
@@ -313,7 +314,7 @@ export default function Dashboard() {
     const statCards = [
         {
             label: "Sales Today",
-            value: `$${dashboardData.salesToday.toLocaleString()}`,
+            value: `${settings?.currencySymbol || '$'}${dashboardData.salesToday.toLocaleString()}`,
             change: dashboardData.salesChange.toFixed(1),
             icon: TrendingUp,
             highlight: true,
@@ -326,7 +327,7 @@ export default function Dashboard() {
         },
         {
             label: "Avg. Transaction Value",
-            value: `$${dashboardData.avgTransactionValue.toFixed(2)}`,
+            value: `${settings?.currencySymbol || '$'}${dashboardData.avgTransactionValue.toFixed(2)}`,
             change: dashboardData.avgTransactionChange.toFixed(1),
             icon: Receipt,
         },
@@ -338,7 +339,7 @@ export default function Dashboard() {
         },
     ];
 
-    const fmt = (v) => `$${v.toLocaleString()}`;
+    const fmt = (v) => `${settings?.currencySymbol || '$'}${v.toLocaleString()}`;
 
     return (
         <div className="space-y-5">
@@ -529,7 +530,7 @@ export default function Dashboard() {
                         {topProducts.length > 0 ? topProducts.map((p) => (
                             <div key={p.name} className="flex items-center justify-between">
                                 <span className="text-sm text-card-foreground">{p.name}</span>
-                                <span className="text-sm font-semibold text-card-foreground">${p.sales.toLocaleString()}</span>
+                                <span className="text-sm font-semibold text-card-foreground">{settings?.currencySymbol || '$'}{p.sales.toLocaleString()}</span>
                             </div>
                         )) : (
                             <p className="text-sm text-muted-foreground">No sales data available</p>
@@ -569,7 +570,7 @@ export default function Dashboard() {
                         {activePromotionsWithRevenue.length > 0 ? activePromotionsWithRevenue.map((promo) => (
                             <div key={promo.name} className="flex items-center justify-between">
                                 <span className="text-sm text-card-foreground">{promo.name}</span>
-                                <span className="text-sm font-semibold text-card-foreground">${promo.revenue.toLocaleString()}</span>
+                                <span className="text-sm font-semibold text-card-foreground">{settings?.currencySymbol || '$'}{promo.revenue.toLocaleString()}</span>
                             </div>
                         )) : (
                             <p className="text-sm text-muted-foreground">No active promotions</p>

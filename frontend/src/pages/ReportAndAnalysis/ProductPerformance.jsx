@@ -56,8 +56,15 @@ const ProductPerformance = () => {
     const loading = branchId ? branchLoading : allStockLoading;
 
 
-    const stockData = stockRawData.data
+    const stockData = useMemo(() => {
+        if (!stockRawData?.data) return [];
 
+        return stockRawData.data.filter((item) => {
+            // Convert lastSoldDate to Date
+            const itemDate = new Date(item.lastSoldDate);
+            return itemDate >= startDate && itemDate <= endDate;
+        });
+    }, [stockRawData, startDate, endDate]);
     
    
 

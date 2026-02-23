@@ -6,13 +6,20 @@ const Branch = require("../models/branch.model");
  */
 exports.createBranch = async (req, res) => {
   try {
-   
-   const branchData = {
-  ...req.body,
-  branch_manager: req.body.branch_manager || undefined // avoid sending empty string
-};
+    console.log("Received branch data:", req.body);
 
-const branch = await Branch.create(branchData);
+    // Ensure branch_manager is undefined if empty
+    const branchData = {
+      branch_name: req.body.branch_name,
+      tax_region: req.body.tax_region,
+      opening_time: req.body.opening_time,
+      closing_time: req.body.closing_time,
+      status: req.body.status || "ACTIVE",
+      branch_manager: req.body.branch_manager || undefined,
+      address: req.body.address || {},
+    };
+
+    const branch = await Branch.create(branchData);
 
     res.status(201).json({
       success: true,
@@ -20,15 +27,15 @@ const branch = await Branch.create(branchData);
       data: branch
     });
 
-
   } catch (error) {
+    console.error("Branch creation error:", error); // detailed log
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
+      errors: error.errors || null
     });
   }
 };
-
 /**
  * GET ALL BRANCHES (ACTIVE ONLY)
  */

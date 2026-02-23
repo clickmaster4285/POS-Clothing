@@ -8,7 +8,8 @@ const TransactionList = ({
     onViewReceipt,
     onViewReturn,
     formatDate,
-    statusColor
+    statusColor,
+      
 }) => {
     return (
         <>
@@ -22,6 +23,7 @@ const TransactionList = ({
                         onViewReturn={onViewReturn}
                         formatDate={formatDate}
                         statusColor={statusColor}
+                     
                     />
                 ))}
             </div>
@@ -34,8 +36,11 @@ const TransactionList = ({
                     onViewReturn={onViewReturn}
                     formatDate={formatDate}
                     statusColor={statusColor}
+                 
                 />
             </div>
+
+         
         </>
     );
 };

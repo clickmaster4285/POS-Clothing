@@ -10,7 +10,9 @@ import { MoreVertical, PackagePlus, PackageMinus, Truck as TruckIcon } from "luc
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { Pagination } from "@/components/ui/Pagination";
+
 
 export function StockOverviewTab({
     stocks = [],
@@ -28,6 +30,11 @@ export function StockOverviewTab({
     setActiveTab,
     getStatusColor
 }) {
+
+
+    const itemsPerPage = 10;
+    const [currentPage, setCurrentPage] = useState(1);
+
 
 
 
@@ -48,8 +55,16 @@ export function StockOverviewTab({
 
         return matchesSearch && matchesBranch
     })
+    const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
 
+    const paginatedStocks = filteredStocks.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, branchFilter]);
 
     return (
         <div className="space-y-4">
@@ -164,7 +179,7 @@ export function StockOverviewTab({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredStocks.map((stock) => {
+                            {paginatedStocks.map((stock) => {
                                 const variant = stock.product?.variants?.find((v) =>
                                     v._id === stock.variantId || v.id === stock.variantId
                                 )
@@ -268,6 +283,12 @@ export function StockOverviewTab({
                     </Table>
                 </CardContent>
             </Card>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
+
 
             {/* Recent Adjustments & Transfers */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

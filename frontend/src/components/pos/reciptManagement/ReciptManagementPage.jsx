@@ -18,9 +18,16 @@ const ReciptManagementPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showReceiptPrinter, setShowReceiptPrinter] = useState(false); // Add this
 
+    // Filter state
+    const [filterByDate, setFilterByDate] = useState("all"); 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; 
+    // Payment method filter state
+    const [filterByPayment, setFilterByPayment] = useState("all"); // "all", "cash", "card"
+
     const { data: settings } = useSettings();
   
-    console.log("Settings data in ReceiptManagementPage:", settings);
+ 
     const { data: transactionData, isLoading } = useTransactions();
 
     // Get transactions array from the data and filter only completed transactions
@@ -28,6 +35,8 @@ const ReciptManagementPage = () => {
     const transactions = allTransactions.filter(txn =>
         txn.status?.toLowerCase() === "completed"
     );
+
+  
 
     // Initialize selectedTxn with first transaction once data is loaded
     useState(() => {
@@ -59,16 +68,51 @@ const ReciptManagementPage = () => {
 
     // Filter transactions based on search query
     const filteredTransactions = transactions.filter(txn => {
-        if (!searchQuery) return true;
-        const query = searchQuery.toLowerCase();
-        return (
-            txn.transactionNumber?.toLowerCase().includes(query) ||
-            txn.customer?.customerFirstName?.toLowerCase().includes(query) ||
-            txn.customer?.customerLastName?.toLowerCase().includes(query) ||
-            txn.customer?.customerEmail?.toLowerCase().includes(query) ||
-            formatDate(txn.timestamp).toLowerCase().includes(query)
-        );
+        const txnDate = new Date(txn.timestamp);
+
+        // --- Date Filter ---
+        const today = new Date();
+        let dateMatch = true;
+        if (filterByDate === "today") {
+            dateMatch = txnDate.toDateString() === today.toDateString();
+        } else if (filterByDate === "last7days") {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            dateMatch = txnDate >= sevenDaysAgo && txnDate <= today;
+        } else if (filterByDate === "last30days") {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            dateMatch = txnDate >= thirtyDaysAgo && txnDate <= today;
+        }
+
+        // --- Payment Method Filter ---
+        let paymentMatch = true;
+        if (filterByPayment === "cash") {
+            paymentMatch = txn.payment?.paymentMethod?.toLowerCase() === "cash";
+        } else if (filterByPayment === "card") {
+            paymentMatch = txn.payment?.paymentMethod?.toLowerCase() === "card";
+        }
+
+        // --- Search Filter ---
+        let searchMatch = true;
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            searchMatch =
+                txn.transactionNumber?.toLowerCase().includes(query) ||
+                txn.customer?.customerFirstName?.toLowerCase().includes(query) ||
+                txn.customer?.customerLastName?.toLowerCase().includes(query) ||
+                txn.customer?.customerEmail?.toLowerCase().includes(query) ||
+                formatDate(txn.timestamp).toLowerCase().includes(query);
+        }
+
+        return dateMatch && paymentMatch && searchMatch;
     });
+
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     // Handle print receipt
     const handlePrintReceipt = (txn) => {
@@ -146,7 +190,7 @@ const ReciptManagementPage = () => {
                     <div>
                         <p className="text-xs text-muted-foreground">Total</p>
                         <p className="text-base font-bold text-primary">
-                            ${txn.totals?.grandTotal?.toFixed(2) || '0.00'}
+                            {settings?.currencySymbol || '$'}{txn.totals?.grandTotal?.toFixed(2) || '0.00'}
                         </p>
                     </div>
                     <button
@@ -186,6 +230,9 @@ const ReciptManagementPage = () => {
                     <span>Home</span><span>›</span><span>Point of Sale</span><span>›</span>
                     <span className="text-primary font-medium">Receipt Management</span>
                 </div>
+                
+
+               
 
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-6">
@@ -227,7 +274,7 @@ const ReciptManagementPage = () => {
                             <div>
                                 <span className="text-xs text-muted-foreground">Total:</span>
                                 <p className="text-base font-bold text-primary">
-                                    ${selectedTxn.totals?.grandTotal?.toFixed(2)}
+                                    {settings?.currencySymbol || '$'}{selectedTxn.totals?.grandTotal?.toFixed(2)}
                                 </p>
                             </div>
                         </div>
@@ -244,7 +291,7 @@ const ReciptManagementPage = () => {
                                                 Color: {item.color?.name || 'N/A'} | Size: {item.size || 'N/A'} | Qty: {item.quantity}
                                             </p>
                                         </div>
-                                        <span className="font-medium">${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                                        <span className="font-medium">{settings?.currencySymbol || '$'}{(item.unitPrice * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -298,28 +345,28 @@ const ReciptManagementPage = () => {
                                     <div key={idx} className="flex justify-between text-xs">
                                         <span className="flex-1 truncate">{item.name}</span>
                                         <span className="w-12 text-center">{item.quantity}</span>
-                                        <span className="w-16 text-right">${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                                        <span className="w-16 text-right">{settings?.currencySymbol || '$'}{(item.unitPrice * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
 
                                 <div className="border-t pt-2 mt-2 space-y-1">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span>${selectedTxn.totals?.subtotal?.toFixed(2)}</span>
+                                        <span>{settings?.currencySymbol || '$'}{selectedTxn.totals?.subtotal?.toFixed(2)}</span>
                                     </div>
                                     {selectedTxn.totals?.totalDiscount > 0 && (
                                         <div className="flex justify-between text-green-600">
                                             <span>Discount</span>
-                                            <span>-${selectedTxn.totals?.totalDiscount?.toFixed(2)}</span>
+                                            <span>{settings?.currencySymbol || '$'}{selectedTxn.totals?.totalDiscount?.toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between">
                                         <span>Tax</span>
-                                        <span>${selectedTxn.totals?.totalTax?.toFixed(2)}</span>
+                                        <span>{settings?.currencySymbol || '$'}{selectedTxn.totals?.totalTax?.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold pt-1 border-t">
                                         <span>Total</span>
-                                        <span>${selectedTxn.totals?.grandTotal?.toFixed(2)}</span>
+                                        <span>{settings?.currencySymbol || '$'}{selectedTxn.totals?.grandTotal?.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -328,7 +375,7 @@ const ReciptManagementPage = () => {
                                 <p className="text-xs text-muted-foreground mb-2">
                                     Payment: {selectedTxn.payment?.paymentMethod?.toUpperCase()}
                                     {selectedTxn.payment?.paymentMethod === 'cash' &&
-                                        ` - Change: $${selectedTxn.payment?.changeDue?.toFixed(2)}`}
+                                        `Change: ${settings?.currencySymbol || '$'}${selectedTxn.payment?.changeDue?.toFixed(2)}`}
                                 </p>
                                 {selectedTxn.loyalty?.pointsEarned > 0 && (
                                     <p className="text-xs text-primary">
@@ -404,13 +451,31 @@ const ReciptManagementPage = () => {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowMobileFilter(true)}
-                        className="lg:hidden flex items-center gap-2 px-4 py-2 border rounded-lg text-sm"
-                    >
-                        <Filter size={16} />
-                        Filter
-                    </button>
+                    <div className="flex gap-2 items-center">
+                        <select
+                            value={filterByDate}
+                            onChange={(e) => { setFilterByDate(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm bg-card"
+                        >
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="last7days">Last 7 Days</option>
+                            <option value="last30days">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <select
+                            value={filterByPayment}
+                            onChange={(e) => { setFilterByPayment(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm bg-card"
+                        >
+                            <option value="all">All Payment Methods</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                        </select>
+                    </div>
+
+
                     <div className="hidden lg:block relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
@@ -458,7 +523,7 @@ const ReciptManagementPage = () => {
                 <>
                     {/* Mobile Transaction Cards */}
                     <div className="lg:hidden">
-                        {filteredTransactions.map((txn) => (
+                                {paginatedTransactions.map((txn) => (
                             <TransactionCard key={txn._id} txn={txn} />
                         ))}
                     </div>
@@ -480,7 +545,7 @@ const ReciptManagementPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {filteredTransactions.map((txn) => {
+                                    {paginatedTransactions.map((txn) => {
                                         const customerName = txn.customer
                                             ? `${txn.customer.customerFirstName || ''} ${txn.customer.customerLastName || ''}`.trim()
                                             : 'Walk-in Customer';
@@ -494,7 +559,7 @@ const ReciptManagementPage = () => {
                                                 </td>
                                                 <td className="px-4 py-3 text-sm">{txn.cartItems?.length || 0}</td>
                                                 <td className="px-4 py-3 text-sm font-medium">
-                                                    ${txn.totals?.grandTotal?.toFixed(2)}
+                                                    {settings?.currencySymbol || '$'}{txn.totals?.grandTotal?.toFixed(2)}
                                                 </td>
                                                 <td className="px-4 py-3 text-sm capitalize">
                                                     {txn.payment?.paymentMethod || 'N/A'}
@@ -540,6 +605,28 @@ const ReciptManagementPage = () => {
                 </>
             )}
             </Card>
+
+            <div className="flex justify-between items-center mt-4 text-sm">
+                <span>
+                    Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                        className="px-2 py-1 border rounded disabled:opacity-50"
+                    >
+                        Prev
+                    </button>
+                    <button
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        className="px-2 py-1 border rounded disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
             {/* Receipt Printer Modal */}
             <ReceiptPrinter
                 transaction={selectedTxn}

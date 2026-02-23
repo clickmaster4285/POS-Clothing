@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
-
+import { useSettings } from "@/hooks/useSettings";
 const ReturnView = ({
     selectedTxn,
     returnItems,
@@ -21,7 +21,7 @@ const ReturnView = ({
     const [selectedItems, setSelectedItems] = useState([]);
     const [showExchangeHistory, setShowExchangeHistory] = useState(false);
 
-
+    const { data: settings } = useSettings();
    
 
     // Reset selection whenever returnItems change
@@ -107,7 +107,7 @@ const ReturnView = ({
                         <div>
                             <span className="text-xs text-muted-foreground">Total:</span>
                             <p className="text-base font-bold text-primary">
-                                ${(selectedTxn.updatedTotals?.originalGrandTotal ||
+                                {settings?.currencySymbol }{(selectedTxn.updatedTotals?.originalGrandTotal ||
                                     selectedTxn.totals?.grandTotal || 0).toFixed(2)}
                             </p>
                         </div>
@@ -126,14 +126,14 @@ const ReturnView = ({
                                 <div className="flex justify-between">
                                     <span>Original:</span>
                                     <span>
-                                        ${updatedTotals.originalGrandTotal}
+                                        {settings?.currencySymbol}{updatedTotals.originalGrandTotal}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between text-red-600">
                                     <span>Returned:</span>
                                     <span>
-                                        -${updatedTotals.returnedValue}
+                                        - {settings?.currencySymbol}{updatedTotals.returnedValue}
                                     </span>
                                 </div>
 
@@ -141,7 +141,7 @@ const ReturnView = ({
                                     <div className="flex justify-between text-blue-600">
                                         <span>Exchange:</span>
                                         <span>
-                                            ${updatedTotals.exchangeValue}
+                                            {settings?.currencySymbol}{updatedTotals.exchangeValue}
                                         </span>
                                     </div>
                                 )}
@@ -150,7 +150,7 @@ const ReturnView = ({
                                     <div className="flex justify-between text-primary">
                                         <span>Additional Paid:</span>
                                         <span>
-                                            ${updatedTotals.additionalPaymentTotal}
+                                            {settings?.currencySymbol}{updatedTotals.additionalPaymentTotal}
                                         </span>
                                     </div>
                                 )}
@@ -158,7 +158,7 @@ const ReturnView = ({
                                 <div className="border-t pt-1 mt-2 flex justify-between font-semibold text-sm">
                                     <span>Net:</span>
                                     <span>
-                                        ${updatedTotals.netAmount}
+                                        {settings?.currencySymbol}{updatedTotals.netAmount}
                                     </span>
                                 </div>
 
@@ -194,14 +194,14 @@ const ReturnView = ({
                                                             {item.name} x{Math.abs(item.quantity)}
                                                         </span>
                                                         <span className="font-medium">
-                                                            ${Math.abs(item.unitPrice * item.quantity).toFixed(2)}
+                                                            {settings?.currencySymbol || '$'}{Math.abs(item.unitPrice * item.quantity).toFixed(2)}
                                                         </span>
                                                     </div>
                                                 ))}
                                             </div>
                                             <div className="flex justify-between mt-1 font-medium">
                                                 <span>Exchange Total:</span>
-                                                <span>${exchange.totals?.grandTotal?.toFixed(2) || 0}</span>
+                                                <span>{settings?.currencySymbol}{exchange.totals?.grandTotal?.toFixed(2) || 0}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -213,7 +213,7 @@ const ReturnView = ({
                                             {selectedTxn.exchangeItems.map((item, i) => (
                                                 <div key={i} className="flex justify-between text-xs">
                                                     <span>{item.name} x{item.quantity}</span>
-                                                    <span>${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                                                    <span>{settings?.currencySymbol}{(item.unitPrice * item.quantity).toFixed(2)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -238,13 +238,13 @@ const ReturnView = ({
                                     {ret.items?.map((item, i) => (
                                         <div key={i} className="flex justify-between text-muted-foreground">
                                             <span>↩ {item.name} x{item.quantity}</span>
-                                            <span>${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                                            <span>{settings?.currencySymbol}{(item.unitPrice * item.quantity).toFixed(2)}</span>
                                         </div>
                                     ))}
                                     <div className="flex justify-between font-medium mt-1">
                                         <span>Refund Amount:</span>
                                         <span className="text-red-600">
-                                            -${ret.totals?.grandTotal?.toFixed(2) || 0}
+                                            - {settings?.currencySymbol}{ret.totals?.grandTotal?.toFixed(2) || 0}
                                         </span>
                                     </div>
                                 </div>
@@ -259,27 +259,27 @@ const ReturnView = ({
                             <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div className="flex justify-between">
                                     <span>Original Total:</span>
-                                    <span>${selectedTxn.updatedTotals.originalGrandTotal?.toFixed(2)}</span>
+                                    <span>{settings?.currencySymbol}{selectedTxn.updatedTotals.originalGrandTotal?.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-red-600">
                                     <span>Returned:</span>
-                                    <span>-${selectedTxn.updatedTotals.returnedValue?.toFixed(2)}</span>
+                                    <span>- {settings?.currencySymbol}{selectedTxn.updatedTotals.returnedValue?.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Exchange Value:</span>
-                                    <span>${selectedTxn.updatedTotals.exchangeValue?.toFixed(2)}</span>
+                                    <span>{settings?.currencySymbol}{selectedTxn.updatedTotals.exchangeValue?.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-green-600">
                                     <span>Additional Paid:</span>
-                                    <span>+${selectedTxn.updatedTotals.additionalPaymentTotal?.toFixed(2)}</span>
+                                    <span>+ {settings?.currencySymbol}{selectedTxn.updatedTotals.additionalPaymentTotal?.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-red-600">
                                     <span>Refunded:</span>
-                                    <span>-${selectedTxn.updatedTotals.refundTotal?.toFixed(2)}</span>
+                                    <span>- {settings?.currencySymbol}{selectedTxn.updatedTotals.refundTotal?.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between font-bold border-t pt-1 mt-1 col-span-2">
                                     <span>Net Amount:</span>
-                                    <span>${selectedTxn.updatedTotals.netAmount?.toFixed(2)}</span>
+                                    <span>{settings?.currencySymbol}{selectedTxn.updatedTotals.netAmount?.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -329,7 +329,7 @@ const ReturnView = ({
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
                                                 <p className="text-sm font-medium text-primary">
-                                                    ${unitPrice.toFixed(2)}
+                                                    {settings?.currencySymbol}{unitPrice.toFixed(2)}
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <button
@@ -358,18 +358,18 @@ const ReturnView = ({
                                             {discountPercent > 0 && (
                                                 <div className="flex justify-between">
                                                     <span>Discount ({discountPercent}%):</span>
-                                                    <span>-${discountAmount.toFixed(2)}</span>
+                                                    <span>-{settings?.currencySymbol || '$'}{discountAmount.toFixed(2)}</span>
                                                 </div>
                                             )}
                                             {loyaltyDiscountPerItem > 0 && (
                                                 <div className="flex justify-between border-b pb-1">
                                                     <span>Loyalty Discount:</span>
-                                                    <span>-${loyaltyDiscountPerItem.toFixed(2)}</span>
+                                                    <span>-{settings?.currencySymbol || '$'}{loyaltyDiscountPerItem.toFixed(2)}</span>
                                                 </div>
                                             )}
                                             <div className="flex justify-between font-bold">
                                                 <span>Refund Amount:</span>
-                                                <span className="text-primary">${totalAfterDiscounts.toFixed(2)}</span>
+                                                <span className="text-primary">{settings?.currencySymbol || '$'}{totalAfterDiscounts.toFixed(2)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -485,13 +485,13 @@ const ReturnView = ({
 
                                                     {discountPercent > 0 && (
                                                         <p className="text-xs text-red-600 mt-1">
-                                                            Discount: -${discountAmount.toFixed(2)}
+                                                            Discount: -{settings?.currencySymbol || '$'}{discountAmount.toFixed(2)}
                                                         </p>
                                                     )}
 
                                                     {loyaltyDiscountPerItem > 0 && (
                                                         <p className="text-xs text-green-600">
-                                                            Loyalty: -$
+                                                            Loyalty: -{settings?.currencySymbol || '$'}
                                                             {loyaltyDiscountPerItem.toFixed(2)}
                                                         </p>
                                                     )}
@@ -500,10 +500,10 @@ const ReturnView = ({
                                                 {/* RIGHT */}
                                                 <div className="text-right">
                                                     <p className="text-xs text-muted-foreground">
-                                                        Unit: ${unitPrice.toFixed(2)}
+                                                        Unit: {settings?.currencySymbol || '$'}{unitPrice.toFixed(2)}
                                                     </p>
                                                     <p className="font-bold text-sm text-red-600">
-                                                        -${totalAfterDiscounts.toFixed(2)}
+                                                        -{settings?.currencySymbol || '$'}{totalAfterDiscounts.toFixed(2)}
                                                     </p>
                                                 </div>
 
@@ -558,7 +558,7 @@ const ReturnView = ({
                                                 {/* RIGHT */}
                                                 <div className="text-right">
                                                     <p className="font-bold text-sm text-emerald-600">
-                                                        ${total.toFixed(2)}
+                                                        {settings?.currencySymbol || '$'}{total.toFixed(2)}
                                                     </p>
                                                 </div>
 

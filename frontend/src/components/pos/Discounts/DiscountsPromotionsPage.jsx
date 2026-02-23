@@ -11,6 +11,7 @@ import PromotionsTable from "./PromotionsTable";
 import PromotionModal from "./PromotionModal";
 import ValidationModal from "./ValidationModal";
 import { RefreshCw } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 
 const DiscountsPromotionsPage = () => {
     const [activeTab, setActiveTab] = useState("promotions");
@@ -22,6 +23,15 @@ const DiscountsPromotionsPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [managerPin, setManagerPin] = useState("");
 
+    const [priorityFilter, setPriorityFilter] = useState(""); // "" = all priorities
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // adjust as needed
+    const [dateRange, setDateRange] = useState({
+        startDate: "",
+        endDate: "",
+    });
+
     // API Hooks
     const {
         data: response,
@@ -31,10 +41,41 @@ const DiscountsPromotionsPage = () => {
     } = usePromotions();
 
     // Extract promotions array from response
+    // Filter by search term
     const promotions = response?.success && Array.isArray(response.data)
         ? response.data
         : [];
 
+    // Filter by search term
+    let filteredPromotions = promotions.filter((promo) =>
+        promo.discountDescription.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Filter by priority if selected
+    if (priorityFilter) {
+        filteredPromotions = filteredPromotions.filter(
+            (promo) => promo.priority === priorityFilter
+        );
+    }
+
+    // Filter by date if provided
+    if (dateRange.startDate) {
+        filteredPromotions = filteredPromotions.filter(
+            (promo) => new Date(promo.createdAt) >= new Date(dateRange.startDate)
+        );
+    }
+    if (dateRange.endDate) {
+        filteredPromotions = filteredPromotions.filter(
+            (promo) => new Date(promo.createdAt) <= new Date(dateRange.endDate)
+        );
+    }
+
+    // Pagination
+    const totalPages = Math.ceil(filteredPromotions.length / itemsPerPage);
+    const paginatedPromotions = filteredPromotions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
     
   
     const createPromotion = useCreatePromotion();
@@ -120,12 +161,15 @@ const DiscountsPromotionsPage = () => {
                 </div>
             </div>
 
+            
             {/* Promotions Tab */}
             {activeTab === "promotions" && (
                 <div className="space-y-4">
                     <PromotionsHeader
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
+                        priorityFilter={priorityFilter}
+                        setPriorityFilter={setPriorityFilter}
                     />
 
                     {isLoading && (
@@ -136,8 +180,8 @@ const DiscountsPromotionsPage = () => {
                     )}
 
                     {!isLoading && (
-                        <PromotionsTable
-                            promotions={promotions}
+                        <>   <PromotionsTable
+                            promotions={paginatedPromotions}
                             searchTerm={searchTerm}
                             onView={setSelectedPromo}
                             onEdit={(promo) => {
@@ -148,6 +192,12 @@ const DiscountsPromotionsPage = () => {
                             onDelete={deletePromotion.mutateAsync}
                             deleteLoading={deletePromotion.isLoading}
                         />
+
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={(page) => setCurrentPage(page)}
+                            /></>
                     )}
                 </div>
             )}

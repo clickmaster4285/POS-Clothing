@@ -10,7 +10,7 @@ const variantStyles = {
     destructive: "border-l-4 border-l-destructive",
 };
 
-export const KPICard = ({ title, value, icon, change, prefix = "$", subtitle, variant = "default" }) => {
+export const KPICard = ({ title, value, icon, change, prefix = "", subtitle, variant = "default" }) => {
     const formatted = typeof value === "number"
         ? `${prefix}${value.toLocaleString()}`
         : value;

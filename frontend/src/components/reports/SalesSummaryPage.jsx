@@ -5,21 +5,110 @@ import { ChartCard, SalesLineChart, ReportBarChart, ReportDonutChart } from "./R
 import { ReportTable, StatusBadge } from "./ReportTable";
 import { useStockByBranch, useStock } from "@/hooks/inv_hooks/useStock";
 import { useAuth } from "@/hooks/useAuth";
+import {
+    useTransactions
+} from "@/hooks/pos_hooks/useTransaction";
+import { useSettings } from "@/hooks/useSettings";
 
-const SalesSummaryPage = () => {
+const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     const { user: currentUser } = useAuth();
     const branchId = currentUser?.branchId || null;
+    const { data: settings } = useSettings();
 
-    // Fetch stock data
-    const { data: branchStockData, isLoading: branchLoading } = useStockByBranch(branchId);
-    const { data: allStockData, isLoading: allStockLoading } = useStock();
+    // Calculate date range based on filter
+    const getDateFilter = useMemo(() => {
+        const now = new Date();
+        const start = new Date();
+        const end = new Date();
+
+        console.log("🔄 Recalculating date filter for:", dateRange);
+
+        switch (dateRange) {
+            case 'today':
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                break;
+
+            case 'this-week':
+                const day = now.getDay();
+                start.setDate(now.getDate() - day);
+                start.setHours(0, 0, 0, 0);
+                end.setDate(start.getDate() + 6);
+                end.setHours(23, 59, 59, 999);
+                break;
+
+            case 'this-month':
+                start.setDate(1);
+                start.setHours(0, 0, 0, 0);
+                end.setMonth(now.getMonth() + 1);
+                end.setDate(0);
+                end.setHours(23, 59, 59, 999);
+                break;
+
+            case 'this-quarter':
+                const quarter = Math.floor(now.getMonth() / 3);
+                start.setMonth(quarter * 3, 1);
+                start.setHours(0, 0, 0, 0);
+                end.setMonth(quarter * 3 + 3, 0);
+                end.setHours(23, 59, 59, 999);
+                break;
+
+            case 'this-year':
+                start.setMonth(0, 1);
+                start.setHours(0, 0, 0, 0);
+                end.setMonth(11, 31);
+                end.setHours(23, 59, 59, 999);
+                break;
+
+            default:
+                start.setDate(1);
+                start.setHours(0, 0, 0, 0);
+                end.setMonth(now.getMonth() + 1);
+                end.setDate(0);
+                end.setHours(23, 59, 59, 999);
+        }
+
+        console.log("📅 Date range:", {
+            start: start.toLocaleDateString(),
+            end: end.toLocaleDateString()
+        });
+
+        return { start, end };
+    }, [dateRange]);
+
+    // Fetch transactions with date filters
+    const { data: transactionData, isLoading: transactionsLoading } = useTransactions({
+        startDate: getDateFilter.start.toISOString(),
+        endDate: getDateFilter.end.toISOString(),
+        branchId: branchId
+    });
+
+    const transactions = transactionData?.transactions || [];
+    console.log("📦 Filtered Transactions:", transactions.length, "for", dateRange);
+
+    // Fetch stock data with date filters
+    const { data: branchStockData, isLoading: branchLoading } = useStockByBranch(
+        branchId,
+        {
+            startDate: getDateFilter.start.toISOString(),
+            endDate: getDateFilter.end.toISOString(),
+        }
+    );
+
+    const { data: allStockData, isLoading: allStockLoading } = useStock({
+        startDate: getDateFilter.start.toISOString(),
+        endDate: getDateFilter.end.toISOString(),
+    });
 
     const stockRawData = branchId ? branchStockData : allStockData;
-    const loading = branchId ? branchLoading : allStockLoading;
-
+    const stockLoading = branchId ? branchLoading : allStockLoading;
     const stockData = stockRawData?.data || [];
 
-    // Process sales data
+    console.log("stockData in sales page", stockData);
+
+    const loading = transactionsLoading || stockLoading;
+
+    // Process sales data - THIS WILL WORK FOR BOTH VERSIONS
     const {
         kpiData,
         salesByHourData,
@@ -28,6 +117,8 @@ const SalesSummaryPage = () => {
         topSellingProducts,
         dailySalesData
     } = useMemo(() => {
+        console.log("📊 Processing data for:", dateRange);
+
         // Initialize data structures
         let totalRevenue = 0;
         let totalTransactions = 0;
@@ -42,59 +133,45 @@ const SalesSummaryPage = () => {
         const productSales = {};
         const dailyRevenue = {};
 
-        // Process each stock item's history
+        // Get date range for filtering (used for stock history approach)
+        const startDate = getDateFilter.start;
+        const endDate = getDateFilter.end;
+
+        // OPTION 1: Process from stock history (first version)
         stockData.forEach(item => {
             if (item.history && Array.isArray(item.history)) {
                 item.history.forEach(transaction => {
+                    const transactionTime = new Date(transaction.timestamp).getTime();
+                    const startTime = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
+                    const endTime = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59);
+
+                    if (transactionTime < startTime || transactionTime > endTime) return;
+
+                    // Sale
                     if (transaction.action === 'sale') {
                         const quantity = Math.abs(transaction.quantity || 0);
-                        const timestamp = transaction.timestamp;
-                        const date = new Date(timestamp);
-                        const hour = date.getHours();
-                        const month = date.toLocaleString('default', { month: 'short' });
-                        const day = date.toISOString().split('T')[0];
-
-                        // Calculate revenue (you might need to adjust this based on your price structure)
                         const price = item.product?.variants?.[0]?.price?.retailPrice || 0;
                         const revenue = quantity * price;
-
                         totalRevenue += revenue;
                         totalItemsSold += quantity;
                         totalTransactions += 1;
 
-                        // Track unique customers (if you have customer data)
-                        if (transaction.user) {
-                            uniqueCustomers.add(transaction.user);
-                        }
-
-                        // Hourly sales
+                        const date = new Date(transaction.timestamp);
+                        const hour = date.getHours();
                         hourlySales[hour] += revenue;
 
-                        // Monthly sales
-                        if (!monthlySales[month]) {
-                            monthlySales[month] = { current: 0, previous: 0 };
-                        }
-                        monthlySales[month].current += revenue;
+                        // Daily
+                        const day = date.toISOString().split('T')[0];
+                        dailyRevenue[day] = (dailyRevenue[day] || 0) + revenue;
 
-                        // Daily revenue for trend
-                        if (!dailyRevenue[day]) {
-                            dailyRevenue[day] = 0;
-                        }
-                        dailyRevenue[day] += revenue;
-
-                        // Payment methods (if you have this data)
-                        const method = transaction.paymentMethod || 'Cash';
-                        paymentMethods[method] = (paymentMethods[method] || 0) + revenue;
-
-                        // Product sales tracking
+                        // Product tracking
                         const productId = item.product?._id || item.product?.sku;
-                        const productName = item.product?.productName || 'Unknown';
                         if (productId) {
                             if (!productSales[productId]) {
                                 productSales[productId] = {
-                                    name: productName,
-                                    sku: item.product?.sku || 'N/A',
-                                    category: item.product?.category || 'Uncategorized',
+                                    name: item.product.productName || 'Unknown',
+                                    sku: item.product.sku || 'N/A',
+                                    category: item.product.category || 'Uncategorized',
                                     sold: 0,
                                     revenue: 0,
                                     stock: item.currentStock || 0,
@@ -104,16 +181,110 @@ const SalesSummaryPage = () => {
                             productSales[productId].sold += quantity;
                             productSales[productId].revenue += revenue;
                         }
-                    } else if (transaction.action === 'return') {
+                    }
+
+                    // Return
+                    else if (transaction.action === 'return') {
                         totalReturns += Math.abs(transaction.quantity || 0);
                     }
                 });
             }
         });
 
+     
+        const productDetailsMap = {};
+        stockData.forEach(item => {
+            if (item.product?._id || item.product?.sku) {
+                const productId = item.product._id || item.product.sku;
+                productDetailsMap[productId] = {
+                    name: item.product.productName || 'Unknown',
+                    sku: item.product.sku || 'N/A',
+                    category: item.product.category || 'Uncategorized',
+                    color: item.color || 'N/A',
+                    currentStock: item.currentStock || 0
+                };
+            }
+        });
+
+        // Process transactions directly
+        transactions.forEach(transaction => {
+            totalTransactions++;
+
+            const paymentMethod = transaction.payment?.paymentMethod || 'cash';
+            const grandTotal = transaction.totals?.grandTotal || 0;
+
+            totalRevenue += grandTotal;
+
+            if (transaction.customer?.customerId || transaction.customer?.customerFirstName) {
+                const customerId = transaction.customer.customerId ||
+                    `${transaction.customer.customerFirstName}-${transaction.customer.customerLastName}`;
+                uniqueCustomers.add(customerId);
+            }
+
+            if (transaction.cartItems && Array.isArray(transaction.cartItems)) {
+                transaction.cartItems.forEach(item => {
+                    const quantity = item.quantity || 1;
+                    const unitPrice = item.unitPrice || 0;
+                    const itemRevenue = quantity * unitPrice;
+
+                    totalItemsSold += quantity;
+
+                    const productId = item.productId || item.id;
+                    if (productId) {
+                        if (!productSales[productId]) {
+                            const productDetails = productDetailsMap[productId] || {};
+                            productSales[productId] = {
+                                name: item.name || productDetails.name || 'Unknown',
+                                sku: productDetails.sku || 'N/A',
+                                category: productDetails.category || 'Uncategorized',
+                                sold: 0,
+                                revenue: 0,
+                                stock: productDetails.currentStock || 0,
+                                color: item.color || productDetails.color || 'N/A'
+                            };
+                        }
+                        productSales[productId].sold += quantity;
+                        productSales[productId].revenue += itemRevenue;
+                    }
+                });
+            }
+
+            const timestamp = transaction.timestamp || transaction.createdAt;
+            if (timestamp) {
+                const date = new Date(timestamp);
+                const hour = date.getHours();
+                const month = date.toLocaleString('default', { month: 'short' });
+                const day = date.toISOString().split('T')[0];
+
+                hourlySales[hour] += grandTotal;
+
+                if (!monthlySales[month]) {
+                    monthlySales[month] = { current: 0, previous: 0 };
+                }
+                monthlySales[month].current += grandTotal;
+
+                if (!dailyRevenue[day]) {
+                    dailyRevenue[day] = 0;
+                }
+                dailyRevenue[day] += grandTotal;
+            }
+
+            if (paymentMethod) {
+                const method = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
+                paymentMethods[method] = (paymentMethods[method] || 0) + grandTotal;
+            }
+        });
+
         // Calculate averages
         const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-        const netSales = totalRevenue - (totalReturns * averageOrderValue); // Approximate
+        const netSales = totalRevenue - (totalReturns * averageOrderValue);
+
+        console.log("📈 Processed totals for", dateRange, ":", {
+            totalRevenue,
+            totalTransactions,
+            totalItemsSold,
+            uniqueCustomers: uniqueCustomers.size
+        });
 
         // Format sales by hour for chart
         const salesByHourFormatted = hourlySales.map((sales, hour) => ({
@@ -141,13 +312,12 @@ const SalesSummaryPage = () => {
             .slice(0, 10)
             .map(product => ({
                 ...product,
-                revenue: `$${product.revenue.toLocaleString()}`
+                revenue: `${settings?.currencySymbol || '$'}${product.revenue.toLocaleString()}`
             }));
 
         // Format daily sales for line chart
         const dailySalesFormatted = Object.entries(dailyRevenue)
             .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
-            .slice(-30) // Last 30 days
             .map(([date, revenue]) => ({
                 date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                 revenue: Math.round(revenue)
@@ -155,11 +325,11 @@ const SalesSummaryPage = () => {
 
         return {
             kpiData: {
-                totalSales: `$${totalRevenue.toLocaleString()}`,
+                totalSales: `${settings?.currencySymbol || '$'}${totalRevenue.toLocaleString()}`,
                 transactions: totalTransactions,
-                averageOrderValue: `$${averageOrderValue.toFixed(2)}`,
+                averageOrderValue: `${settings?.currencySymbol || '$'}${averageOrderValue.toFixed(2)}`,
                 returns: totalReturns,
-                netSales: `$${netSales.toLocaleString()}`,
+                netSales: `${settings?.currencySymbol || '$'}${netSales.toLocaleString()}`,
                 itemsSold: totalItemsSold,
                 uniqueCustomers: uniqueCustomers.size
             },
@@ -169,15 +339,34 @@ const SalesSummaryPage = () => {
             topSellingProducts: topProductsFormatted,
             dailySalesData: dailySalesFormatted
         };
-    }, [stockData]);
+    }, [transactions, stockData, getDateFilter, dateRange, settings]); // Added dateRange to dependencies
 
-    if (loading) return <p className="p-4">Loading...</p>;
+    // Show loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Loading sales data...</p>
+            </div>
+        );
+    }
 
     // Prepare pie chart data
     const pieData = paymentMethodData.map(p => ({ name: p.method, value: p.value }));
 
+    // Format date range for display
+    const formatDateRange = () => {
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        return `${getDateFilter.start.toLocaleDateString('en-US', options)} - ${getDateFilter.end.toLocaleDateString('en-US', options)}`;
+    };
+
     return (
         <div className="space-y-6">
+            {/* Date Range Indicator */}
+            <div className="bg-muted/50 p-2 px-4 rounded-lg text-sm flex items-center justify-between">
+                <span className="font-medium">Selected Period: {formatDateRange()}</span>
+                <span className="text-muted-foreground capitalize">{dateRange.replace('-', ' ')}</span>
+            </div>
+
             {/* KPI Cards */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-7">
                 <KPICard title="Total Sales" value={kpiData.totalSales} icon={<DollarSign className="h-5 w-5" />} />
@@ -210,7 +399,7 @@ const SalesSummaryPage = () => {
             </div>
 
             {/* Daily Sales Trend */}
-            <ChartCard title="Daily Sales Trend (Last 30 Days)">
+            <ChartCard title="Daily Sales Trend">
                 <SalesLineChart
                     data={dailySalesData.length > 0 ? dailySalesData : [{ date: 'No Data', revenue: 0 }]}
                     xKey="date"
@@ -240,7 +429,6 @@ const SalesSummaryPage = () => {
                     { header: "Product", accessor: "name" },
                     { header: "SKU", accessor: "sku" },
                     { header: "Color", accessor: "color" },
-                    
                     { header: "Units Sold", accessor: "sold", align: "right" },
                     { header: "Revenue", accessor: "revenue", align: "right" },
                     {
@@ -254,10 +442,10 @@ const SalesSummaryPage = () => {
                 ]}
             />
 
-            {/* If no data available */}
+            {/* No Data Message */}
             {topSellingProducts.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No sales data available for the selected period
+                    No sales data available for {dateRange.replace('-', ' ')}
                 </div>
             )}
         </div>

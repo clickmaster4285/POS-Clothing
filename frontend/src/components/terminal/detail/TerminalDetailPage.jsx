@@ -76,12 +76,9 @@ export default function TerminalDetail() {
         );
     };
 
-    const handleRemoveUser = (userId) => {
-      
-        const user = userId;
-     
-        removeUserMutation.mutate({ id, userId: user });
-    };
+ const handleRemoveUser = (userId) => {
+    removeUserMutation.mutate({  id, userId });
+};
 
     const handleRecordAction = () => {
         if (!actionForm.userId || !actionForm.role || !actionForm.actionType || !actionForm.description) return;

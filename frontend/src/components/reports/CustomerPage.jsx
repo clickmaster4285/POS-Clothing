@@ -17,9 +17,9 @@ const CustomerPage = ({ customers }) => {
             enabled: !!selectedCustomer?.id && isModalOpen // Only fetch when modal is open and customer is selected
         });
 
- 
+
     const transactions = transactionsData?.transactions || [];
-  
+
     const kpiData = useMemo(() => {
         const totalCustomers = customers?.length;
         const loyaltyMembers = customers?.filter(c => c.loyaltyPoints > 0).length;

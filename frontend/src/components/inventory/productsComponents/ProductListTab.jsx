@@ -41,7 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useUpdateProduct, useDeleteProduct } from "@/hooks/inv_hooks/useProducts"
 
-
+import { useSettings } from "@/hooks/useSettings";
 export default function ProductListTab({
     products,
     categories,
@@ -58,6 +58,8 @@ export default function ProductListTab({
 
     const updateProductMutation = useUpdateProduct()
     const deleteProductMutation = useDeleteProduct()
+
+    const { data: settings } = useSettings();
 
     const stats = {
         totalProducts: products.length,
@@ -265,7 +267,7 @@ export default function ProductListTab({
                                     <TableCell onClick={() => onViewProduct(product)}>{product.brand?.brandName || "N/A"}</TableCell>
                                     <TableCell onClick={() => onViewProduct(product)}>{product.variants?.length || 0}</TableCell>
                                     <TableCell>
-                                        ${product.variants?.[0]?.price?.retailPrice?.toFixed(2) || "0.00"}
+                                        {settings?.currencySymbol || '$'}{product.variants?.[0]?.price?.retailPrice?.toFixed(2) || "0.00"}
                                     </TableCell>
                                     <TableCell>
                                         <Badge

@@ -61,54 +61,86 @@ export function Actions() {
 <meta charset="UTF-8" />
 <title>Receipt - ${transaction.transactionNumber || "N/A"}</title>
 <style>
-  /* Remove browser print margins */
   @page { margin: 0; }
   body {
     font-family: 'Courier New', monospace;
     font-size: 8px;
-    line-height: 1.15;
+    line-height: 1.2;
     margin: 0;
     padding: 0;
-    width: 50mm; /* Thermal printer width */
+    width: 50mm;
+    background-color: #fff;
+    color: #000;
   }
   .receipt {
     width: 50mm;
-    padding: 3px 5px;
-    margin: 0;
+    padding: 5px 8px;
+    margin: 0 auto;
   }
   .center { text-align: center; }
   .left { text-align: left; }
   .right { text-align: right; }
-  hr { border: none; border-top: 1px dashed #000; margin: 2px 0; }
-  table { width: 100%; border-collapse: collapse; word-wrap: break-word; }
-  th, td { padding: 1px 0; font-size: 8px; }
+  hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 4px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    word-wrap: break-word;
+    margin-top: 2px;
+  }
+  th, td {
+    padding: 2px 0;
+    font-size: 8px;
+  }
   th { text-align: left; }
   td.qty { text-align: center; width: 12%; }
+  td.discount { text-align: center; width: 22%; }
   td.amount { text-align: right; width: 25%; }
-  td.name { width: 63%; word-wrap: break-word; }
+  td.name { width: 50%; word-wrap: break-word; }
   .totals p {
     display: flex;
     justify-content: space-between;
-    margin: 1px 0;
+    margin: 2px 0;
     font-weight: bold;
   }
-  .footer { text-align: center; font-size: 7px; margin-top: 2px; line-height: 1.1; }
+  .totals .cash {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    font-weight: bold;
+  }
+  .footer {
+    text-align: center;
+    font-size: 7px;
+    margin-top: 5px;
+    line-height: 1.2;
+  }
+  h2 {
+    margin: 2px 0;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  p { margin: 1px 0; }
 </style>
 </head>
 <body>
 <div class="receipt">
   <h2 class="center">${settings?.companyName || "STORE"}</h2>
-  <p class="center">${settings?.address}</p>
+  <p class="center">${settings?.address || ''}</p>
   <p class="center">Tel: ${settings?.phone || "(212) 555-0123"}</p>
   <hr />
-  <p>Receipt #: ${transaction.transactionNumber}</p>
-  <p>Customer: ${customerName}</p>
+  <p><strong>Receipt #:</strong> ${transaction.transactionNumber}</p>
+  <p><strong>Customer:</strong> ${customerName}</p>
   <hr />
   <table>
     <thead>
       <tr>
         <th class="name">Item</th>
         <th class="qty">Qty</th>
+        <th class="discount">Discount</th>
         <th class="amount">Price</th>
       </tr>
     </thead>
@@ -117,24 +149,30 @@ export function Actions() {
       <tr>
         <td class="name">${item.name}</td>
         <td class="qty">${item.quantity}</td>
-        <td class="amount">$${(item.unitPrice * item.quantity).toFixed(2)}</td>
+        <td class="discount">${item.discountPercent}%</td>
+        <td class="amount">${settings?.currencySymbol || '$'}${(item.unitPrice * item.quantity).toFixed(2)}</td>
       </tr>
       `).join('')}
     </tbody>
   </table>
   <hr />
   <div class="totals">
-    <p><span>Subtotal</span><span>$${transaction.totals?.subtotal?.toFixed(2)}</span></p>
-    ${transaction.totals?.totalDiscount > 0 ? `<p><span>Discount</span><span>-$${transaction.totals.totalDiscount.toFixed(2)}</span></p>` : ''}
-    <p><span>Total</span><span>$${transaction.totals?.grandTotal?.toFixed(2)}</span></p>
+    <p><span>Subtotal</span><span>${settings?.currencySymbol || '$'}${transaction.totals?.subtotal?.toFixed(2)}</span></p>
+    ${transaction.totals?.totalDiscount > 0 ? `<p><span>Discount</span><span>${settings?.currencySymbol || '$'}${transaction.totals.totalDiscount.toFixed(2)}</span></p>` : ''}
+    <p><span>Total</span><span>${settings?.currencySymbol || '$'}${transaction.totals?.grandTotal?.toFixed(2)}</span></p>
     <p><span>Payment</span><span>${transaction.payment?.paymentMethod?.toUpperCase()}</span></p>
-    ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDue ? `<p><span>Change</span><span>$${transaction.payment.changeDue.toFixed(2)}</span></p>` : ''}
+
+${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDue ? `
+  <p><span>Amount Paid:</span><span>${settings?.currencySymbol || '$'}${transaction.payment.amountTendered.toFixed(2)}</span></p>
+  <p><span>Change:</span><span>${settings?.currencySymbol || '$'}${transaction.payment.changeDue.toFixed(2)}</span></p>
+` : ''}
+
     ${transaction.loyalty?.pointsEarned > 0 ? `<p><span>Points Earned</span><span>${transaction.loyalty.pointsEarned}</span></p>` : ''}
   </div>
   <hr />
   <div class="footer">
     <p>Thank You For Shopping With Us!</p>
-    <p>www.fashionstore.com</p>
+    <p>www.example.com</p>
   </div>
 </div>
 </body>
@@ -191,24 +229,45 @@ export function Actions() {
             // Show success message
             toast({ title: "Transaction Completed" });
 
-            // Small delay to ensure dialog is fully closed before printing
+            // FIX: Use an iframe for printing instead of a new window
+            const printIframe = document.createElement('iframe');
+            printIframe.style.position = 'absolute';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = 'none';
+            document.body.appendChild(printIframe);
+
+            const printHTML = generateReceiptHTML(receiptData);
+
+            printIframe.contentDocument.write(printHTML);
+            printIframe.contentDocument.close();
+
+            // Focus back on the main window before printing
+            window.focus();
+
+            // Print from the iframe - this won't steal focus from the main window
+            printIframe.contentWindow.print();
+
+            // Remove the iframe after printing
+            printIframe.contentWindow.onafterprint = () => {
+                document.body.removeChild(printIframe);
+            };
+
+            // Alternative approach if the above doesn't work well:
+            // Use a hidden div with print styles instead
+            /*
+            const printContainer = document.createElement('div');
+            printContainer.style.display = 'none';
+            document.body.appendChild(printContainer);
+            printContainer.innerHTML = printHTML;
+            
+            window.focus();
+            
             setTimeout(() => {
-                // Generate HTML and print
-                const printHTML = generateReceiptHTML(receiptData);
-                const printWindow = window.open("", "_blank");
-                if (printWindow) {
-                    printWindow.document.write(printHTML);
-                    printWindow.document.close();
-
-                    // Don't call focus() immediately - let the print dialog handle it
-                    // Remove printWindow.focus() line
-
-                    // Use requestAnimationFrame to ensure print dialog doesn't steal focus
-                    requestAnimationFrame(() => {
-                        printWindow.print();
-                    });
-                }
-            }, 300); // 300ms delay
+                window.print();
+                document.body.removeChild(printContainer);
+            }, 100);
+            */
 
         } catch (err) {
             console.error("Transaction save failed:", err);

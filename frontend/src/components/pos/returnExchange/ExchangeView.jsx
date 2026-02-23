@@ -3,11 +3,13 @@ import { ArrowLeft, X } from "lucide-react";
 import { useProducts } from "@/hooks/inv_hooks/useProducts";
 import PaymentModal from "./PaymentModal";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/useSettings";
+
 
 const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
     const { data: productsData, isLoading } = useProducts();
 
- 
+    const { data: settings } = useSettings();
     const [selectedExchange, setSelectedExchange] = useState(null);
     const [exchangeQuantity, setExchangeQuantity] = useState(1);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -108,11 +110,11 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                             Color: {item.originalItem?.color || "N/A"}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Quantity: {item.qty} × ${item.price.toFixed(2)}
+                                            Quantity: {item.qty} × {settings?.currencySymbol || '$'}{item.price.toFixed(2)}
                                         </p>
                                     </div>
                                     <p className="font-bold text-primary">
-                                        ${(item.price * item.qty).toFixed(2)}
+                                        {settings?.currencySymbol || '$'}{(item.price * item.qty).toFixed(2)}
                                     </p>
                                 </div>
                                 {item.returnReason && (
@@ -125,7 +127,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                         <div className="border-t pt-3 mt-3">
                             <div className="flex justify-between font-semibold">
                                 <span>Total Return Value:</span>
-                                <span className="text-primary">${returnTotal.toFixed(2)}</span>
+                                <span className="text-primary">{settings?.currencySymbol || '$'}{returnTotal.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -178,7 +180,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                                             Available Colors: {availableColors}
                                                         </p>
                                                         <p className="text-sm font-semibold text-primary mt-1">
-                                                            Price: ${price.toFixed(2)}
+                                                            Price: {settings?.currencySymbol || '$'}{price.toFixed(2)}
                                                         </p>
                                                     </div>
 
@@ -247,7 +249,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                 <div className="text-sm">
                                     <span className="text-muted-foreground">Unit Price: </span>
                                     <span className="font-medium">
-                                        ${getVariantPrice(selectedExchange.variantSelected).toFixed(2)}
+                                        {settings?.currencySymbol || '$'}{getVariantPrice(selectedExchange.variantSelected).toFixed(2)}
                                     </span>
                                 </div>
                             </div>
@@ -258,11 +260,11 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span>Return Total:</span>
-                                    <span className="font-medium">${returnTotal.toFixed(2)}</span>
+                                    <span className="font-medium">{settings?.currencySymbol || '$'}{returnTotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Exchange Total ({exchangeQuantity} item{exchangeQuantity > 1 ? 's' : ''}):</span>
-                                    <span className="font-medium">${exchangeTotal.toFixed(2)}</span>
+                                    <span className="font-medium">{settings?.currencySymbol || '$'}{exchangeTotal.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t pt-2 mt-2">
                                     <div className="flex justify-between font-bold">
@@ -272,7 +274,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                                 isRefundDue ? 'text-green-600' :
                                                     'text-muted-foreground'
                                         }>
-                                            {isExtraPayment ? '+' : isRefundDue ? '-' : ''}${Math.abs(priceDifference).toFixed(2)}
+                                            {isExtraPayment ? '+' : isRefundDue ? '-' : ''}{settings?.currencySymbol || '$'}{Math.abs(priceDifference).toFixed(2)}
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
@@ -298,7 +300,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                 onClick={handleProceedToPayment}
                                 className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-medium"
                             >
-                                Proceed to Payment (${priceDifference.toFixed(2)})
+                                Proceed to Payment ({settings?.currencySymbol || '$'}{priceDifference.toFixed(2)})
                             </button>
                         ) : (
                                 <button

@@ -1,13 +1,16 @@
 import React from "react";
 import { Eye, Edit } from "lucide-react";
-
+import { useSettings } from "@/hooks/useSettings";
 const TransactionTable = ({
     transactions,
     onViewReceipt,
     onViewReturn,
     formatDate,
-    statusColor
+    statusColor,
+   
 }) => {
+
+    const { data: settings } = useSettings();
     return (
         <div className="overflow-x-auto">
             <table className="w-full">
@@ -20,7 +23,7 @@ const TransactionTable = ({
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">TOTAL</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">PAYMENT</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">STATUS</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">LOYALTY</th>
+                       
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">ACTIONS</th>
                     </tr>
                 </thead>
@@ -38,28 +41,25 @@ const TransactionTable = ({
                                     {customerName}
                                 </td>
                                 <td className="px-4 py-3 text-sm">{txn.cartItems?.length || 0}</td>
+
                                 <td className="px-4 py-3 text-sm font-medium">
-                                    ${txn.totals?.grandTotal?.toFixed(2)}
+                                    {settings?.currencySymbol }{txn.totals?.grandTotal?.toFixed(2)}
                                 </td>
+
                                 <td className="px-4 py-3 text-sm capitalize">
                                     {txn.payment?.paymentMethod || 'N/A'}
                                 </td>
                                 <td className="px-4 py-3 text-sm">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColor(txn.status)}`}>
-                                        {txn.status || 'Pending'}
-                                    </span>
+                                    {(() => {
+                                        const displayStatus = (txn.returnExchangeIds?.length > 0) ? "returned" : (txn.status || "pending");
+                                        return (
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColor(displayStatus)}`}>
+                                                {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)} {/* Capitalize first letter */}
+                                            </span>
+                                        );
+                                    })()}
                                 </td>
-                                <td className="px-4 py-3 text-sm">
-                                    {txn.loyalty?.pointsEarned ? (
-                                        <span className="text-xs">
-                                            +{txn.loyalty.pointsEarned} pts
-                                            {txn.loyalty.pointsRedeemed > 0 &&
-                                                ` / -${txn.loyalty.pointsRedeemed} pts`}
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground">-</span>
-                                    )}
-                                </td>
+                             
                                 <td className="px-4 py-3">
                                     <div className="flex gap-1">
                                         {/* <button

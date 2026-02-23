@@ -1,6 +1,6 @@
 import React from "react";
 import { Eye, Edit } from "lucide-react";
-
+import { useSettings } from "@/hooks/useSettings";
 const TransactionCard = ({
     txn,
     onViewReceipt,
@@ -8,6 +8,7 @@ const TransactionCard = ({
     formatDate,
     statusColor
 }) => {
+    const { data: settings } = useSettings();
     const customerName = txn.customer
         ? `${txn.customer.customerFirstName || ''} ${txn.customer.customerLastName || ''}`.trim()
         : 'Walk-in Customer';
@@ -19,8 +20,9 @@ const TransactionCard = ({
                     <p className="font-mono text-xs text-muted-foreground">Transaction no #</p>
                     <p className="font-medium text-sm break-all">{txn.transactionNumber || 'N/A'}</p>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColor(txn.status)}`}>
-                    {txn.status || 'Pending'}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColor((txn.returnExchangeIds?.length > 0) ? "returned" : (txn.status || "pending"))
+                    }`}>
+                    {((txn.returnExchangeIds?.length > 0) ? "Returned" : (txn.status || "Pending"))}
                 </span>
             </div>
 
@@ -47,7 +49,7 @@ const TransactionCard = ({
                 <div>
                     <p className="text-xs text-muted-foreground">Total</p>
                     <p className="text-base font-bold text-primary">
-                        ${txn.totals?.grandTotal?.toFixed(2) || '0.00'}
+                        {settings?.currencySymbol }{txn.totals?.grandTotal?.toFixed(2) || '0.00'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -2,10 +2,11 @@ import { TrendingUp, BarChart3, Tag } from "lucide-react";
 import { KPICard } from "./KPICard";
 import { ChartCard, ReportBarChart, ReportDonutChart } from "./ReportCharts";
 import { ReportTable } from "./ReportTable";
-
+import { useSettings } from "@/hooks/useSettings";
 const ProductPerformancePage = ({ stockData = [], loading }) => {
     if (loading) return <p>Loading...</p>;
-
+    const { data: settings } = useSettings();
+    console.log("Raw Stock Data:", stockData);
     // Preprocess stockData to calculate totalSold, totalReturned, totalExchanged
     const processedData = stockData.map(item => {
         const totals = item.history.reduce(
@@ -86,12 +87,12 @@ const ProductPerformancePage = ({ stockData = [], loading }) => {
                 />
                 <KPICard
                     title="Total Revenue"
-                    value={`$${totalRevenue.toLocaleString()}`}
+                    value={`${settings?.currencySymbol || ""}${totalRevenue.toLocaleString()}`}
                     icon={<TrendingUp className="h-5 w-5" />}
                 />
                 <KPICard
                     title="Avg. Revenue/Product"
-                    value={`$${avgRevenuePerProduct}`}
+                    value={`${settings?.currencySymbol || ""}${avgRevenuePerProduct}`}
                     icon={<TrendingUp className="h-5 w-5" />}
                 />
             </div>

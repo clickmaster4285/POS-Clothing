@@ -21,7 +21,7 @@ const Auth = () => {
     useEffect(() => {
         if (!authLoading && isAuthenticated && user) {
             const userPrimaryRole = user.role ? user.role.toLowerCase() : 'customer';
-            navigate(`/${userPrimaryRole}/dashboard`, { replace: true });
+            navigate(`/${userPrimaryRole}/dashboard`);
         }
     }, [isAuthenticated, user, authLoading, navigate]);
 

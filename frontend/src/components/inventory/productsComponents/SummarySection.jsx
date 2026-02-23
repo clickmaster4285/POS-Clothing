@@ -3,6 +3,9 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle } from "lucide-react"
 
 export default function SummarySection({ formSummary, showVariantSection }) {
+    console.log("SummarySection formSummary:", formSummary , ); // Debug log
+
+
     return (
         <div className="space-y-6">
 
@@ -37,7 +40,7 @@ export default function SummarySection({ formSummary, showVariantSection }) {
             </Card>
 
                   {/* Variants */}
-            {showVariantSection && (
+            { (
                 <div className="space-y-2">
                     <h4 className="text-lg font-semibold  pb-1">Variants</h4>
                     {formSummary.variants.map((v, idx) => (

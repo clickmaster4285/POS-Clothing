@@ -84,7 +84,9 @@ export const useRemoveUserFromTerminal = () => {
   return useMutation({
     mutationFn: removeUserFromTerminal,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["terminal", variables.terminalId] });
+      // make sure terminalId is correct
+      const terminalId = variables.terminalId || variables.id;
+      queryClient.invalidateQueries({ queryKey: ["terminal", terminalId] });
     },
   });
 };

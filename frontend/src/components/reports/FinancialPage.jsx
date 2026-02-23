@@ -6,109 +6,12 @@ import { useStockByBranch, useStock } from "@/hooks/inv_hooks/useStock";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Custom Income Statement Component
-const IncomeStatement = ({ data }) => {
-    return (
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Income Statement</CardTitle>
-                <p className="text-sm text-muted-foreground">For the period ending {new Date().toLocaleDateString()}</p>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {/* Revenue Section */}
-                    <div>
-                        <h3 className="font-bold text-lg border-b pb-1 mb-2">REVENUE</h3>
-                        {data.filter(item => item.section === 'revenue' && !item.isTotal).map((item, idx) => (
-                            <div key={idx} className="flex justify-between py-1 hover:bg-muted/50 px-2">
-                                <span className={item.isBold ? "font-semibold" : item.indent ? "pl-4" : ""}>
-                                    {item.label}
-                                </span>
-                                <span className={item.amount < 0 ? "text-destructive" : ""}>
-                                    ${Math.abs(item.amount).toLocaleString()}
-                                </span>
-                            </div>
-                        ))}
-                        {/* Revenue Total */}
-                        <div className="flex justify-between font-bold border-t pt-2 mt-1 px-2">
-                            <span>Total Revenue</span>
-                            <span className="text-green-600">
-                                ${data.find(item => item.label === 'Total Revenue')?.amount.toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
+import { useSettings } from "@/hooks/useSettings";
 
-                    {/* Cost of Goods Sold Section */}
-                    <div>
-                        <h3 className="font-bold text-lg border-b pb-1 mb-2 mt-6">COST OF Items SOLD</h3>
-                        {data.filter(item => item.section === 'cogs' && !item.isTotal).map((item, idx) => (
-                            <div key={idx} className="flex justify-between py-1 hover:bg-muted/50 px-2">
-                                <span className={item.isBold ? "font-semibold" : item.indent ? "pl-4" : ""}>
-                                    {item.label}
-                                </span>
-                                <span className={item.amount < 0 ? "text-destructive" : ""}>
-                                    ${Math.abs(item.amount).toLocaleString()}
-                                </span>
-                            </div>
-                        ))}
-                     
-                        <div className="flex justify-between font-bold border-t pt-2 mt-1 px-2">
-                            <span>Total Cost of Items Sold</span>
-                            <span className="text-orange-600">
-                                ${data.find(item => item.label === 'Total Cost of Items Sold')?.amount.toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Gross Profit */}
-                    <div className="flex justify-between font-bold text-lg border-y-2 py-3 mt-4 bg-muted/20 px-2">
-                        <span>GROSS PROFIT</span>
-                        <span className={data.find(item => item.label === 'GROSS PROFIT')?.amount >= 0 ? "text-green-600" : "text-destructive"}>
-                            ${data.find(item => item.label === 'GROSS PROFIT')?.amount.toLocaleString()}
-                        </span>
-                    </div>
-
-                    {/* Expenses Section - Only show if there are expenses */}
-                    {data.some(item => item.section === 'expenses' && item.amount > 0) && (
-                        <div className="mt-4">
-                            <h3 className="font-bold text-lg border-b pb-1 mb-2">EXPENSES</h3>
-                            {data.filter(item => item.section === 'expenses' && !item.isTotal).map((item, idx) => (
-                                <div key={idx} className="flex justify-between py-1 hover:bg-muted/50 px-2">
-                                    <span className={item.isBold ? "font-semibold" : item.indent ? "pl-4" : ""}>
-                                        {item.label}
-                                    </span>
-                                    <span className={item.amount < 0 ? "text-destructive" : ""}>
-                                        ${Math.abs(item.amount).toLocaleString()}
-                                    </span>
-                                </div>
-                            ))}
-                            {/* Expenses Total */}
-                            <div className="flex justify-between font-bold border-t pt-2 mt-1 px-2">
-                                <span>Total Expenses</span>
-                                <span className="text-destructive">
-                                    ${data.find(item => item.label === 'Total Expenses')?.amount.toLocaleString()}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Net Profit */}
-                    <div className="flex justify-between font-bold text-xl border-t-2 pt-4 mt-4 px-2">
-                        <span>NET PROFIT</span>
-                        <span className={data.find(item => item.label === 'NET PROFIT')?.amount >= 0 ? "text-green-600" : "text-destructive"}>
-                            ${data.find(item => item.label === 'NET PROFIT')?.amount.toLocaleString()}
-                        </span>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
-
-const FinancialPage = () => {
+const FinancialPage = ({ dateRange }) => {
     const { user: currentUser } = useAuth();
     const branchId = currentUser?.branchId || null;
-
+    const { data: settings } = useSettings();
     // Fetch stock data
     const { data: branchStockData, isLoading: branchLoading } = useStockByBranch(branchId);
     const { data: allStockData, isLoading: allStockLoading } = useStock();
@@ -118,9 +21,48 @@ const FinancialPage = () => {
 
     const stockData = stockRawData?.data || [];
 
+    // Helper function to check if a date is within the selected range
+    const isDateInRange = (date) => {
+        const now = new Date();
+        const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(now.setHours(23, 59, 59, 999));
 
+        switch (dateRange) {
+            case 'today':
+                return date >= startOfDay && date <= endOfDay;
 
-    // Process financial data
+            case 'this-week': {
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay()); // Start from Sunday
+                startOfWeek.setHours(0, 0, 0, 0);
+                return date >= startOfWeek;
+            }
+
+            case 'this-month': {
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                startOfMonth.setHours(0, 0, 0, 0);
+                return date >= startOfMonth;
+            }
+
+            case 'this-quarter': {
+                const quarter = Math.floor(now.getMonth() / 3);
+                const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1);
+                startOfQuarter.setHours(0, 0, 0, 0);
+                return date >= startOfQuarter;
+            }
+
+            case 'this-year': {
+                const startOfYear = new Date(now.getFullYear(), 0, 1);
+                startOfYear.setHours(0, 0, 0, 0);
+                return date >= startOfYear;
+            }
+
+            default:
+                return true;
+        }
+    };
+
+    // Process financial data with date filtering
     const { kpis, revenueVsExpensesData, incomeStatementData } = useMemo(() => {
         let totalRevenue = 0;
         let totalCostOfGoodsSold = 0;
@@ -139,8 +81,14 @@ const FinancialPage = () => {
             if (item.history && Array.isArray(item.history)) {
                 item.history.forEach(transaction => {
                     const timestamp = transaction.timestamp;
-                    const date = new Date(timestamp);
-                    const month = date.toLocaleString('default', { month: 'short' });
+                    const transactionDate = new Date(timestamp);
+
+                    // Filter by date range
+                    if (!isDateInRange(transactionDate)) {
+                        return;
+                    }
+
+                    const month = transactionDate.toLocaleString('default', { month: 'short' });
                     const quantity = Math.abs(transaction.quantity || 0);
 
                     // Initialize monthly data
@@ -182,14 +130,90 @@ const FinancialPage = () => {
         const netProfit = grossProfit - totalExpenses;
         const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-        // Format monthly data for chart
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const revenueVsExpensesFormatted = months.map(month => ({
-            month,
-            revenue: monthlyData[month]?.revenue || 0,
-            cogs: monthlyData[month]?.cogs || 0,
-            profit: monthlyData[month]?.profit || 0
-        })).filter(m => m.revenue > 0 || m.cogs > 0);
+        // Format monthly data for chart - adjust based on date range
+        let revenueVsExpensesFormatted;
+
+        if (dateRange === 'today') {
+            // For today, show hourly data or just today as one data point
+            revenueVsExpensesFormatted = [{
+                month: 'Today',
+                revenue: totalRevenue,
+                cogs: totalCostOfGoodsSold,
+                profit: grossProfit
+            }];
+        } else if (dateRange === 'this-week') {
+            // For this week, show daily data
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            revenueVsExpensesFormatted = days.map(day => ({
+                month: day,
+                revenue: 0,
+                cogs: 0,
+                profit: 0
+            }));
+
+            // Populate with actual data
+            Object.entries(monthlyData).forEach(([month, data]) => {
+                const dayIndex = days.findIndex(d => d === month.substring(0, 3));
+                if (dayIndex !== -1) {
+                    revenueVsExpensesFormatted[dayIndex] = {
+                        month: month,
+                        revenue: data.revenue,
+                        cogs: data.cogs,
+                        profit: data.profit
+                    };
+                }
+            });
+        } else {
+            // For month, quarter, year - show monthly data
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            if (dateRange === 'this-month') {
+                // For this month, show only current month's data
+                const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+                revenueVsExpensesFormatted = [{
+                    month: currentMonth,
+                    revenue: monthlyData[currentMonth]?.revenue || 0,
+                    cogs: monthlyData[currentMonth]?.cogs || 0,
+                    profit: monthlyData[currentMonth]?.profit || 0
+                }];
+            } else if (dateRange === 'this-quarter') {
+                // For quarter, show only months in current quarter
+                const currentMonth = new Date().getMonth();
+                const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
+                const quarterMonths = months.slice(quarterStartMonth, quarterStartMonth + 3);
+
+                revenueVsExpensesFormatted = quarterMonths.map(month => ({
+                    month,
+                    revenue: monthlyData[month]?.revenue || 0,
+                    cogs: monthlyData[month]?.cogs || 0,
+                    profit: monthlyData[month]?.profit || 0
+                }));
+            } else {
+                // For year, show all months with data or zeros
+                revenueVsExpensesFormatted = months.map(month => ({
+                    month,
+                    revenue: monthlyData[month]?.revenue || 0,
+                    cogs: monthlyData[month]?.cogs || 0,
+                    profit: monthlyData[month]?.profit || 0
+                }));
+            }
+        }
+
+        // Filter out months with no data for cleaner display
+        revenueVsExpensesFormatted = revenueVsExpensesFormatted.filter(m => m.revenue > 0 || m.cogs > 0 || m.profit !== 0);
+
+        // If no data, show at least one data point
+        if (revenueVsExpensesFormatted.length === 0) {
+            revenueVsExpensesFormatted = [{
+                month: dateRange === 'today' ? 'Today' :
+                    dateRange === 'this-week' ? 'This Week' :
+                        dateRange === 'this-month' ? 'This Month' :
+                            dateRange === 'this-quarter' ? 'This Quarter' : 'This Year',
+                revenue: 0,
+                cogs: 0,
+                profit: 0
+            }];
+        }
 
         // Build income statement with proper sections
         const incomeStatementFormatted = [
@@ -216,18 +240,18 @@ const FinancialPage = () => {
 
         return {
             kpis: {
-                revenue: `$${totalRevenue.toLocaleString()}`,
-                expenses: `$${totalExpenses.toLocaleString()}`,
-                grossProfit: `$${grossProfit.toLocaleString()}`,
+                revenue: `${settings?.currencySymbol || '$'}${totalRevenue.toLocaleString()}`,
+                expenses: `${settings?.currencySymbol || '$'}${totalExpenses.toLocaleString()}`,
+                grossProfit: `${settings?.currencySymbol || '$'}    ${grossProfit.toLocaleString()}`,
                 profitMargin: profitMargin.toFixed(1),
-                netProfit: `$${netProfit.toLocaleString()}`,
-                costOfGoods: `$${totalCostOfGoodsSold.toLocaleString()}`,
-                returns: `$${totalReturns.toLocaleString()}`
+                netProfit: `${settings?.currencySymbol || '$'}${netProfit.toLocaleString()}`,
+                costOfGoods: `${settings?.currencySymbol || '$'}${totalCostOfGoodsSold.toLocaleString()}`,
+                returns: `${settings?.currencySymbol || '$'}${totalReturns.toLocaleString()}`
             },
             revenueVsExpensesData: revenueVsExpensesFormatted,
             incomeStatementData: incomeStatementFormatted
         };
-    }, [stockData]);
+    }, [stockData, dateRange]);
 
     if (loading) return <p className="p-4">Loading...</p>;
 
@@ -285,9 +309,9 @@ const FinancialPage = () => {
             </div>
 
             {/* Revenue vs COGS Chart */}
-            <ChartCard title="Revenue vs Cost of Items Sold (Monthly)">
+            <ChartCard title={`Revenue vs Cost of Items Sold (${dateRange.replace('-', ' ')})`}>
                 <SalesLineChart
-                    data={revenueVsExpensesData.length > 0 ? revenueVsExpensesData : [{ month: 'Jan', revenue: 0, cogs: 0, profit: 0 }]}
+                    data={revenueVsExpensesData}
                     xKey="month"
                     lines={[
                         { key: "revenue", color: "hsl(16, 85%, 55%)", name: "Revenue" },
@@ -297,12 +321,9 @@ const FinancialPage = () => {
                 />
             </ChartCard>
 
-            {/* Custom Income Statement */}
-            {/* <IncomeStatement data={incomeStatementData} /> */}
-
             {incomeStatementData.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No financial data available
+                    No financial data available for this period
                 </div>
             )}
         </div>

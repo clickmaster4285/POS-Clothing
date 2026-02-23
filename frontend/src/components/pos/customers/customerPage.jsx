@@ -169,14 +169,7 @@ const CustomerInformation = () => {
                             </SelectContent>
                         </Select>
 
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Sort By" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="name">Sort by Name</SelectItem>
-                                <SelectItem value="points">Sort by Loyalty Points</SelectItem>
-                                <SelectItem value="value">Sort by Lifetime Value</SelectItem>
-                            </SelectContent>
-                        </Select>
+                 
                     </div>
                 </CardContent>
             </Card>
@@ -199,10 +192,13 @@ const CustomerInformation = () => {
                         <TableBody>
                             {paginated.map((customer) => (
                                 <TableRow key={customer._id}>
-                                    <TableCell>{customer.firstName} {customer.lastName}</TableCell>
-                                    <TableCell>{customer.email}</TableCell>
-                                    <TableCell><Badge variant="outline">{customer.loyaltyProgram}</Badge></TableCell>
-                                    <TableCell>{customer.loyaltyPoints || 0}</TableCell>
+                                    <TableCell onClick={() => navigate(`/${currentUser?.role}/pos/${customer._id}/detail`)}>{customer.firstName} {customer.lastName}</TableCell>
+
+                                    <TableCell onClick={() => navigate(`/${currentUser?.role}/pos/${customer._id}/detail`)}>{customer.email}</TableCell>
+
+                                    <TableCell onClick={() => navigate(`/${currentUser?.role}/pos/${customer._id}/detail`)}><Badge variant="outline">{customer.loyaltyProgram}</Badge></TableCell>
+
+                                    <TableCell onClick={() => navigate(`/${currentUser?.role}/pos/${customer._id}/detail`)}>{customer.loyaltyPoints || 0}</TableCell>
                                     <TableCell>{customer.redeemedPoints || 0}</TableCell>
                                    
                                     <TableCell>

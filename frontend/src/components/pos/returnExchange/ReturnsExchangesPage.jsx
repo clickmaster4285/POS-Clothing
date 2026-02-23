@@ -9,7 +9,7 @@ import Loading from "@/pages/Loading";
 import EmptyState from "./EmptyState";
 import { Filter, Search } from "lucide-react";
 import { toast } from "sonner";
-
+import { useSettings } from "@/hooks/useSettings";
 import {
     useTransactionFullDetails,
     useCreateReturnExchange
@@ -17,6 +17,11 @@ import {
 import { Card } from "@/components/ui/card";
 
 const ReturnsExchangesPage = () => {
+
+    const { data: settings } = useSettings();
+
+
+
     const [view, setView] = useState("list");
     const [selectedTxn, setSelectedTxn] = useState(null);
     const [returnReason, setReturnReason] = useState({ predefined: "", custom: "" });
@@ -29,6 +34,7 @@ const ReturnsExchangesPage = () => {
     const { data: transactionData, isLoading } = useTransactions();
     const transactions = transactionData?.transactions || [];
 
+  
 
     const { data: transactionFullDetails, isLoading: isLoadingReturns } = useTransactionFullDetails(
         selectedTxn?._id,
@@ -36,8 +42,14 @@ const ReturnsExchangesPage = () => {
             enabled: !!selectedTxn?._id
         }
     );
-
-
+    
+   
+    // Filters
+    const [filterByDate, setFilterByDate] = useState("all"); // all, today, yesterday, last7days
+    const [filterByPayment, setFilterByPayment] = useState("all"); // all, cash, card
+    const [filterByStatus, setFilterByStatus] = useState("all"); // all, completed, returned, pending
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
 
     useEffect(() => {
@@ -198,7 +210,7 @@ const ReturnsExchangesPage = () => {
     const statusColor = (status) => {
         switch (status?.toLowerCase()) {
             case "completed": return "bg-green-100 text-green-700 border-green-200";
-            case "refunded": return "bg-red-100 text-red-700 border-red-200";
+            case "returned": return "bg-red-100 text-red-700 border-red-200";
             case "pending": return "bg-yellow-100 text-yellow-700 border-yellow-200";
             case "exchanged": return "bg-blue-100 text-blue-700 border-blue-200";
             default: return "bg-gray-100 text-gray-700 border-gray-200";
@@ -206,17 +218,63 @@ const ReturnsExchangesPage = () => {
     };
 
     const filteredTransactions = transactions.filter(txn => {
-        if (!searchQuery) return true;
-        const query = searchQuery.toLowerCase();
-        return (
-            txn.transactionNumber?.toLowerCase().includes(query) ||
-            txn.customer?.customerFirstName?.toLowerCase().includes(query) ||
-            txn.customer?.customerLastName?.toLowerCase().includes(query) ||
-            txn.customer?.customerEmail?.toLowerCase().includes(query) ||
-            formatDate(txn.timestamp).toLowerCase().includes(query)
-        );
+        const txnDate = new Date(txn.timestamp);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        // --- Date Filter ---
+        let dateMatch = true;
+        switch (filterByDate) {
+            case "today":
+                dateMatch = txnDate.toDateString() === today.toDateString();
+                break;
+            case "yesterday":
+                dateMatch = txnDate.toDateString() === yesterday.toDateString();
+                break;
+            case "last7days":
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                dateMatch = txnDate >= sevenDaysAgo && txnDate <= today;
+                break;
+            default:
+                dateMatch = true;
+        }
+
+        // --- Payment Method Filter ---
+        let paymentMatch = true;
+        if (filterByPayment === "cash") paymentMatch = txn.payment?.paymentMethod?.toLowerCase() === "cash";
+        else if (filterByPayment === "card") paymentMatch = txn.payment?.paymentMethod?.toLowerCase() === "card";
+
+        // --- Status Filter ---
+        // --- Status Filter ---
+        let statusMatch = true;
+        if (filterByStatus !== "all") {
+            const displayStatus = (txn.returnExchangeIds?.length > 0) ? "returned" : (txn.status?.toLowerCase() || "pending");
+            statusMatch = displayStatus === filterByStatus.toLowerCase();
+        }
+
+        // --- Search Filter ---
+        let searchMatch = true;
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            searchMatch =
+                txn.transactionNumber?.toLowerCase().includes(query) ||
+                txn.customer?.customerFirstName?.toLowerCase().includes(query) ||
+                txn.customer?.customerLastName?.toLowerCase().includes(query) ||
+                txn.customer?.customerEmail?.toLowerCase().includes(query) ||
+                formatDate(txn.timestamp).toLowerCase().includes(query);
+        }
+
+        return dateMatch && paymentMatch && statusMatch && searchMatch;
     });
 
+
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
     //-----------------exchage items funt-----------------
     const getNewExchangedItems = (transactionFullDetails) => {
         if (!transactionFullDetails) return [];
@@ -398,7 +456,7 @@ const ReturnsExchangesPage = () => {
 
     return (
         <div className="px-4 sm:px-6 lg:px-0">
-            <MobileFilterDrawer show={showMobileFilter} onClose={() => setShowMobileFilter(false)} />
+          
             <div className="flex items-center text-xs text-muted-foreground mb-4 gap-1 overflow-x-auto whitespace-nowrap pb-2">
                 <span>Home</span><span>›</span><span>Point of Sale</span><span>›</span>
                 <span className="text-primary font-medium">Returns & Exchanges</span>
@@ -412,12 +470,7 @@ const ReturnsExchangesPage = () => {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowMobileFilter(true)}
-                        className="lg:hidden flex items-center gap-2 px-4 py-2 border rounded-lg text-sm"
-                    >
-                        <Filter size={16} /> Filter
-                    </button>
+                 
                     <div className="hidden lg:block relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
@@ -427,18 +480,120 @@ const ReturnsExchangesPage = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
+
+                    <div className="hidden lg:flex gap-2 items-center">
+                        {/* Date Filter */}
+                        <select
+                            
+                            value={filterByDate}
+                            onChange={(e) => { setFilterByDate(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm bg-card"
+                        >
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last7days">Last 7 Days</option>
+                        </select>
+
+                        {/* Payment Method Filter */}
+                        <select
+                            value={filterByPayment}
+                            onChange={(e) => { setFilterByPayment(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm bg-card"
+                        >
+                            <option value="all">All Payment Methods</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                        </select>
+
+                        {/* Status Filter */}
+                        <select
+                            value={filterByStatus}
+                            onChange={(e) => { setFilterByStatus(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm bg-card"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="returned">Returned</option>
+                          
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+            {/* Mobile Search + Filter Button */}
+            <div className="lg:hidden flex flex-col gap-2 mb-4">
+                <div className="flex gap-2">
+                    {/* Filter Button */}
+                    <button
+                        onClick={() => setShowMobileFilter(true)}
+                        className="flex items-center gap-1 px-3 py-2 border rounded-lg text-sm bg-card"
+                    >
+                        <Filter size={16} /> Filter
+                    </button>
+
+                    {/* Search Input */}
+                    <div className="relative flex-1">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            placeholder="Search transactions..."
+                            className="w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm bg-card outline-none focus:ring-1 focus:ring-primary"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="lg:hidden relative mb-4">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                    placeholder="Search transactions..."
-                    className="w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm bg-card outline-none focus:ring-1 focus:ring-primary"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
+            <MobileFilterDrawer show={showMobileFilter} onClose={() => setShowMobileFilter(false)}>
+                <div className="flex flex-col gap-4 p-4">
+                    {/* Date Filter */}
+                    <div className="flex flex-col gap-1">
+                        <label className="font-medium text-sm">Date</label>
+                        <select
+                            value={filterByDate}
+                            onChange={(e) => { setFilterByDate(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                        >
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last7days">Last 7 Days</option>
+                        </select>
+                    </div>
+
+                    {/* Payment Method Filter */}
+                    <div className="flex flex-col gap-1">
+                        <label className="font-medium text-sm">Payment Method</label>
+                        <select
+                            value={filterByPayment}
+                            onChange={(e) => { setFilterByPayment(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                        >
+                            <option value="all">All Payment Methods</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                        </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="flex flex-col gap-1">
+                        <label className="font-medium text-sm">Status</label>
+                        <select
+                            value={filterByStatus}
+                            onChange={(e) => { setFilterByStatus(e.target.value); setCurrentPage(1); }}
+                            className="border rounded-lg px-3 py-2 text-sm"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="returned">Returned</option>
+                        </select>
+                    </div>
+                </div>
+            </MobileFilterDrawer>
+
+            {/* Mobile Filter Drawer */}
+       
             <Card className="p-4">
                 <div className="mb-4">
                     <h3 className="font-semibold text-base sm:text-lg">Transaction History</h3>
@@ -451,15 +606,34 @@ const ReturnsExchangesPage = () => {
                     <EmptyState searchQuery={searchQuery} />
                 ) : (
                     <TransactionList
-                        transactions={filteredTransactions}
+                         transactions={paginatedTransactions}
                         onViewReceipt={handleViewReceipt}
                         onViewReturn={handleViewReturn}
                         formatDate={formatDate}
-                        statusColor={statusColor}
+                            statusColor={statusColor}
+                            settings={settings}
                     />
                 )}
 
             </Card>
+
+            <div className="flex justify-end gap-2 mt-4">
+                <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1 border rounded-lg disabled:opacity-50"
+                >
+                    Prev
+                </button>
+                <span className="px-3 py-1">{currentPage} / {totalPages}</span>
+                <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="px-3 py-1 border rounded-lg disabled:opacity-50"
+                >
+                    Next
+                </button>
+            </div>
         </div>
     );
 };

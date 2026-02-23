@@ -19,7 +19,7 @@ const CreateCustomer = ({ isModal = false,
     const [showSuccess, setShowSuccess] = useState(false)
     const { user: currentUser } = useAuth()
 
-    const isPageMode = isModal ||!isModal && window.location.pathname.includes('/create');
+    const isPageMode = id|| isModal ||!isModal && window.location.pathname.includes('/create');
 
 
     const [form, setForm] = useState({

@@ -17,11 +17,19 @@ const BranchSchema = new mongoose.Schema({
     enum: ["ACTIVE", "INACTIVE"],
     default: "ACTIVE"
   },
-  address: {
-    city: String,
-    state: String,
-    country: String
+  // address: {
+  //   city: String,
+  //   state: String,
+  //   country: String
+  // },
+
+ address: {
+    country: { type: String },
+    state: { type: String },
+    city: { type: String },
   },
+    
+    
     branch_manager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User", 

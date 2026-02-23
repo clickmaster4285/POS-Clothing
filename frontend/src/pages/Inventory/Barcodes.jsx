@@ -47,6 +47,7 @@ import {
 } from "lucide-react"
 
 import { useProducts } from "@/hooks/inv_hooks/useProducts"
+import { Pagination } from "@/components/ui/Pagination"
 
 
 
@@ -63,6 +64,10 @@ export default function BarcodeManagementPage() {
 
     const products = productsData?.data || []
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // adjust per page
+
+    
 
     // Fallback when both variantBarcode and variantSku are missing/empty
     function generateFallbackBarcode(product, variant) {
@@ -157,6 +162,13 @@ export default function BarcodeManagementPage() {
             categoryFilter === "all" || item.product.category.id === categoryFilter
         return matchesSearch && matchesCategory
     })
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+    const paginatedItems = filteredItems.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const selectedItems = barcodeItems.filter((item) => item.selected)
     const totalLabels = selectedItems.reduce((acc, item) => acc + item.printQuantity, 0)
@@ -458,7 +470,7 @@ export default function BarcodeManagementPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredItems.map((item, index) => (
+                                    {paginatedItems.map((item, index) => (
                                         <TableRow key={`${item.product._id}-${item.variant._id}`}>
                                             <TableCell>
                                                 <Checkbox
@@ -520,7 +532,16 @@ export default function BarcodeManagementPage() {
                                 </TableBody>
                             </Table>
                         </CardContent>
+                      
+
                     </Card>
+                    <div className="mt-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="print-queue" className="space-y-4">

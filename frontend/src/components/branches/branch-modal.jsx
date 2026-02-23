@@ -34,7 +34,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
     const [cities, setCities] = useState([]);
     const [isLoadingStates, setIsLoadingStates] = useState(false);
     const [isLoadingCities, setIsLoadingCities] = useState(false);
-    const [selectedCityValue, setSelectedCityValue] = useState("");
+    const [selectedCityId, setSelectedCityId] = useState("");
 
     const { data: managers = [], isLoading: managersLoading } = useStaffList();
 
@@ -58,91 +58,82 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
     useEffect(() => {
         if (!branch || !isOpen) {
             setFormData(initialFormData);
-            setSelectedCityValue("");
+            setSelectedCityId("");
             setStates([]);
             setCities([]);
             return;
         }
 
-        const { country, state, city } = branch.address;
-
-      
-        // Set form data
-        setFormData({
+        // First, set the form data synchronously
+        const newFormData = {
             branch_name: branch.branch_name || "",
             tax_region: branch.tax_region || "",
             opening_time: branch.opening_time || "",
             closing_time: branch.closing_time || "",
             status: branch.status || "ACTIVE",
-            branch_manager: typeof branch.branch_manager === 'object'
+            branch_manager: typeof branch.branch_manager === "object"
                 ? branch.branch_manager?._id || ""
                 : branch.branch_manager || "",
             address: {
-                country: country || "",
-                state: state || "",
-                city: city || ""
-            },
-        });
+                country: branch.address?.country || "",
+                state: branch.address?.state || "",
+                city: branch.address?.city || ""
+            }
+        };
 
-        // Set selected city value
-        if (city) {
-            setSelectedCityValue(city);
-        }
+        setFormData(newFormData);
 
-        // Load states and cities based on address
+        // Then load location data asynchronously
         const loadLocationData = async () => {
-            if (country) {
-                try {
-                    setIsLoadingStates(true);
-                    const statesData = await getStates(country);
-                   
-                    setStates(statesData);
+            const { country, state, city } = branch.address || {};
 
-                    if (state) {
+            if (!country) return;
+
+            try {
+                // Load states
+                setIsLoadingStates(true);
+                const statesData = await getStates(country);
+                setStates(statesData);
+
+                // If we have a state, load cities
+                if (state) {
+                    // Find the state ISO code
+                    const foundState = statesData.find(
+                        s => s.isoCode === state || s.name === state || s.isoCode === state?.toUpperCase()
+                    );
+
+                    if (foundState || state) {
                         setIsLoadingCities(true);
-                        const citiesData = await getCities(country, state);
-                     
-                 
+                        const stateIso = foundState?.isoCode || state;
+                        const citiesData = await getCities(country, stateIso);
 
-                        // Find the exact city in the loaded data
-                        const foundCity = citiesData.find(c =>
-                            c.name === city ||
-                            c.name.toLowerCase() === city.toLowerCase()
-                        );
+                        const citiesWithIds = citiesData.map((c, index) => ({
+                            id: c.id || c._id || `${c.name}-${index}`,
+                            name: c.name
+                        }));
+                        setCities(citiesWithIds);
 
-                       
-
-                        // If city is found, ensure we use the exact name from API
-                        if (foundCity) {
-                            // Update form data with the exact city name from API
-                            setFormData(prev => ({
-                                ...prev,
-                                address: {
-                                    ...prev.address,
-                                    city: foundCity.name
-                                }
-                            }));
-                            setSelectedCityValue(foundCity.name);
+                        // Set selected city ID if city matches
+                        if (city) {
+                            const foundCity = citiesWithIds.find(c =>
+                                c.name.toLowerCase() === city.toLowerCase()
+                            );
+                            if (foundCity) {
+                                setSelectedCityId(foundCity.id);
+                            }
                         }
-
-                        setCities(citiesData);
                     }
-                } catch (error) {
-                    console.error("Error loading location data:", error);
-                } finally {
-                    setIsLoadingStates(false);
-                    setIsLoadingCities(false);
                 }
-            } else {
-                setStates([]);
-                setCities([]);
+            } catch (error) {
+                console.error("Error loading location data:", error);
+            } finally {
+                setIsLoadingStates(false);
+                setIsLoadingCities(false);
             }
         };
 
         loadLocationData();
-    }, [branch, mode, isOpen]);
-
-    // Handle country selection
+    }, [branch, isOpen]);
     const handleCountryChange = async (countryCode) => {
         setFormData({
             ...formData,
@@ -152,7 +143,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                 city: ""
             },
         });
-        setSelectedCityValue("");
+        setSelectedCityId("");
         setStates([]);
         setCities([]);
 
@@ -181,7 +172,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                 city: ""
             },
         });
-        setSelectedCityValue("");
+        setSelectedCityId("");
         setCities([]);
 
         if (!stateIso) return;
@@ -189,8 +180,14 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
         try {
             setIsLoadingCities(true);
             const citiesData = await getCities(countryCode, stateIso);
-          
-            setCities(citiesData);
+
+            // Ensure each city has a unique ID
+            const citiesWithIds = citiesData.map((city, index) => ({
+                id: city.id || city._id || `${city.name}-${index}`,
+                name: city.name
+            }));
+
+            setCities(citiesWithIds);
         } catch (error) {
             console.error("Error loading cities:", error);
         } finally {
@@ -199,16 +196,18 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
     };
 
     // Handle city selection
-    const handleCityChange = (cityName) => {
-      
-        setFormData({
-            ...formData,
-            address: {
-                ...formData.address,
-                city: cityName
-            },
-        });
-        setSelectedCityValue(cityName);
+    const handleCityChange = (cityId) => {
+        const selectedCity = cities.find(c => c.id === cityId);
+        if (selectedCity) {
+            setFormData({
+                ...formData,
+                address: {
+                    ...formData.address,
+                    city: selectedCity.name
+                },
+            });
+            setSelectedCityId(cityId);
+        }
     };
 
     // Submit form
@@ -326,6 +325,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                     </div>
 
                     {/* Address Section */}
+                    {/* Address Section */}
                     <div className="space-y-4">
                         <Label className="text-sm font-medium">Address</Label>
 
@@ -366,7 +366,9 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                                                 isLoadingStates
                                                     ? "Loading states..."
                                                     : states.length === 0
-                                                        ? "No states available"
+                                                        ? formData.address.state
+                                                            ? `Current: ${formData.address.state}`
+                                                            : "No states available"
                                                         : "Select state"
                                             }
                                         />
@@ -386,7 +388,7 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                         <div className="space-y-2">
                             <Label className="text-xs text-muted-foreground">City</Label>
                             <Select
-                                value={selectedCityValue || formData.address.city}
+                                value={selectedCityId}
                                 onValueChange={handleCityChange}
                                 disabled={!formData.address.state || isViewMode || isLoadingCities}
                             >
@@ -404,22 +406,13 @@ const BranchModal = ({ isOpen, onClose, onSave, branch, mode }) => {
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {cities.map((city, index) => (
-                                        <SelectItem key={`${city.name}-${index}`} value={city.name}>
+                                    {cities.map((city) => (
+                                        <SelectItem key={city.id} value={city.id}>
                                             {city.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-
-                            {/* Debug info - you can remove this after testing */}
-                            {mode === "edit" && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    <div>Form city: {formData.address.city}</div>
-                                    <div>Selected city value: {selectedCityValue}</div>
-                                    <div>Matching: {cities.some(c => c.name === (selectedCityValue || formData.address.city)) ? '✓' : '✗'}</div>
-                                </div>
-                            )}
                         </div>
                     </div>
 

@@ -56,7 +56,7 @@ const InventoryPage = () => {
 
     if (loading) return <p className="p-4">Loading...</p>;
 
-    console.log("normalStock", normalStock)
+   
 
     // Table columns - Fixed accessors
     const columns = [

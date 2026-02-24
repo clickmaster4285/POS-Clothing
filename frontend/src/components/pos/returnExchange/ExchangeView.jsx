@@ -5,10 +5,10 @@ import PaymentModal from "./PaymentModal";
 import { toast } from "sonner";
 import { useSettings } from "@/hooks/useSettings";
 
-
 const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
     const { data: productsData, isLoading } = useProducts();
 
+   
     const { data: settings } = useSettings();
     const [selectedExchange, setSelectedExchange] = useState(null);
     const [exchangeQuantity, setExchangeQuantity] = useState(1);
@@ -32,9 +32,15 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
     const isRefundDue = priceDifference < 0;
 
     const handleSelectExchange = (product, variant) => {
+        // Get the first available color from stockByAttribute
+        const defaultColor = variant.stockByAttribute?.find(s => s.quantity > 0)?.color || null;
+
         setSelectedExchange({
             ...product,
-            variantSelected: variant
+            variantSelected: {
+                ...variant,
+                color: defaultColor  // Ensure color is set
+            }
         });
         setExchangeQuantity(1);
         setPaymentComplete(false);
@@ -48,6 +54,9 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
         setPaymentComplete(true);
         setShowPaymentModal(false);
 
+        // Get the first return item
+        const returnItem = returnItems[0];
+
         onComplete({
             returnItems,
             exchangeItem: selectedExchange,
@@ -55,14 +64,26 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
             returnTotal,
             exchangeTotal,
             priceDifference,
-            payment: paymentDetails
+            payment: paymentDetails,
+            branch: selectedTxn.branch,
+            // Add original item details for stock update
+            originalItem: {
+                productId: returnItem.originalItem?.productId || returnItem.productId,
+                variantId: returnItem.originalItem?.variantId || returnItem.variantId,
+                name: returnItem.name,
+                quantity: returnItem.qty,
+                size: returnItem.originalItem?.size,
+                color: returnItem.originalItem?.color,
+                unitPrice: returnItem.price,
+                returnReason: returnItem.returnReason
+            }
         });
 
         toast.success("Exchange payment completed");
     };
 
     const isExchangeValid = selectedExchange && exchangeTotal >= returnTotal;
-    
+
     if (isLoading) return (
         <div className="flex justify-center items-center h-64">
             <p>Loading products...</p>
@@ -188,8 +209,8 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                                         onClick={() => handleSelectExchange(product, variant)}
                                                         disabled={isSelected}
                                                         className={`px-3 py-1.5 text-xs rounded transition whitespace-nowrap ${isSelected
-                                                                ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
-                                                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                            ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
+                                                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
                                                             }`}
                                                     >
                                                         {isSelected ? 'Selected' : 'Select'}
@@ -213,7 +234,7 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                             <div className="flex items-center gap-2">
                                 <h4 className="font-semibold">Selected for Exchange:</h4>
                                 <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm">
-                                    {selectedExchange.productName} - Size {selectedExchange.variantSelected.size}
+                                    {selectedExchange.productName} - Size {selectedExchange.variantSelected.size} - Color {selectedExchange.variantSelected.color || 'N/A'}
                                 </span>
                                 <button
                                     onClick={() => setSelectedExchange(null)}
@@ -303,8 +324,10 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                 Proceed to Payment ({settings?.currencySymbol || '$'}{priceDifference.toFixed(2)})
                             </button>
                         ) : (
-                                <button
-                                    onClick={() => onComplete({
+                            <button
+                                onClick={() => {
+                                    const returnItem = returnItems[0];
+                                    onComplete({
                                         returnItems,
                                         exchangeItem: selectedExchange,
                                         exchangeQuantity,
@@ -314,16 +337,29 @@ const ExchangeView = ({ selectedTxn, returnItems, onBack, onComplete }) => {
                                         payment: {
                                             method: "exchange",
                                             amount: 0
+                                        },
+                                        branch: selectedTxn.branch,
+                                        // Add original item details for stock update
+                                        originalItem: {
+                                            productId: returnItem.originalItem?.productId || returnItem.productId,
+                                            variantId: returnItem.originalItem?.variantId || returnItem.variantId,
+                                            name: returnItem.name,
+                                            quantity: returnItem.qty,
+                                            size: returnItem.originalItem?.size,
+                                            color: returnItem.originalItem?.color,
+                                            unitPrice: returnItem.price,
+                                            returnReason: returnItem.returnReason
                                         }
-                                    })}
-                                    className={`px-6 py-2 rounded-lg transition font-medium ${!isExchangeValid
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-green-600 text-white hover:opacity-90'
-                                        }`}
-                                    disabled={!isExchangeValid}
-                                >
-                                    Complete Exchange
-                                </button>
+                                    });
+                                }}
+                                className={`px-6 py-2 rounded-lg transition font-medium ${!isExchangeValid
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-green-600 text-white hover:opacity-90'
+                                    }`}
+                                disabled={!isExchangeValid}
+                            >
+                                Complete Exchange
+                            </button>
                         )}
                     </div>
                 </div>

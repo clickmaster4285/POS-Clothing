@@ -21,7 +21,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         const start = new Date();
         const end = new Date();
 
-        console.log("🔄 Recalculating date filter for:", dateRange);
 
         switch (dateRange) {
             case 'today':
@@ -68,10 +67,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
                 end.setHours(23, 59, 59, 999);
         }
 
-        console.log("📅 Date range:", {
-            start: start.toLocaleDateString(),
-            end: end.toLocaleDateString()
-        });
+      
 
         return { start, end };
     }, [dateRange]);
@@ -84,7 +80,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     });
 
     const transactions = transactionData?.transactions || [];
-    console.log("📦 Filtered Transactions:", transactions.length, "for", dateRange);
+ 
 
     // Fetch stock data with date filters
     const { data: branchStockData, isLoading: branchLoading } = useStockByBranch(
@@ -104,7 +100,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     const stockLoading = branchId ? branchLoading : allStockLoading;
     const stockData = stockRawData?.data || [];
 
-    console.log("stockData in sales page", stockData);
+   
 
     const loading = transactionsLoading || stockLoading;
 
@@ -117,7 +113,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         topSellingProducts,
         dailySalesData
     } = useMemo(() => {
-        console.log("📊 Processing data for:", dateRange);
+     
 
         // Initialize data structures
         let totalRevenue = 0;
@@ -279,12 +275,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
         const netSales = totalRevenue - (totalReturns * averageOrderValue);
 
-        console.log("📈 Processed totals for", dateRange, ":", {
-            totalRevenue,
-            totalTransactions,
-            totalItemsSold,
-            uniqueCustomers: uniqueCustomers.size
-        });
 
         // Format sales by hour for chart
         const salesByHourFormatted = hourlySales.map((sales, hour) => ({

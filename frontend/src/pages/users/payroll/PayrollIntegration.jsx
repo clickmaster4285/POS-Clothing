@@ -48,7 +48,7 @@ const PayrollIntegration = () => {
   const navigate = useNavigate();
   const { data: staff = [], isLoading } = useStaffList();
 
-  console.log("PayrollIntegration - staff data:", staff);
+
   const { currentUserRole } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
 

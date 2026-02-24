@@ -24,70 +24,42 @@ const getByOriginalTransaction = async (req, res) => {
 };
 
 
-// const createReturnExchange = async (req, res) => {
-
-//   try {
-//     const payload = req.body;
-
-//     // 1️⃣ Save return/exchange
-//     const txnNumber = `RE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-//     const newReturn = new ReturnExchange({
-//       transactionNumber: txnNumber,
-//       ...payload
-//     });
-
-//     await newReturn.save();
-
-//     // 2️⃣ Update original transaction to link this return/exchange
-//     await Transaction.findByIdAndUpdate(payload.originalTransactionId, {
-//       $push: { returnExchangeIds: newReturn._id }
-//     });
-
-//     res.status(201).json({ success: true, transaction: newReturn });
-
-//   } catch (err) {
-//     console.error("ReturnExchange creation error:", err);
-//     res.status(500).json({ success: false, error: err.message });
-//   }
-// };
 const createReturnExchange = async (req, res) => {
   try {
     const payload = req.body;
-    const userId = req.user._id;        // Logged-in user
-    const branchId = req.user.branch_id; // User branch
-
-   
+    const userId = req.user._id;
+    
+    // Use branch from payload or user
+    const branchId = payload.branch || req.user.branch_id;
+    
+    console.log("🏢 Using branch:", branchId);
+    console.log("📦 Received payload:", payload);
 
     // 1️⃣ Create Return/Exchange Record
     const txnNumber = `RE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const newReturn = new ReturnExchange({
       transactionNumber: txnNumber,
-      ...payload
+      ...payload,
+      branch: branchId
     });
     await newReturn.save();
-   
 
     // 2️⃣ Link to Original Transaction
     if (payload.originalTransactionId) {
       await Transaction.findByIdAndUpdate(payload.originalTransactionId, {
         $push: { returnExchangeIds: newReturn._id }
       });
-    
     }
 
-    // 3️⃣ Update Stock
-    for (const item of payload.items) {
-    
+    // 3️⃣ Update Stock based on type
+    if (payload.type === "return") {
+      // ----- RETURN LOGIC -----
+      for (const item of payload.items) {
+        if (!item.variantId) {
+          console.warn(`⚠️ Missing variantId for item ${item.productId}. Skipping stock update.`);
+          continue;
+        }
 
-      // Check if variantId is present
-      if (!item.variantId) {
-        console.warn(`⚠️ Missing variantId for item ${item.productId}. Skipping stock update.`);
-        continue;
-      }
-
-      // --- RETURN ---
-      if (payload.type === "return") {
-       
         const stockDoc = await Stock.findOne({
           product: item.productId,
           variantId: item.variantId,
@@ -96,68 +68,88 @@ const createReturnExchange = async (req, res) => {
         });
 
         if (stockDoc) {
-       
           stockDoc.currentStock += item.quantity;
           stockDoc.availableStock += item.quantity;
           stockDoc.history.push({
-            action: "return",
+            action: "return",  // ✅ Using allowed enum value
             quantity: item.quantity,
             user: userId,
             timestamp: new Date()
           });
           await stockDoc.save();
-          
+          console.log(`✅ RETURN: Added ${item.quantity} back to stock. New stock: ${stockDoc.currentStock}`);
         } else {
-          console.error(`❌ No stock record found for RETURN item: ${item.productId} ${item.color}`);
+          console.error(`❌ No stock record found for RETURN item:`, {
+            product: item.productId,
+            variant: item.variantId,
+            color: item.color
+          });
         }
       }
-
-      // --- EXCHANGE ---
-      if (payload.type === "exchange") {
-        // 1️⃣ Add original item back to stock
+    } 
+    else if (payload.type === "exchange") {
+      // ----- EXCHANGE LOGIC -----
+      
+      // 1️⃣ Add original item back to stock
+      if (payload.originalItem) {
         const originalStock = await Stock.findOne({
-          product: item.originalProductId,
-          variantId: item.originalVariantId,
+          product: payload.originalItem.productId,
+          variantId: payload.originalItem.variantId,
           branch: branchId,
-          color: item.color || "Default"
+          color: payload.originalItem.color || "Default"
         });
 
         if (originalStock) {
-          originalStock.currentStock += item.quantity;
-          originalStock.availableStock += item.quantity;
+          originalStock.currentStock += payload.originalItem.quantity;
+          originalStock.availableStock += payload.originalItem.quantity;
           originalStock.history.push({
-            action: "exchange-return",
-            quantity: item.quantity,
+            action: "return",  // ✅ Using allowed enum value
+            quantity: payload.originalItem.quantity,
             user: userId,
             timestamp: new Date()
           });
           await originalStock.save();
-         
+          console.log(`✅ EXCHANGE: Added original item back. New stock: ${originalStock.currentStock}`);
         } else {
-          console.error(`❌ No stock record found for original item in EXCHANGE: ${item.originalProductId} ${item.color}`);
+          console.error(`❌ No stock record found for original item:`, {
+            product: payload.originalItem.productId,
+            variant: payload.originalItem.variantId,
+            color: payload.originalItem.color
+          });
         }
+      }
 
-        // 2️⃣ Deduct new exchanged item from stock
+      // 2️⃣ Deduct new exchanged item from stock
+      if (payload.newItem) {
         const newStock = await Stock.findOne({
-          product: item.productId,
-          variantId: item.variantId,
+          product: payload.newItem.productId,
+          variantId: payload.newItem.variantId,
           branch: branchId,
-          color: item.color || "Default"
+          color: payload.newItem.color || "Default"
         });
 
         if (newStock) {
-          newStock.currentStock -= item.quantity;
-          newStock.availableStock -= item.quantity;
+          // Check if enough stock
+          if (newStock.currentStock < payload.newItem.quantity) {
+            console.warn(`⚠️ Insufficient stock for new item: ${newStock.currentStock} < ${payload.newItem.quantity}`);
+          }
+          
+          newStock.currentStock -= payload.newItem.quantity;
+          newStock.availableStock -= payload.newItem.quantity;
           newStock.history.push({
-            action: "exchange-out",
-            quantity: -item.quantity,
+            action: "sale",  // ✅ Using allowed enum value (negative quantity indicates sale)
+            quantity: -payload.newItem.quantity,
             user: userId,
             timestamp: new Date()
           });
           await newStock.save();
-        
+          console.log(`✅ EXCHANGE: Deducted new item. New stock: ${newStock.currentStock}`);
         } else {
-          console.error(`❌ No stock record found for new item in EXCHANGE: ${item.productId} ${item.color}`);
+          console.error(`❌ No stock record found for new item:`, {
+            product: payload.newItem.productId,
+            variant: payload.newItem.variantId,
+            color: payload.newItem.color
+          });
         }
       }
     }
@@ -169,7 +161,6 @@ const createReturnExchange = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
-
 
 
 

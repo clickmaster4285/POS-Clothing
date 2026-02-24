@@ -18,7 +18,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
   const { data: settings, isLoading, refetch } = useSettings();
 
   const { user } = useAuth();
-  console.log("ReceiptPrinter user:", user);
+ 
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";

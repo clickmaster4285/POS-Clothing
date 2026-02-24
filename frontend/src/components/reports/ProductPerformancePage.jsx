@@ -6,8 +6,7 @@ import { useSettings } from "@/hooks/useSettings";
 const ProductPerformancePage = ({ stockData = [], loading }) => {
     if (loading) return <p>Loading...</p>;
     const { data: settings } = useSettings();
-    console.log("Raw Stock Data:", stockData);
-    // Preprocess stockData to calculate totalSold, totalReturned, totalExchanged
+  
     const processedData = stockData.map(item => {
         const totals = item.history.reduce(
             (acc, h) => {

@@ -62,6 +62,8 @@ const ReturnsExchangesPage = () => {
             ex.items?.map(i => i.id || i.productId) || []
         ) || [];
 
+
+        
         // Build cart items with remaining quantity (exclude fully returned or exchanged items)
         const items = txn.soldItems
             .map((item, index) => {
@@ -144,10 +146,12 @@ const ReturnsExchangesPage = () => {
 
         const returnTotal = items.reduce((acc, item) => acc + item.price * item.qty, 0);
        
+       
         const payload = {
             type: "return",
             mode: "normal",
             originalTransactionId: selectedTxn._id,
+            branch: selectedTxn.branch, 
             customer: {
                 customerId: selectedTxn.customer?.customerId || selectedTxn.customer?._id,
                 customerFirstName: selectedTxn.customer?.customerFirstName || "Walk-in",
@@ -386,13 +390,17 @@ const ReturnsExchangesPage = () => {
                 selectedTxn={selectedTxn}
                 returnItems={selectedReturnItems}
                 onBack={() => setView("return")}
+
                 onComplete={async (data) => {
-                   
                     try {
+                        // Get the return item from selectedReturnItems
+                        const returnItem = selectedReturnItems[0];
+
                         const payload = {
                             type: "exchange",
                             mode: "normal",
                             originalTransactionId: selectedTxn._id,
+                            branch: data.branch || selectedTxn.branch,
                             customer: {
                                 customerId: selectedTxn.customer?.customerId || selectedTxn.customer?._id,
                                 customerFirstName: selectedTxn.customer?.customerFirstName || "Walk-in",
@@ -400,15 +408,52 @@ const ReturnsExchangesPage = () => {
                                 customerEmail: selectedTxn.customer?.customerEmail || "",
                                 customerPhone: selectedTxn.customer?.customerPhone || ""
                             },
-                            items: data.exchangeItem ? [{
+                            // ✅ COMBINE BOTH ITEMS INTO ONE ARRAY
+                            items: [
+                                // Original item being returned (negative quantity or special flag)
+                                {
+                                    productId: returnItem.originalItem?.productId || returnItem.productId,
+                                    variantId: returnItem.originalItem?.variantId || returnItem.variantId,
+                                    name: returnItem.name,
+                                    quantity: -returnItem.qty, // Negative for returned items
+                                    size: returnItem.originalItem?.size,
+                                    color: returnItem.originalItem?.color,
+                                    unitPrice: returnItem.price,
+                                    isOriginalItem: true,
+                                    returnReason: returnItem.returnReason
+                                },
+                                // New item being exchanged
+                                {
+                                    productId: data.exchangeItem._id,
+                                    variantId: data.exchangeItem.variantSelected._id,
+                                    name: data.exchangeItem.productName,
+                                    quantity: data.exchangeQuantity,
+                                    size: data.exchangeItem.variantSelected.size,
+                                    color: data.exchangeItem.variantSelected.color,
+                                    unitPrice: data.exchangeItem.variantSelected.retailPrice || 0,
+                                    isNewItem: true
+                                }
+                            ],
+                            // Keep these for stock update logic if needed
+                            originalItem: {
+                                productId: returnItem.originalItem?.productId || returnItem.productId,
+                                variantId: returnItem.originalItem?.variantId || returnItem.variantId,
+                                name: returnItem.name,
+                                quantity: returnItem.qty,
+                                size: returnItem.originalItem?.size,
+                                color: returnItem.originalItem?.color,
+                                unitPrice: returnItem.price,
+                                returnReason: returnItem.returnReason
+                            },
+                            newItem: {
                                 productId: data.exchangeItem._id,
                                 variantId: data.exchangeItem.variantSelected._id,
                                 name: data.exchangeItem.productName,
                                 quantity: data.exchangeQuantity,
                                 size: data.exchangeItem.variantSelected.size,
-                                color: data.exchangeItem.variantSelected.color || null,
+                                color: data.exchangeItem.variantSelected.color,
                                 unitPrice: data.exchangeItem.variantSelected.retailPrice || 0
-                            }] : [],
+                            },
                             totals: {
                                 subtotal: data.exchangeTotal,
                                 grandTotal: data.exchangeTotal
@@ -416,9 +461,10 @@ const ReturnsExchangesPage = () => {
                             payment: data.payment,
                             notes: "Exchange processed via POS"
                         };
-                     
-                        await createReturnExchangeMutation.mutateAsync(payload);
 
+                       
+
+                        await createReturnExchangeMutation.mutateAsync(payload);
                         toast.success("Exchange saved successfully!");
                         setSelectedReturnItems([]);
                         setView("list");

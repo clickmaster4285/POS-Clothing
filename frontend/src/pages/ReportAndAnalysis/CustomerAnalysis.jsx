@@ -60,9 +60,6 @@ const CustomerAnalysis = () => {
     }, [customers, startDate, endDate]);
 
 
-
-
-    console.log("customers", customers);
     return (
         <div className="">
             {/* Breadcrumb */}

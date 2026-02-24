@@ -22,7 +22,7 @@ const ReturnView = ({
     const [showExchangeHistory, setShowExchangeHistory] = useState(false);
 
     const { data: settings } = useSettings();
-   
+ 
 
     // Reset selection whenever returnItems change
     useEffect(() => {
@@ -519,7 +519,7 @@ const ReturnView = ({
 
                     {/* ================= EXCHANGE ITEMS ================= */}
                     {newItems?.length > 0 && (
-                        <div>
+                        <div className="bg-card mt-4 p-4 shadow-md rounded-md">
                             <h3 className="font-semibold mb-3">
                                 Items Received from Exchanges
                             </h3>

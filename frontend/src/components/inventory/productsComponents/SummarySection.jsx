@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle } from "lucide-react"
 
 export default function SummarySection({ formSummary, showVariantSection }) {
-    console.log("SummarySection formSummary:", formSummary , ); // Debug log
+   
 
 
     return (

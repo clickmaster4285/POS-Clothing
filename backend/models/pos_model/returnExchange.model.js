@@ -26,6 +26,7 @@ const returnExchangeSchema = new mongoose.Schema(
     customerEmail: String
   },
 
+     branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch'},
  
   items: [
     {

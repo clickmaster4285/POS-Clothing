@@ -50,7 +50,7 @@ const StaffDetailPage = () => {
 
   const { data: user, isLoading, error } = useGetUserById(id);
 
-  console.log("Fetched user data:", user);
+  
   const { data: allPermissionsData, isLoading: permissionsLoading } = useGetPermissions();
 
   // Transform allPermissionsData for the grid

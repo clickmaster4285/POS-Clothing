@@ -30,7 +30,7 @@ export function Actions() {
 
     const { data: settings, isLoading, refetch } = useSettings();
 
-    console.log("Settings data in Actions component:", settings);
+ 
     const [showHold, setShowHold] = useState(false);
     const [showRetrieve, setShowRetrieve] = useState(false);
     const [showVoidTxn, setShowVoidTxn] = useState(false);

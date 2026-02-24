@@ -102,11 +102,40 @@ function POSContent() {
                     <div className="bg-white rounded-lg shadow p-4 sm:p-4">
                         <h3 className="text-sm font-semibold mb-3 text-gray-700 sm:hidden">Quick Actions</h3>
                         <QuickActions />
-                        <CartQuickActions
+
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <button
+                                onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                                disabled={currentStep === 0}
+                                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 
+                    ${currentStep === 0
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                                    }`}
+                            >
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>Back to {currentStep === 1 ? 'Product Entry' : currentStep === 2 ? 'Shopping Cart' : currentStep === 3 ? 'Transaction Totals' : 'Previous Step'}</span>
+                            </button>
+                        </div>
+
+                       
+                    </div>
+
+
+
+
+                        {/* <CartQuickActions
                             onAddToCart={() => setCurrentStep(0)}
                             className="justify-between"
-                        />
-                    </div>
+                        /> */}
+                  
                   
                 </aside>
             </main>

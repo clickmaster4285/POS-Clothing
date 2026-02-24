@@ -9,6 +9,8 @@ import { useProducts } from "@/hooks/inv_hooks/useProducts";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from "@/hooks/useAuth"
 import { useStockByBranch } from '@/hooks/inv_hooks/useStock'
+import { useSettings } from "@/hooks/useSettings";
+
 
 export function ProductEntry() {
     const { addToCart, setCurrentStep, cartItems, transactionNumber, status, selectedBranch, clearCart } = useTransaction();
@@ -19,7 +21,7 @@ export function ProductEntry() {
     const [quantity, setQuantity] = useState(1);
     const [showResults, setShowResults] = useState(false);
 
-
+    const { data: settings } = useSettings();
     // Helper function to get color hex values
     const getColorHex = (colorName) => {
         const colorMap = {
@@ -481,7 +483,7 @@ export function ProductEntry() {
                                     disabled={!selectedVariant || quantity > currentStock}
                                 >
                                     <ShoppingCart className="w-4 h-4 mr-2" />
-                                    Add — ${(currentPrice * quantity).toFixed(2)}
+                                    Add — {settings?.currencySymbol || '$'}{(currentPrice * quantity).toFixed(2)}
                                 </Button>
                             </div>
                         </div>
@@ -571,7 +573,7 @@ export function ProductEntry() {
                                                     <div className="flex items-center gap-2">
                                                         {/* Price */}
                                                         <span className="text-sm font-semibold text-primary">
-                                                            ${variantPrice.toFixed(2)}
+                                                            {settings?.currencySymbol || '$'}{variantPrice.toFixed(2)}
                                                         </span>
                                                         {/* Stock Status */}
                                                         <Badge

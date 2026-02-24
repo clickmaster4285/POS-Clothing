@@ -13,6 +13,7 @@ import { PaymentDialog } from '@/components/pos/transaction/dialogs/PaymentDialo
 import { CustomerLookupDialog } from '@/components/pos/transaction/dialogs/CustomerLookupDialog';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useSettings } from "@/hooks/useSettings";
 
 export function QuickActions() {
     const { cartItems, totals } = useTransaction();
@@ -22,6 +23,8 @@ export function QuickActions() {
     const [showVoidItem, setShowVoidItem] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [showCustomerLookup, setShowCustomerLookup] = useState(false);
+
+    const { data: settings } = useSettings();
 
     const actions = [
         // {
@@ -103,64 +106,6 @@ export function QuickActions() {
                 Quick Actions
             </h2>
 
-            {/* Summary Card - Mobile Optimized */}
-            <Card className="overflow-hidden">
-                <CardContent className="p-4 sm:p-4">
-                    <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 sm:gap-4">
-                        {/* Items count - Left side */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                                Items in cart:
-                            </span>
-                            <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 text-xs sm:text-sm font-semibold bg-primary/10 text-primary rounded-full">
-                                {cartItems.length}
-                            </span>
-                        </div>
-
-                        {/* Total amount - Right side */}
-                        <div className="flex items-baseline gap-1.5 sm:gap-2">
-                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                                Total:
-                            </span>
-                            <span className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
-                                ${(totals?.grandTotal || 0).toFixed(2)}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Detailed Transaction Breakdown */}
-                    {cartItems.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-dashed space-y-1 text-xs sm:text-sm text-muted-foreground">
-                            <div className="flex justify-between">
-                                <span>Subtotal:</span>
-                                <span>${(totals?.subtotal || 0).toFixed(2)}</span>
-                            </div>
-
-                            {totals?.totalDiscount > 0 && (
-                                <div className="flex justify-between text-green-600">
-                                    <span>Item Discounts:</span>
-                                    <span>- ${(totals?.totalDiscount || 0).toFixed(2)}</span>
-                                </div>
-                            )}
-
-                            {totals?.loyaltyDiscount > 0 && (
-                                <div className="flex justify-between text-green-600">
-                                    <span>Loyalty Discount:</span>
-                                    <span>- ${(totals?.loyaltyDiscount || 0).toFixed(2)}</span>
-                                </div>
-                            )}
-
-                            {/* Final Total */}
-                            <div className="flex justify-between pt-2 border-t border-dashed font-semibold text-primary">
-                                <span>Grand Total:</span>
-                                <span>${(totals?.grandTotal || 0).toFixed(2)}</span>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-
             {/* Action Grid - Responsive Layout */}
             <div className="space-y-3 sm:space-y-4">
                 {/* Section title for actions - visible on larger screens */}
@@ -169,7 +114,7 @@ export function QuickActions() {
                 </h3>
 
                 {/* Responsive grid - adjusts columns based on screen size */}
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-2">
                     {actions.map((action) => (
                         <button
                             key={action.label}
@@ -218,6 +163,67 @@ export function QuickActions() {
                     </div>
                 )}
             </div>
+
+            
+            {/* Summary Card - Mobile Optimized */}
+            <Card className="overflow-hidden">
+                <CardContent className="p-4 sm:p-4">
+                    <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 sm:gap-4">
+                        {/* Items count - Left side */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                                Items in cart:
+                            </span>
+                            <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 text-xs sm:text-sm font-semibold bg-primary/10 text-primary rounded-full">
+                                {cartItems.length}
+                            </span>
+                        </div>
+
+                        {/* Total amount - Right side */}
+                        <div className="flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                                Total:
+                            </span>
+                            <span className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
+                                {settings?.currencySymbol || '$'}{(totals?.grandTotal || 0).toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Detailed Transaction Breakdown */}
+                    {cartItems.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-dashed space-y-1 text-xs sm:text-sm text-muted-foreground">
+                            <div className="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span>{settings?.currencySymbol || '$'}{(totals?.subtotal || 0).toFixed(2)}</span>
+                            </div>
+
+                            {totals?.totalDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Item Discounts:</span>
+                                    <span>- {settings?.currencySymbol || '$'}{(totals?.totalDiscount || 0).toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {totals?.loyaltyDiscount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Loyalty Discount:</span>
+                                    <span>- {settings?.currencySymbol || '$'}{(totals?.loyaltyDiscount || 0).toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {/* Final Total */}
+                            <div className="flex justify-between pt-2 border-t border-dashed font-semibold text-primary">
+                                <span>Grand Total:</span>
+                                <span>{settings?.currencySymbol || '$'}{(totals?.grandTotal || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+
+         
 
             {/* Dialogs - Responsive handling is inside each dialog component */}
             <HoldDialog open={showHold} onOpenChange={setShowHold} />

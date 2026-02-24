@@ -21,7 +21,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         const start = new Date();
         const end = new Date();
 
-
         switch (dateRange) {
             case 'today':
                 start.setHours(0, 0, 0, 0);
@@ -67,8 +66,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
                 end.setHours(23, 59, 59, 999);
         }
 
-      
-
         return { start, end };
     }, [dateRange]);
 
@@ -80,7 +77,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     });
 
     const transactions = transactionData?.transactions || [];
- 
 
     // Fetch stock data with date filters
     const { data: branchStockData, isLoading: branchLoading } = useStockByBranch(
@@ -100,11 +96,12 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     const stockLoading = branchId ? branchLoading : allStockLoading;
     const stockData = stockRawData?.data || [];
 
-   
+    console.log("Fetched transactions", transactions);
+    console.log("Fetched stock data", stockData);
 
     const loading = transactionsLoading || stockLoading;
 
-    // Process sales data - THIS WILL WORK FOR BOTH VERSIONS
+    // Process sales data
     const {
         kpiData,
         salesByHourData,
@@ -113,8 +110,6 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         topSellingProducts,
         dailySalesData
     } = useMemo(() => {
-     
-
         // Initialize data structures
         let totalRevenue = 0;
         let totalTransactions = 0;
@@ -129,65 +124,29 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
         const productSales = {};
         const dailyRevenue = {};
 
-        // Get date range for filtering (used for stock history approach)
+        // Get date range for filtering
         const startDate = getDateFilter.start;
         const endDate = getDateFilter.end;
 
-        // OPTION 1: Process from stock history (first version)
+        // Process returns from stock history
         stockData.forEach(item => {
             if (item.history && Array.isArray(item.history)) {
-                item.history.forEach(transaction => {
-                    const transactionTime = new Date(transaction.timestamp).getTime();
+                item.history.forEach(historyItem => {
+                    const transactionTime = new Date(historyItem.timestamp).getTime();
                     const startTime = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
                     const endTime = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59);
 
                     if (transactionTime < startTime || transactionTime > endTime) return;
 
-                    // Sale
-                    if (transaction.action === 'sale') {
-                        const quantity = Math.abs(transaction.quantity || 0);
-                        const price = item.product?.variants?.[0]?.price?.retailPrice || 0;
-                        const revenue = quantity * price;
-                        totalRevenue += revenue;
-                        totalItemsSold += quantity;
-                        totalTransactions += 1;
-
-                        const date = new Date(transaction.timestamp);
-                        const hour = date.getHours();
-                        hourlySales[hour] += revenue;
-
-                        // Daily
-                        const day = date.toISOString().split('T')[0];
-                        dailyRevenue[day] = (dailyRevenue[day] || 0) + revenue;
-
-                        // Product tracking
-                        const productId = item.product?._id || item.product?.sku;
-                        if (productId) {
-                            if (!productSales[productId]) {
-                                productSales[productId] = {
-                                    name: item.product.productName || 'Unknown',
-                                    sku: item.product.sku || 'N/A',
-                                    category: item.product.category || 'Uncategorized',
-                                    sold: 0,
-                                    revenue: 0,
-                                    stock: item.currentStock || 0,
-                                    color: item.color || 'N/A'
-                                };
-                            }
-                            productSales[productId].sold += quantity;
-                            productSales[productId].revenue += revenue;
-                        }
-                    }
-
-                    // Return
-                    else if (transaction.action === 'return') {
-                        totalReturns += Math.abs(transaction.quantity || 0);
+                    // Count returns from stock history
+                    if (historyItem.action === 'return') {
+                        totalReturns += Math.abs(historyItem.quantity || 0);
                     }
                 });
             }
         });
 
-     
+        // Build product details map from stock data
         const productDetailsMap = {};
         stockData.forEach(item => {
             if (item.product?._id || item.product?.sku) {
@@ -202,79 +161,92 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
             }
         });
 
-        // Process transactions directly
+        // Process ONLY completed transactions from direct transaction data
         transactions.forEach(transaction => {
-            totalTransactions++;
+            // Only count completed transactions, not returns or voids
+            if (transaction.status === 'completed') {
+                totalTransactions++;
 
-            const paymentMethod = transaction.payment?.paymentMethod || 'cash';
-            const grandTotal = transaction.totals?.grandTotal || 0;
+                const paymentMethod = transaction.payment?.paymentMethod || 'cash';
+                const grandTotal = transaction.totals?.grandTotal || 0;
 
-            totalRevenue += grandTotal;
+                totalRevenue += grandTotal;
 
-            if (transaction.customer?.customerId || transaction.customer?.customerFirstName) {
-                const customerId = transaction.customer.customerId ||
-                    `${transaction.customer.customerFirstName}-${transaction.customer.customerLastName}`;
-                uniqueCustomers.add(customerId);
-            }
+                // Track unique customers
+                if (transaction.customer?.customerId || transaction.customer?.customerFirstName) {
+                    const customerId = transaction.customer.customerId ||
+                        `${transaction.customer.customerFirstName}-${transaction.customer.customerLastName}`;
+                    uniqueCustomers.add(customerId);
+                }
 
-            if (transaction.cartItems && Array.isArray(transaction.cartItems)) {
-                transaction.cartItems.forEach(item => {
-                    const quantity = item.quantity || 1;
-                    const unitPrice = item.unitPrice || 0;
-                    const itemRevenue = quantity * unitPrice;
+                // Process cart items
+                if (transaction.cartItems && Array.isArray(transaction.cartItems)) {
+                    transaction.cartItems.forEach(item => {
+                        const quantity = item.quantity || 1;
+                        const unitPrice = item.unitPrice || 0;
+                        const itemRevenue = quantity * unitPrice;
 
-                    totalItemsSold += quantity;
+                        totalItemsSold += quantity;
 
-                    const productId = item.productId || item.id;
-                    if (productId) {
-                        if (!productSales[productId]) {
-                            const productDetails = productDetailsMap[productId] || {};
-                            productSales[productId] = {
-                                name: item.name || productDetails.name || 'Unknown',
-                                sku: productDetails.sku || 'N/A',
-                                category: productDetails.category || 'Uncategorized',
-                                sold: 0,
-                                revenue: 0,
-                                stock: productDetails.currentStock || 0,
-                                color: item.color || productDetails.color || 'N/A'
-                            };
+                        // Track product sales
+                        const productId = item.productId || item.id;
+                        if (productId) {
+                            if (!productSales[productId]) {
+                                const productDetails = productDetailsMap[productId] || {};
+                                productSales[productId] = {
+                                    name: item.name || productDetails.name || 'Unknown',
+                                    sku: productDetails.sku || 'N/A',
+                                    category: productDetails.category || 'Uncategorized',
+                                    sold: 0,
+                                    revenue: 0,
+                                    stock: productDetails.currentStock || 0,
+                                    color: item.color || productDetails.color || 'N/A'
+                                };
+                            }
+                            productSales[productId].sold += quantity;
+                            productSales[productId].revenue += itemRevenue;
                         }
-                        productSales[productId].sold += quantity;
-                        productSales[productId].revenue += itemRevenue;
+                    });
+                }
+
+                // Process timestamp data for charts
+                const timestamp = transaction.timestamp || transaction.createdAt;
+                if (timestamp) {
+                    const date = new Date(timestamp);
+                    const hour = date.getHours();
+                    const month = date.toLocaleString('default', { month: 'short' });
+                    const day = date.toISOString().split('T')[0];
+
+                    // Hourly sales
+                    hourlySales[hour] += grandTotal;
+
+                    // Monthly sales
+                    if (!monthlySales[month]) {
+                        monthlySales[month] = { current: 0, previous: 0 };
                     }
-                });
-            }
+                    monthlySales[month].current += grandTotal;
 
-            const timestamp = transaction.timestamp || transaction.createdAt;
-            if (timestamp) {
-                const date = new Date(timestamp);
-                const hour = date.getHours();
-                const month = date.toLocaleString('default', { month: 'short' });
-                const day = date.toISOString().split('T')[0];
-
-                hourlySales[hour] += grandTotal;
-
-                if (!monthlySales[month]) {
-                    monthlySales[month] = { current: 0, previous: 0 };
+                    // Daily sales
+                    if (!dailyRevenue[day]) {
+                        dailyRevenue[day] = 0;
+                    }
+                    dailyRevenue[day] += grandTotal;
                 }
-                monthlySales[month].current += grandTotal;
 
-                if (!dailyRevenue[day]) {
-                    dailyRevenue[day] = 0;
+                // Payment method tracking
+                if (paymentMethod) {
+                    const method = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
+                    paymentMethods[method] = (paymentMethods[method] || 0) + grandTotal;
                 }
-                dailyRevenue[day] += grandTotal;
-            }
-
-            if (paymentMethod) {
-                const method = paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1);
-                paymentMethods[method] = (paymentMethods[method] || 0) + grandTotal;
             }
         });
 
         // Calculate averages
         const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-        const netSales = totalRevenue - (totalReturns * averageOrderValue);
 
+        // Calculate net sales (total revenue minus returns value)
+        // Assuming average return value is similar to average order value
+        const netSales = totalRevenue - (totalReturns * averageOrderValue);
 
         // Format sales by hour for chart
         const salesByHourFormatted = hourlySales.map((sales, hour) => ({
@@ -329,7 +301,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
             topSellingProducts: topProductsFormatted,
             dailySalesData: dailySalesFormatted
         };
-    }, [transactions, stockData, getDateFilter, dateRange, settings]); // Added dateRange to dependencies
+    }, [transactions, stockData, getDateFilter, settings]);
 
     // Show loading state
     if (loading) {
@@ -358,14 +330,14 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-7">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
                 <KPICard title="Total Sales" value={kpiData.totalSales} icon={<DollarSign className="h-5 w-5" />} />
                 <KPICard title="Transactions" value={kpiData.transactions} icon={<ShoppingCart className="h-5 w-5" />} prefix="" />
                 <KPICard title="Avg. Order Value" value={kpiData.averageOrderValue} icon={<TrendingUp className="h-5 w-5" />} />
                 <KPICard title="Items Sold" value={kpiData.itemsSold} icon={<Package className="h-5 w-5" />} prefix="" />
                 <KPICard title="Returns" value={kpiData.returns} icon={<RotateCcw className="h-5 w-5" />} variant="warning" />
                 <KPICard title="Net Sales" value={kpiData.netSales} icon={<DollarSign className="h-5 w-5" />} />
-                <KPICard title="Unique Customers" value={kpiData.uniqueCustomers} icon={<Users className="h-5 w-5" />} prefix="" />
+               
             </div>
 
             {/* Charts Row 1 */}

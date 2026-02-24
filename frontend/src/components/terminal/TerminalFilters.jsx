@@ -15,7 +15,7 @@ export default function TerminalFilters({
             <div className="relative flex-1 max-w-md bg-card">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search by name, ID or location..."
+                    placeholder="Search by terminal name, ID or location..."
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="pl-10"

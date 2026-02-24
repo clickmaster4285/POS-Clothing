@@ -8,12 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useTransaction } from "@/context/TransactionContext"
 import { toast } from "@/hooks/use-toast"
 import { useHeldTransactions, useCompleteHeldTransaction } from "@/hooks/pos_hooks/useTransaction"
+import { useSettings } from "@/hooks/useSettings" // Add this import
 
 export function RetrieveDialog({ open, onOpenChange }) {
     const { setCartItems, setCurrentStep, cartItems, setStatus, setSelectedCustomer } = useTransaction()
     const { data, isLoading, isError } = useHeldTransactions()
     const heldTransactions = data?.heldTransactions || []
     const { mutateAsync: completeTxn, isLoading: completing } = useCompleteHeldTransaction()
+    const { data: settings } = useSettings() // Get settings for receipt
 
     // Per-transaction state
     const [paymentData, setPaymentData] = useState({}) // { [txnId]: { paymentMethod, amountTendered } }
@@ -43,6 +45,160 @@ export function RetrieveDialog({ open, onOpenChange }) {
         toast({ title: "Transaction retrieved", description: `Park code: ${txn.parkCode}` })
     }
 
+    // Separate function to generate receipt HTML for retrieved transactions
+    const generateRetrieveReceiptHTML = (transaction) => {
+        const customerName = transaction.customer
+            ? `${transaction.customer.customerFirstName || ''} ${transaction.customer.customerLastName || ''}`.trim()
+            : "Walk-in Customer";
+
+        return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Receipt - ${transaction.transactionNumber || "N/A"}</title>
+<style>
+  @page { margin: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    width: 50mm;
+    background-color: #fff;
+    color: #000;
+  }
+  .receipt {
+    width: 50mm;
+    padding: 5px 8px;
+    margin: 0 auto;
+  }
+  .center { text-align: center; }
+  .left { text-align: left; }
+  .right { text-align: right; }
+  hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 4px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    word-wrap: break-word;
+    margin-top: 2px;
+  }
+  th, td {
+    padding: 2px 0;
+    font-size: 8px;
+  }
+  th { text-align: left; }
+  td.qty { text-align: center; width: 12%; }
+  td.discount { text-align: center; width: 22%; }
+  td.amount { text-align: right; width: 25%; }
+  td.name { width: 50%; word-wrap: break-word; }
+  .totals p {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    font-weight: bold;
+  }
+  .totals .cash {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    font-weight: bold;
+  }
+  .footer {
+    text-align: center;
+    font-size: 7px;
+    margin-top: 5px;
+    line-height: 1.2;
+  }
+  h2 {
+    margin: 2px 0;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  p { margin: 1px 0; }
+</style>
+</head>
+<body>
+<div class="receipt">
+  <h2 class="center">${settings?.companyName || "STORE"}</h2>
+  <p class="center">${settings?.address || ''}</p>
+  <p class="center">Tel: ${settings?.phone || "(212) 555-0123"}</p>
+  <hr />
+  <p><strong>Receipt #:</strong> ${transaction.transactionNumber}</p>
+  <p><strong>Customer:</strong> ${customerName}</p>
+  <hr />
+  <table>
+    <thead>
+      <tr>
+        <th class="name">Item</th>
+        <th class="qty">Qty</th>
+        <th class="discount">Discount</th>
+        <th class="amount">Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${transaction.cartItems?.map(item => `
+      <tr>
+        <td class="name">${item.name}</td>
+        <td class="qty">${item.quantity}</td>
+        <td class="discount">${item.discountPercent || 0}%</td>
+        <td class="amount">${settings?.currencySymbol || '$'}${(item.unitPrice * item.quantity).toFixed(2)}</td>
+      </tr>
+      `).join('')}
+    </tbody>
+  </table>
+  <hr />
+  <div class="totals">
+    <p><span>Subtotal</span><span>${settings?.currencySymbol || '$'}${transaction.totals?.subtotal?.toFixed(2)}</span></p>
+    ${transaction.totals?.totalDiscount > 0 ? `<p><span>Discount</span><span>${settings?.currencySymbol || '$'}${transaction.totals.totalDiscount.toFixed(2)}</span></p>` : ''}
+    <p><span>Total</span><span>${settings?.currencySymbol || '$'}${transaction.totals?.grandTotal?.toFixed(2)}</span></p>
+    <p><span>Payment</span><span>${transaction.payment?.paymentMethod?.toUpperCase()}</span></p>
+
+${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDue ? `
+  <p><span>Amount Paid:</span><span>${settings?.currencySymbol || '$'}${transaction.payment.amountTendered.toFixed(2)}</span></p>
+  <p><span>Change:</span><span>${settings?.currencySymbol || '$'}${transaction.payment.changeDue.toFixed(2)}</span></p>
+` : ''}
+
+    ${transaction.loyalty?.pointsEarned > 0 ? `<p><span>Points Earned</span><span>${transaction.loyalty.pointsEarned}</span></p>` : ''}
+  </div>
+  <hr />
+  <div class="footer">
+    <p>Thank You For Shopping With Us!</p>
+    <p>www.example.com</p>
+  </div>
+</div>
+</body>
+</html>
+`;
+    };
+
+    // Function to print receipt
+    const printReceipt = (transactionData) => {
+        const printIframe = document.createElement('iframe');
+        printIframe.style.position = 'absolute';
+        printIframe.style.width = '0';
+        printIframe.style.height = '0';
+        printIframe.style.border = 'none';
+        document.body.appendChild(printIframe);
+
+        const printHTML = generateRetrieveReceiptHTML(transactionData);
+
+        printIframe.contentDocument.write(printHTML);
+        printIframe.contentDocument.close();
+
+        window.focus();
+        printIframe.contentWindow.print();
+
+        printIframe.contentWindow.onafterprint = () => {
+            document.body.removeChild(printIframe);
+        };
+    };
+
     const handleCompletePayment = async (txn) => {
         const txnPayment = paymentData[txn._id] || {}
         const tendered = parseFloat(txnPayment.amountTendered)
@@ -60,9 +216,20 @@ export function RetrieveDialog({ open, onOpenChange }) {
         }
 
         try {
-            await completeTxn({ id: txn._id, payment })
+            console.log("Completing transaction:", txn._id, payment)
+            const completedTransaction = await completeTxn({ id: txn._id, payment })
+            console.log("Completed transaction response:", completedTransaction)
+
+            // Get the transaction data (handle different response structures)
+            const transactionData = completedTransaction?.transaction || completedTransaction
+            console.log("Transaction data to send:", transactionData)
+
+            // Print receipt directly from here
+            printReceipt(transactionData)
+
             toast({ title: "Transaction completed", description: `Park code: ${txn.parkCode}` })
             onOpenChange(false)
+
             // Reset state for this transaction
             setPaymentData(prev => {
                 const copy = { ...prev }
@@ -70,7 +237,7 @@ export function RetrieveDialog({ open, onOpenChange }) {
                 return copy
             })
         } catch (err) {
-            console.error(err)
+            console.error("Error completing transaction:", err)
             toast({ title: "Failed to complete transaction", variant: "destructive" })
         }
     }

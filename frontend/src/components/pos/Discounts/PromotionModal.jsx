@@ -16,7 +16,7 @@ const PromotionModal = ({
     const { data: categoriesData, isLoading: isCategoriesLoading } = useCategories();
 
     const category = categoriesData?.data || []
- 
+  
 
     const [categories, setCategories] = useState([]);
     const [promoForm, setPromoForm] = useState({
@@ -56,7 +56,10 @@ const PromotionModal = ({
                 name: selectedPromo.name || "",
                 type: selectedPromo.type || "Discount",
                 couponCode: selectedPromo.couponCode || "",
-                qualifyingCategories: selectedPromo.qualifyingCategories || [],
+
+                qualifyingCategories: selectedPromo.qualifyingCategories?.map(cat => cat._id) || [],
+                
+
                 qualifyingProducts: selectedPromo.qualifyingProducts || [],
                 discountDescription: selectedPromo.discountDescription || "",
                 amountType: selectedPromo.amountType || "Percentage",
@@ -70,6 +73,7 @@ const PromotionModal = ({
                 autoApply: selectedPromo.autoApply !== undefined ? selectedPromo.autoApply : true,
                 allowFurtherDiscounts: selectedPromo.allowFurtherDiscounts !== undefined ? selectedPromo.allowFurtherDiscounts : true,
                 status: selectedPromo.status || "active",
+                
             });
         }
     }, [isEditing, selectedPromo]);

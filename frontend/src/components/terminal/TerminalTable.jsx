@@ -11,7 +11,7 @@ export default function TerminalTable({
     role
 }) {
     const navigate = useNavigate();
-
+   
     if (isLoading) {
         return (
             <Table>
@@ -70,7 +70,24 @@ export default function TerminalTable({
                             {terminal.location}
                         </TableCell>
                         <TableCell>
-                            <Badge variant="secondary">{terminal.users?.length || 0}</Badge>
+                            {terminal.users && terminal.users.length > 0 ? (
+                                <div className="flex flex-col gap-1 text-xs text-muted-foreground font-medium">
+                                    {terminal.users?.map((user) => (
+                                        <div key={user._id}>
+                                            {user.role === 'supplier' ? (
+                                                // Display supplier info
+                                                <span>{user.userId?.company_name || 'N/A'}</span>
+                                            ) : (
+                                                // Display employee info
+                                                <span>{user.userId?.firstName} {user.userId?.lastName}</span>
+                                            )}
+                                            <span className="text-xs text-muted-foreground">({user.role})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <Badge variant="secondary">No Users</Badge>
+                            )}
                         </TableCell>
                       
                         <TableCell>

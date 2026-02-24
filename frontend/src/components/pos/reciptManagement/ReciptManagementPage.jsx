@@ -288,7 +288,7 @@ const ReciptManagementPage = () => {
                                         <div className="flex-1">
                                             <p className="font-medium">{item.name}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                Color: {item.color?.name || 'N/A'} | Size: {item.size || 'N/A'} | Qty: {item.quantity}
+                                             Size: {item.size || 'N/A'} | Qty: {item.quantity}
                                             </p>
                                         </div>
                                         <span className="font-medium">{settings?.currencySymbol || '$'}{(item.unitPrice * item.quantity).toFixed(2)}</span>
@@ -321,7 +321,7 @@ const ReciptManagementPage = () => {
                             <div className="text-center mb-4">
                                 <p className="font-bold text-sm sm:text-base mb-1">{settings?.companyName || "STORE"}</p>
                                 <p className="text-xs text-muted-foreground">{settings?.address}</p>
-                                <p className="text-xs text-muted-foreground">Tel: {settings?.phone }</p>
+                                <p className="text-xs text-muted-foreground">Tel: {settings?.phone}</p>
                             </div>
 
                             <div className="border-t border-b py-2 mb-3 text-xs">
@@ -329,26 +329,28 @@ const ReciptManagementPage = () => {
                                     <span>Receipt #: {selectedTxn.transactionNumber?.slice(-8)}</span>
                                     <span>{formatDate(selectedTxn.timestamp)}</span>
                                 </div>
-                                <div className="flex justify-between mt-1">
-                                    <span>Cashier: John Doe (#1234)</span>
-                                    <span>Register: 01</span>
-                                </div>
                             </div>
 
                             <div className="text-xs sm:text-sm space-y-2 mb-4">
+                                {/* Header with 4 columns */}
                                 <div className="flex justify-between font-medium border-b pb-1">
-                                    <span>Item</span>
-                                    <span>Qty</span>
-                                    <span>Price</span>
+                                    <span className="w-[40%]">Item</span>
+                                    <span className="w-[15%] text-center">Qty</span>
+                                    <span className="w-[20%] text-center">Disc%</span>
+                                    <span className="w-[25%] text-right">Price</span>
                                 </div>
+
+                                {/* Items */}
                                 {selectedTxn.cartItems?.map((item, idx) => (
                                     <div key={idx} className="flex justify-between text-xs">
-                                        <span className="flex-1 truncate">{item.name}</span>
-                                        <span className="w-12 text-center">{item.quantity}</span>
-                                        <span className="w-16 text-right">{settings?.currencySymbol || '$'}{(item.unitPrice * item.quantity).toFixed(2)}</span>
+                                        <span className="w-[40%] truncate">{item.name}</span>
+                                        <span className="w-[15%] text-center">{item.quantity}</span>
+                                        <span className="w-[20%] text-center">{item.discountPercent || 0}%</span>
+                                        <span className="w-[25%] text-right">{settings?.currencySymbol || '$'}{(item.unitPrice * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
 
+                                {/* Totals Section */}
                                 <div className="border-t pt-2 mt-2 space-y-1">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
@@ -357,7 +359,7 @@ const ReciptManagementPage = () => {
                                     {selectedTxn.totals?.totalDiscount > 0 && (
                                         <div className="flex justify-between text-green-600">
                                             <span>Discount</span>
-                                            <span>{settings?.currencySymbol || '$'}{selectedTxn.totals?.totalDiscount?.toFixed(2)}</span>
+                                            <span>-{settings?.currencySymbol || '$'}{selectedTxn.totals?.totalDiscount?.toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between">
@@ -373,7 +375,7 @@ const ReciptManagementPage = () => {
 
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground mb-2">
-                                    Payment: {selectedTxn.payment?.paymentMethod?.toUpperCase()}
+                                    Payment: {selectedTxn.payment?.paymentMethod?.toUpperCase()}{" "}
                                     {selectedTxn.payment?.paymentMethod === 'cash' &&
                                         `Change: ${settings?.currencySymbol || '$'}${selectedTxn.payment?.changeDue?.toFixed(2)}`}
                                 </p>

@@ -233,12 +233,21 @@ exports.getTerminal = async (req, res) => {
 };
 
 // ─── List all terminals ────────────────────────────────
+// ─── List all terminals ────────────────────────────────
 exports.listTerminals = async (req, res) => {
   try {
     const terminals = await Terminal.find()
-      .populate("users.userId", "firstName lastName role")
-      .populate("actions.userId", "firstName lastName role")
-      .populate("branch", "branch_name");
+      .populate({
+        path: 'users.userId',
+        select: 'firstName lastName email company_name supplier_id', // Include both user and supplier fields
+        refPath: 'users.roleRef' // Dynamically references either "User" or "Supplier" model
+      })
+      .populate({
+        path: 'actions.userId',
+        select: 'firstName lastName email company_name supplier_id',
+        refPath: 'actions.roleRef' // Dynamically references either "User" or "Supplier" model
+      })
+      .populate("branch", "branch_name location address");
 
     res.status(200).json({ success: true, data: terminals });
   } catch (err) {

@@ -59,9 +59,9 @@ const ReceiptView = ({ selectedTxn, onBack, formatDate, statusColor }) => {
                     </div>
 
                     <div className="flex flex-col xs:flex-row gap-3">
-                        <button className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm hover:opacity-90 flex-1 sm:flex-none">
+                        {/* <button className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm hover:opacity-90 flex-1 sm:flex-none">
                             <FileText size={14} /> Export PDF
-                        </button>
+                        </button> */}
                         <button className="flex items-center justify-center gap-2 border px-4 py-2.5 rounded-lg text-sm hover:bg-muted flex-1 sm:flex-none">
                             <Send size={14} /> Resend
                         </button>

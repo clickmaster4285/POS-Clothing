@@ -567,9 +567,9 @@ Thank You For Shopping With Us!
                     <Button onClick={handlePrint} className="flex-1 gap-2">
                         <Printer size={16} /> Print Receipt
                     </Button>
-                    <Button onClick={handleDownloadPDF} variant="outline" className="flex-1 gap-2">
+                    {/* <Button onClick={handleDownloadPDF} variant="outline" className="flex-1 gap-2">
                         <Download size={16} /> PDF
-                    </Button>
+                    </Button> */}
                     <Button onClick={handleDownloadTXT} variant="outline" className="gap-2">
                         <FileText size={16} /> Text
                     </Button>

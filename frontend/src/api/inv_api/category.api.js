@@ -25,6 +25,7 @@ export const getCategoryById = async (id) => {
 // 🔹 CREATE category
 // In your useCreateCategory hook or directly in the API call
 export const createCategory = async (data) => {
+  console.log("📦 createCategory called with data:", data);
   const config = {};
   
   // If it's FormData, don't set Content-Type

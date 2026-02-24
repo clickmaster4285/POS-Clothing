@@ -8,7 +8,7 @@ const Product = require('../../models/inv_model/product.model');
 // Category Controllers
 exports.createCategory = async (req, res) => {
   try {
- 
+ console.log('Received category creation request with data:', req.body);
 
 
     const categoryData = {

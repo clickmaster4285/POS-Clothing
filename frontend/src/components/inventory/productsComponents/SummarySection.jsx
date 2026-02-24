@@ -50,7 +50,7 @@ export default function SummarySection({ formSummary, showVariantSection }) {
                                 <div><strong>Style:</strong> {v.style}</div>
                              
                                
-                                <div><strong>SKU:</strong> {v.variantSku}</div>
+                                {/* <div><strong>SKU:</strong> {v.variantSku}</div> */}
                                 <div><strong>Cost Price:</strong> {v.costPrice}</div>
                                 <div><strong>Retail Price:</strong> {v.retailPrice}</div>
                                 <div><strong>Margin:</strong> {v.margin}</div>

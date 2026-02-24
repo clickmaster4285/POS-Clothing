@@ -236,6 +236,7 @@ export default function ProfileSettings() {
                         <Input
                             type="text"
                             value={form.phone}
+                            placeholder="+92 000 0000000"
                             onChange={(e) => handleChange("phone", e.target.value)}
                         />
                     </div>
@@ -244,6 +245,7 @@ export default function ProfileSettings() {
                         <Label className="text-xs text-muted-foreground">Address</Label>
                         <Textarea
                             type="text"
+                            placeholder="123 Main St, City, Country"
                             value={form.address}
                             onChange={(e) => handleChange("address", e.target.value)}
                         />

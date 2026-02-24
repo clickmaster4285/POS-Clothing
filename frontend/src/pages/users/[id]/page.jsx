@@ -49,6 +49,8 @@ const StaffDetailPage = () => {
   const { employee, isAdmin, currentUserRole } = usePermissions();
 
   const { data: user, isLoading, error } = useGetUserById(id);
+
+  console.log("Fetched user data:", user);
   const { data: allPermissionsData, isLoading: permissionsLoading } = useGetPermissions();
 
   // Transform allPermissionsData for the grid
@@ -100,11 +102,11 @@ const StaffDetailPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 space-y-8 mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer mb-2" onClick={() => navigate(`/${currentUserRole}/users`)}>
+          <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer mb-2" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm font-medium">Back to Staff List</span>
           </div>
@@ -179,6 +181,10 @@ const StaffDetailPage = () => {
               </div>
             </CardContent>
           </Card>
+
+
+       
+
         </div>
 
         {/* Main Content: Tabs */}
@@ -206,17 +212,41 @@ const StaffDetailPage = () => {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Pay Cycle</span>
-                      <Badge variant="secondary" className="capitalize">{user.salary?.payType}</Badge>
+                      <p className="capitalize">{user.salary?.payType}</p>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Payment Method</span>
                       <span className="font-medium capitalize">{user.salary?.paymentMethod?.replace(/_/g, ' ')}</span>
                     </div>
-                    {user.salary?.paymentMethod === 'BANK_TRANSFER' && (
-                      <div className="mt-2 p-3 bg-muted/30 rounded-lg space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground">Bank Account</p>
-                        <p className="text-xs font-medium">{user.salary.bankDetails?.bankName}</p>
-                        <p className="text-xs font-mono">{user.salary.bankDetails?.accountNumber}</p>
+
+                    {/* Bank Details Section - Always show if bank details exist */}
+                    {(user.salary?.bankDetails?.bankName || user.salary?.bankDetails?.accountNumber) && (
+                      <div className="mt-3 pt-3 border-t border-dashed">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
+                          <Landmark className="h-3 w-3" /> Bank Account Information
+                        </p>
+                        <div className="space-y-2 bg-muted/20 p-3 rounded-lg">
+                          {user.salary.bankDetails.bankName && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="font-medium">{user.salary.bankDetails.bankName}</span>
+                            </div>
+                          )}
+                          {user.salary.bankDetails.accountNumber && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-mono text-xs bg-muted/50 px-2 py-1 rounded">
+                                {user.salary.bankDetails.accountNumber}
+                              </span>
+                            </div>
+                          )}
+                          {user.salary.bankDetails.iban && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-mono">
+                                IBAN: {user.salary.bankDetails.iban}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>

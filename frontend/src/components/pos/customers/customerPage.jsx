@@ -62,6 +62,7 @@ const CustomerInformation = () => {
     const toggleCustomerStatus = useToggleCustomerStatus()
 
     // 🔎 Filtering + Sorting + Pagination
+    // 🔎 Filtering + Sorting + Pagination
     const filtered = useMemo(() => {
         let data = customers
 
@@ -69,21 +70,35 @@ const CustomerInformation = () => {
         if (searchQuery) {
             data = data.filter(
                 (c) =>
-                    c.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (c.lastName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    c.customerId.toLowerCase().includes(searchQuery.toLowerCase())
+                    c.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    c.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    c.customerId?.toLowerCase().includes(searchQuery.toLowerCase())
             )
         }
 
-        // Tier filter
+        // Tier filter - FIXED: Match actual values from your database
         if (tierFilter !== "all") {
-            data = data.filter((c) => c.loyaltyProgram === tierFilter)
+            // Map display filter values to actual database values
+            let dbTierValue = tierFilter;
+
+            // If you want to map "Gold" to your actual DB value
+            if (tierFilter === "Gold") {
+                dbTierValue = "Premium Loyalty Program"; // or whatever your DB stores for Gold
+            } else if (tierFilter === "Regular") {
+                dbTierValue = "Basic Rewards Program"; // or whatever your DB stores for Regular
+            }
+
+            data = data.filter((c) => c.loyaltyProgram === dbTierValue)
         }
 
         // Sort
         if (sortBy === "name") {
-            data.sort((a, b) => a.firstName.localeCompare(b.firstName))
+            data.sort((a, b) => {
+                const nameA = `${a.firstName} ${a.lastName}`.toLowerCase()
+                const nameB = `${b.firstName} ${b.lastName}`.toLowerCase()
+                return nameA.localeCompare(nameB)
+            })
         } else if (sortBy === "points") {
             data.sort((a, b) => (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0))
         } else if (sortBy === "value") {
@@ -92,7 +107,6 @@ const CustomerInformation = () => {
 
         return data
     }, [customers, searchQuery, tierFilter, sortBy])
-
     const totalPages = Math.ceil(filtered.length / perPage)
     const paginated = filtered.slice(
         (currentPage - 1) * perPage,
@@ -147,6 +161,7 @@ const CustomerInformation = () => {
             </div>
 
             {/* Search + Filters */}
+            {/* Search + Filters */}
             <Card>
                 <CardContent className="pt-6 flex flex-wrap gap-4 items-center justify-between">
                     <div className="flex-1 min-w-[200px] max-w-md relative">
@@ -161,15 +176,27 @@ const CustomerInformation = () => {
 
                     <div className="flex gap-3">
                         <Select value={tierFilter} onValueChange={(value) => { setTierFilter(value); setCurrentPage(1) }}>
-                            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filter Tier" /></SelectTrigger>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by Tier" />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Tiers</SelectItem>
-                                <SelectItem value="Gold">Gold</SelectItem>
-                                <SelectItem value="Regular">Regular</SelectItem>
+                                <SelectItem value="No Loyalty Program">No Loyalty Program</SelectItem>
+                                <SelectItem value="Basic Rewards Program">Basic Rewards</SelectItem>
+                                <SelectItem value="Premium Loyalty Program">Premium</SelectItem>
                             </SelectContent>
                         </Select>
 
-                 
+                        {/* <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1) }}>
+                            <SelectTrigger className="w-[140px]">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="name">Name</SelectItem>
+                                <SelectItem value="points">Points</SelectItem>
+                                <SelectItem value="value">Lifetime Value</SelectItem>
+                            </SelectContent>
+                        </Select> */}
                     </div>
                 </CardContent>
             </Card>

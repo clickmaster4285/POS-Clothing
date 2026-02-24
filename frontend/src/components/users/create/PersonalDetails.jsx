@@ -3,24 +3,39 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/PhoneInput";
-import { ComboBox } from "@/components/ui/combobox";
-import { User, MapPin, PhoneCall, Globe, Building2, Landmark } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MapPin,
+  Globe,
+  Landmark,
+  Building2,
+  Mail,
+  Home,
+  User,
+  PhoneCall,
+  Info
+} from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 import { useMemo } from "react";
 
 export const PersonalDetails = ({ formData, updateFormField }) => {
-  
- 
+
   // Memoized lists for location selection
-  const countries = useMemo(() => 
+  const countries = useMemo(() =>
     Country.getAllCountries().map(c => ({ label: c.name, value: c.isoCode })), []);
-  
-  const states = useMemo(() => 
-    formData.address.country ? State.getStatesOfCountry(formData.address.country).map(s => ({ label: s.name, value: s.isoCode })) : [], 
+
+  const states = useMemo(() =>
+    formData.address.country ? State.getStatesOfCountry(formData.address.country).map(s => ({ label: s.name, value: s.isoCode })) : [],
     [formData.address.country]);
 
-  const cities = useMemo(() => 
-    (formData.address.country && formData.address.state) ? City.getCitiesOfState(formData.address.country, formData.address.state).map(c => ({ label: c.name, value: c.name })) : [], 
+  const cities = useMemo(() =>
+    (formData.address.country && formData.address.state) ? City.getCitiesOfState(formData.address.country, formData.address.state).map(c => ({ label: c.name, value: c.name })) : [],
     [formData.address.country, formData.address.state]);
 
   const relationshipOptions = [
@@ -74,82 +89,148 @@ export const PersonalDetails = ({ formData, updateFormField }) => {
       </section>
 
       {/* Address */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 text-primary font-bold border-b pb-2 text-sm uppercase tracking-wider">
-          <MapPin className="h-4 w-4" />
-          <span>Residential Address</span>
+      <section className="space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <MapPin className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-base">Residential Address</h3>
+            <p className="text-xs text-muted-foreground">Enter your current residential address details</p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Country */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1">
-              <Globe className="h-3 w-3" /> Country
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+              Country <span className="text-destructive">*</span>
             </Label>
-            <ComboBox
-              items={countries}
+            <Select
               value={formData.address.country}
               onValueChange={(val) => {
                 updateFormField('address.country', val);
                 updateFormField('address.state', '');
                 updateFormField('address.city', '');
               }}
-              placeholder="Select Country"
-              searchPlaceholder="Search countries..."
-            />
+            >
+              <SelectTrigger className="bg-white h-10">
+                <SelectValue placeholder="Select Country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.value} value={country.value}>
+                    {country.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* State */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1">
-              <Landmark className="h-3 w-3" /> State / Province
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Landmark className="h-3.5 w-3.5 text-muted-foreground" />
+              State / Province <span className="text-destructive">*</span>
             </Label>
-            <ComboBox
-              items={states}
+            <Select
               value={formData.address.state}
               onValueChange={(val) => {
                 updateFormField('address.state', val);
                 updateFormField('address.city', '');
               }}
-              placeholder={formData.address.country ? "Select State" : "Select Country first"}
               disabled={!formData.address.country}
-              searchPlaceholder="Search states..."
-            />
+            >
+              <SelectTrigger className="bg-white h-10">
+                <SelectValue placeholder={formData.address.country ? "Select State" : "Select Country first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((state) => (
+                  <SelectItem key={state.value} value={state.value}>
+                    {state.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* City */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1">
-              <Building2 className="h-3 w-3" /> City
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+              City <span className="text-destructive">*</span>
             </Label>
-            <ComboBox
-              items={cities}
+            <Select
               value={formData.address.city}
               onValueChange={(val) => updateFormField('address.city', val)}
-              placeholder={formData.address.state ? "Select City" : "Select State first"}
               disabled={!formData.address.state}
-              searchPlaceholder="Search cities..."
-              custom // Allow custom city name if not in library
-            />
+            >
+              <SelectTrigger className="bg-white h-10">
+                <SelectValue placeholder={formData.address.state ? "Select City" : "Select State first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((city) => (
+                  <SelectItem key={city.value} value={city.value}>
+                    {city.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
+          {/* Zip Code */}
           <div className="space-y-2">
-            <Label htmlFor="zip" className="text-xs font-semibold tracking-wide">Zip / Postal Code</Label>
+            <Label htmlFor="zip" className="text-xs font-medium flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+              Zip / Postal Code <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="zip"
-              placeholder="Zip Code"
+              placeholder="e.g., 10001"
               value={formData.address.zip}
               onChange={(e) => updateFormField('address.zip', e.target.value)}
-              className="bg-white"
+              className="bg-white h-10"
             />
           </div>
 
+          {/* Street Address - Full width */}
           <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="street" className="text-xs font-semibold">Street Address</Label>
+            <Label htmlFor="street" className="text-xs font-medium flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+              Street Address <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="street"
-              placeholder="Apartment, suite, unit, building, floor, etc."
+              placeholder="House number, street name"
               value={formData.address.street}
               onChange={(e) => updateFormField('address.street', e.target.value)}
-              className="bg-white"
+              className="bg-white h-10"
             />
           </div>
+
+          {/* Additional address line (optional) */}
+          <div className="md:col-span-2 space-y-2">
+            <Label htmlFor="addressLine2" className="text-xs font-medium flex items-center gap-1.5">
+              <Home className="h-3.5 w-3.5 text-muted-foreground" />
+              Apartment / Suite / Unit <span className="text-muted-foreground text-[10px]">(Optional)</span>
+            </Label>
+            <Input
+              id="addressLine2"
+              placeholder="Apartment, suite, unit, building, floor, etc."
+              value={formData.address.addressLine2 || ''}
+              onChange={(e) => updateFormField('address.addressLine2', e.target.value)}
+              className="bg-white h-10"
+            />
+          </div>
+        </div>
+
+        {/* Address validation note */}
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+          <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-700">
+            Please ensure your address is accurate for shipping and verification purposes.
+          </p>
         </div>
       </section>
 
@@ -169,17 +250,24 @@ export const PersonalDetails = ({ formData, updateFormField }) => {
               className="bg-white"
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label className="text-xs font-semibold">Relationship</Label>
-            <ComboBox
-              items={relationshipOptions}
+            <Select
               value={formData.emergencyContact.relationship}
               onValueChange={(val) => updateFormField('emergencyContact.relationship', val)}
-              placeholder="Select Relationship"
-              searchPlaceholder="Search or type..."
-              custom // Allow custom relationships
-            />
+            >
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Select Relationship" />
+              </SelectTrigger>
+              <SelectContent>
+                {relationshipOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="md:col-span-2">
@@ -196,4 +284,3 @@ export const PersonalDetails = ({ formData, updateFormField }) => {
     </div>
   );
 };
-

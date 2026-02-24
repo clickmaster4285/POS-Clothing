@@ -7,6 +7,8 @@ const { generateToken } = require('../utils/jwt');
 const { PERMISSIONS } = require('../config/permissions');
 
 const createUser = async (req, res, next) => {
+  console.log("req.user", req.body);
+
   try {
     const { 
       firstName, 
@@ -20,10 +22,7 @@ const createUser = async (req, res, next) => {
       role = 'general_staff', 
       permissions = [], 
       branch_id,
-      hireDate,
-      designation,
-      department,
-      employmentStatus,
+      employment = {},
       shift,
       salary,
       address,
@@ -35,10 +34,6 @@ const createUser = async (req, res, next) => {
       return res.status(400).json({ message: 'First name is required' });
     }
 
-    if (!pin) {
-      return res.status(400).json({ message: 'PIN is required for all staff members' });
-    }
-
     // Conditional validation for system access
     if (hasSystemAccess) {
       if (!email || !password) {
@@ -46,29 +41,40 @@ const createUser = async (req, res, next) => {
       }
     }
 
+    // Branch validation
     if (branch_id) {
       if (!mongoose.Types.ObjectId.isValid(branch_id)) {
         return res.status(400).json({ message: 'Invalid branch ID format' });
       }
-      const branchExists = await Branch.findOne({ _id: branch_id, status: 'ACTIVE' });
+
+      const branchExists = await Branch.findOne({ 
+        _id: branch_id, 
+        status: 'ACTIVE' 
+      });
+
       if (!branchExists) {
         return res.status(400).json({ message: 'Branch not found or is inactive' });
       }
     }
 
-    // Email check (if provided)
+    // Email uniqueness check
     if (email) {
-      const existingUser = await User.findOne({ email, isDeleted: false });
+      const existingUser = await User.findOne({ 
+        email, 
+        isDeleted: false 
+      });
+
       if (existingUser) {
         return res.status(409).json({ message: 'User with this email already exists' });
       }
     }
 
     const userId = generateUserId({ firstName, lastName, role });
-    
-    // Security: Hash both password and PIN
-    const hashedPassword = password ? await hashPassword(password) : undefined;
-    const hashedPin = await hashPassword(pin.toString());
+
+    // Hash password
+    const hashedPassword = password 
+      ? await hashPassword(password) 
+      : undefined;
 
     const userData = {
       userId,
@@ -78,26 +84,40 @@ const createUser = async (req, res, next) => {
       phone,
       hasSystemAccess,
       password: hashedPassword,
-      pin: hashedPin,
       isTwoFactorEnabled,
       role,
       permissions: hasSystemAccess ? permissions : [],
       branch_id,
-      // Employment
+
+      // ✅ Employment (FIXED)
       employment: {
-        hireDate: hireDate || Date.now(),
-        designation,
-        department,
-        status: employmentStatus || 'ACTIVE',
+        hireDate: employment.hireDate || Date.now(),
+        designation: employment.designation,
+        department: employment.department,
+        status: employment.status || 'ACTIVE',
       },
+
       shift,
       salary,
       address,
       emergencyContact,
-      // Initialize Histories
-      salaryHistory: salary ? [{ ...salary, updatedBy: req.user?._id }] : [],
-      designationHistory: (designation || department) ? [{ designation, department, updatedBy: req.user?._id }] : [],
-      shiftHistory: shift ? [{ ...shift, updatedBy: req.user?._id }] : []
+
+      // Histories
+      salaryHistory: salary
+        ? [{ ...salary, updatedBy: req.user?._id }]
+        : [],
+
+      designationHistory: (employment.designation || employment.department)
+        ? [{
+            designation: employment.designation,
+            department: employment.department,
+            updatedBy: req.user?._id
+          }]
+        : [],
+
+      shiftHistory: shift
+        ? [{ ...shift, updatedBy: req.user?._id }]
+        : []
     };
 
     const user = await User.create(userData);
@@ -107,6 +127,7 @@ const createUser = async (req, res, next) => {
     delete userResponse.pin;
 
     res.status(201).json(userResponse);
+
   } catch (error) {
     next(error);
   }
@@ -167,20 +188,38 @@ const updateUser = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Security Checks
+    // ---------------- SECURITY ----------------
+
     if (req.user.role !== 'admin' && targetUser.role === 'admin') {
       return res.status(403).json({ message: 'Forbidden: Cannot edit admin.' });
     }
+
     if (updateFields.role === 'admin' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden: Only admin can assign admin role.' });
     }
 
-    // --- AUTO-HISTORY LOGIC ---
-    
-    // 1. Salary Change Detection
-    if (updateFields.salary && 
-       (updateFields.salary.baseAmount !== targetUser.salary?.baseAmount || 
-        updateFields.salary.payType !== targetUser.salary?.payType)) {
+    // ---------------- REMOVE EMPTY EMAIL (IMPORTANT FIX) ----------------
+    if (updateFields.email === "") {
+      delete updateFields.email;
+    }
+
+    // If system access disabled → remove credentials
+    if (updateFields.hasSystemAccess === false) {
+      delete updateFields.email;
+      delete updateFields.password;
+      updateFields.permissions = [];
+    }
+
+    // ---------------- HISTORY LOGIC ----------------
+
+    // 1️⃣ Salary Change Detection
+    if (
+      updateFields.salary &&
+      (
+        updateFields.salary.baseAmount !== targetUser.salary?.baseAmount ||
+        updateFields.salary.payType !== targetUser.salary?.payType
+      )
+    ) {
       updateFields.$push = updateFields.$push || {};
       updateFields.$push.salaryHistory = {
         baseAmount: targetUser.salary?.baseAmount,
@@ -190,10 +229,14 @@ const updateUser = async (req, res, next) => {
       };
     }
 
-    // 2. Designation/Dept Change Detection
-    if (updateFields.employment && 
-       (updateFields.employment.designation !== targetUser.employment?.designation || 
-        updateFields.employment.department !== targetUser.employment?.department)) {
+    // 2️⃣ Designation / Department Change
+    if (
+      updateFields.employment &&
+      (
+        updateFields.employment.designation !== targetUser.employment?.designation ||
+        updateFields.employment.department !== targetUser.employment?.department
+      )
+    ) {
       updateFields.$push = updateFields.$push || {};
       updateFields.$push.designationHistory = {
         designation: targetUser.employment?.designation,
@@ -203,10 +246,14 @@ const updateUser = async (req, res, next) => {
       };
     }
 
-    // 3. Shift Change Detection
-    if (updateFields.shift && 
-       (updateFields.shift.startTime !== targetUser.shift?.startTime || 
-        updateFields.shift.endTime !== targetUser.shift?.endTime)) {
+    // 3️⃣ Shift Change Detection
+    if (
+      updateFields.shift &&
+      (
+        updateFields.shift.startTime !== targetUser.shift?.startTime ||
+        updateFields.shift.endTime !== targetUser.shift?.endTime
+      )
+    ) {
       updateFields.$push = updateFields.$push || {};
       updateFields.$push.shiftHistory = {
         startTime: targetUser.shift?.startTime,
@@ -217,30 +264,43 @@ const updateUser = async (req, res, next) => {
       };
     }
 
-    // Hash credentials if updated
-    if (updateFields.password) updateFields.password = await hashPassword(updateFields.password);
-    if (updateFields.pin) updateFields.pin = await hashPassword(updateFields.pin.toString());
+    // ---------------- HASH PASSWORD IF UPDATED ----------------
+
+    if (updateFields.password) {
+      updateFields.password = await hashPassword(updateFields.password);
+    }
+
+    // ---------------- BRANCH VALIDATION ----------------
 
     if (updateFields.branch_id) {
       if (!mongoose.Types.ObjectId.isValid(updateFields.branch_id)) {
         return res.status(400).json({ message: 'Invalid branch ID' });
       }
-      const branchExists = await Branch.findOne({ _id: updateFields.branch_id, status: 'ACTIVE' });
-      if (!branchExists) return res.status(400).json({ message: 'Invalid branch' });
+
+      const branchExists = await Branch.findOne({
+        _id: updateFields.branch_id,
+        status: 'ACTIVE'
+      });
+
+      if (!branchExists) {
+        return res.status(400).json({ message: 'Invalid branch' });
+      }
     }
+
+    // ---------------- UPDATE ----------------
 
     const user = await User.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       updateFields,
       { new: true, runValidators: true }
-    ).select('-password');
+    ).select('-password -pin');
 
     res.status(200).json(user);
+
   } catch (error) {
     next(error);
   }
 };
-
 const deleteUser = async (req, res, next) => {
   try {
     const user = await User.findOneAndUpdate(

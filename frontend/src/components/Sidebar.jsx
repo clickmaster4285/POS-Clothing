@@ -176,11 +176,11 @@ export default function Sidebar() {
                     href: `/${role}/user-management/payroll`,
                     permission: "employee:payroll_integration:read"
                 },
-                {
-                    title: "Performance Management",
-                    href: `/${role}/user-management/performance`,
-                    permission: "employee:performance_management:read"
-                },
+                // {
+                //     title: "Performance Management",
+                //     href: `/${role}/user-management/performance`,
+                //     permission: "employee:performance_management:read"
+                // },
             ],
         },
         {

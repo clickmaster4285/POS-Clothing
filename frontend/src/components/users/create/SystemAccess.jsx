@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, Mail, Lock, KeyRound, CheckSquare, Square, Circle, CheckCircle2, Check } from "lucide-react";
+import { ShieldCheck, Mail, Lock, KeyRound, CheckSquare, Square, Circle, CheckCircle2, Check, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,8 @@ export const SystemAccess = ({
 }) => {
   const [permissionSearchTerm, setPermissionSearchTerm] = useState('');
   const [activeModule, setActiveModule] = useState(null);
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // Initialize active module
   useMemo(() => {
@@ -137,13 +139,20 @@ export const SystemAccess = ({
                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   value={formData.password}
                   onChange={(e) => updateFormField('password', e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
           </div>
@@ -151,7 +160,7 @@ export const SystemAccess = ({
       )}
 
       {/* PIN Code (Required for All) */}
-      <section className="space-y-4">
+      {/* <section className="space-y-4">
         <div className="flex items-center gap-2 text-primary font-semibold border-b pb-2">
           <KeyRound className="h-4 w-4" />
           <span>Attendance PIN *</span>
@@ -169,7 +178,7 @@ export const SystemAccess = ({
           />
           <p className="text-[10px] text-muted-foreground text-center italic">Required for Time Clock & attendance</p>
         </div>
-      </section>
+      </section> */}
 
       {/* Permissions (Conditional) */}
       {formData.hasSystemAccess && (

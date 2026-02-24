@@ -13,7 +13,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   MoreHorizontal,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Building2,
+  Hash,
+  Globe
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,12 +41,19 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { cn } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from '@/hooks/usePermissions';
+import BankDetailsModal from './BankDetailsModal';
+
 
 const PayrollIntegration = () => {
   const navigate = useNavigate();
   const { data: staff = [], isLoading } = useStaffList();
+
+  console.log("PayrollIntegration - staff data:", staff);
   const { currentUserRole } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
 
   const filteredStaff = useMemo(() => {
     return staff.filter(user => 
@@ -202,16 +212,35 @@ const PayrollIntegration = () => {
                         )}
                       </div>
                     </TableCell>
+
                     <TableCell>
-                      {user.salary?.paymentMethod === 'BANK_TRANSFER' ? (
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-bold text-foreground">{user.salary.bankDetails?.bankName}</p>
-                          <p className="text-[9px] font-mono text-muted-foreground">{user.salary.bankDetails?.accountNumber}</p>
+                      {user.salary?.bankDetails?.bankName || user.salary?.bankDetails?.accountNumber ? (
+                        <div className="space-y-1">
+                          {user.salary.bankDetails.bankName && (
+                            <div className="flex items-center gap-1 text-[10px] font-medium text-foreground">
+                              <Building2 className="h-3 w-3 text-muted-foreground" />
+                              {user.salary.bankDetails.bankName}
+                            </div>
+                          )}
+                          {user.salary.bankDetails.accountNumber && (
+                            <div className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground">
+                              <Hash className="h-2.5 w-2.5" />
+                              •••• {user.salary.bankDetails.accountNumber.slice(-4)}
+                            </div>
+                          )}
+                          {user.salary.bankDetails.iban && (
+                            <div className="flex items-center gap-1 text-[8px] font-mono text-muted-foreground/70">
+                              <Globe className="h-2 w-2" />
+                              {user.salary.bankDetails.iban.slice(0, 4)}••••{user.salary.bankDetails.iban.slice(-4)}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-[10px] text-muted-foreground italic">No bank info</span>
                       )}
                     </TableCell>
+
+
                     <TableCell className="text-right font-mono font-bold text-sm">
                       ${(user.salary?.baseAmount || 0).toLocaleString()}
                     </TableCell>
@@ -229,6 +258,13 @@ const PayrollIntegration = () => {
                           <DropdownMenuItem onClick={() =>navigate(`/${currentUserRole}/users/${user._id}/edit`)}>
                             Update Salary
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedUser(user);
+                            setIsBankModalOpen(true);
+                          }}>
+                            Add Bank Details
+                          </DropdownMenuItem>
+
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -239,6 +275,18 @@ const PayrollIntegration = () => {
           </div>
         </CardContent>
       </Card>
+      <BankDetailsModal
+        isOpen={isBankModalOpen}
+        onClose={() => {
+          setIsBankModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={() => {
+          // Refresh the user list or update local state
+          // refetchUsers(); if you have this function
+        }}
+      />
     </div>
   );
 };

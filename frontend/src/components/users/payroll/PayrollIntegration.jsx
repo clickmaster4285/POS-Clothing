@@ -202,6 +202,7 @@ const PayrollIntegration = () => {
                         )}
                       </div>
                     </TableCell>
+                    
                     <TableCell>
                       {user.salary?.paymentMethod === 'BANK_TRANSFER' ? (
                         <div className="space-y-0.5">
@@ -212,6 +213,7 @@ const PayrollIntegration = () => {
                         <span className="text-[10px] text-muted-foreground italic">No bank info</span>
                       )}
                     </TableCell>
+
                     <TableCell className="text-right font-mono font-bold text-sm">
                       ${(user.salary?.baseAmount || 0).toLocaleString()}
                     </TableCell>

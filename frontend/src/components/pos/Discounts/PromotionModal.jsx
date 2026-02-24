@@ -146,7 +146,7 @@ const PromotionModal = ({
                             />
                         </div>
 
-                        <div>
+                        {/* <div>
                             <label className="text-sm font-medium mb-1 block">Type *</label>
                             <select
                                 name="type"
@@ -159,7 +159,7 @@ const PromotionModal = ({
                                 <option value="BOGO">BOGO</option>
                                 <option value="Mix & Match">Mix & Match</option>
                             </select>
-                        </div>
+                        </div> */}
 
                         <div>
                             <label className="text-sm font-medium mb-1 block">Coupon Code</label>

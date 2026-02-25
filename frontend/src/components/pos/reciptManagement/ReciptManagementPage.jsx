@@ -120,6 +120,17 @@ const ReciptManagementPage = () => {
         setShowReceiptPrinter(true);
     };
 
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+    const getFullLogoUrl = (logoPath) => {
+        if (!logoPath) return '';
+        if (logoPath.startsWith('http')) return logoPath;
+        const baseUrl = API_BASE_URL;
+
+        return `${baseUrl}${logoPath}`;
+    };
+
+
     // Mobile filter drawer
     const MobileFilterDrawer = () => (
         <div className={`fixed inset-0 z-50 lg:hidden ${showMobileFilter ? 'block' : 'hidden'}`}>
@@ -319,6 +330,18 @@ const ReciptManagementPage = () => {
                         <h3 className="font-semibold mb-4">Receipt Preview</h3>
                         <div className="bg-muted/50 rounded-lg p-4 sm:p-6">
                             <div className="text-center mb-4">
+
+                                {settings?.logo && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                                        <img
+                                            src={getFullLogoUrl(settings.logo)}
+                                            alt={settings?.companyName || 'Store'}
+                                            style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e5e7eb' }}
+                                        />
+                                    </div>
+                                )}
+                                
+
                                 <p className="font-bold text-sm sm:text-base mb-1">{settings?.companyName || "STORE"}</p>
                                 <p className="text-xs text-muted-foreground">{settings?.address}</p>
                                 <p className="text-xs text-muted-foreground">Tel: {settings?.phone}</p>

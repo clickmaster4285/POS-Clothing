@@ -292,7 +292,7 @@ export function AdjustmentForm({
                                 onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })}
                                 placeholder={adjustForm.type === "remove"
                                     ? "Enter reason for removing stock (required)"
-                                    : "Enter reason for adjustment (optional)"}
+                                    : "Enter reason for adjustment (required)"}
                                 rows={3}
                                 required={adjustForm.type === "remove"}
                             />

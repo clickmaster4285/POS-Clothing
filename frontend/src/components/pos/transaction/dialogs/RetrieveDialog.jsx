@@ -33,6 +33,17 @@ export function RetrieveDialog({ open, onOpenChange }) {
         })
     }, [search, heldTransactions])
 
+
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+    const getFullLogoUrl = (logoPath) => {
+        if (!logoPath) return '';
+        if (logoPath.startsWith('http')) return logoPath;
+        const baseUrl = API_BASE_URL;
+
+        return `${baseUrl}${logoPath}`;
+    };
+
     const handleRetrieve = (txn) => {
         if (cartItems.length > 0) {
             toast({ title: "Cart not empty", description: "Complete or void current transaction", variant: "destructive" })
@@ -124,7 +135,13 @@ export function RetrieveDialog({ open, onOpenChange }) {
 </style>
 </head>
 <body>
+
 <div class="receipt">
+  ${settings?.logo ? `
+    <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+      <img src="${getFullLogoUrl(settings.logo)}" alt="${settings?.companyName || 'Store'}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb;" />
+    </div>
+  ` : ''}
   <h2 class="center">${settings?.companyName || "STORE"}</h2>
   <p class="center">${settings?.address || ''}</p>
   <p class="center">Tel: ${settings?.phone || "(212) 555-0123"}</p>
@@ -192,11 +209,18 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
         printIframe.contentDocument.close();
 
         window.focus();
-        printIframe.contentWindow.print();
 
-        printIframe.contentWindow.onafterprint = () => {
-            document.body.removeChild(printIframe);
-        };
+        setTimeout(() => {
+            printIframe.contentWindow.print();
+
+            printIframe.contentWindow.onafterprint = () => {
+                document.body.removeChild(printIframe);
+            };
+            
+        }, 500);
+
+
+     
     };
 
     const handleCompletePayment = async (txn) => {

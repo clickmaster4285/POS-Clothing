@@ -49,6 +49,16 @@ export function Actions() {
         }
     }, [completedTransaction]);
 
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+    const getFullLogoUrl = (logoPath) => {
+        if (!logoPath) return '';
+        if (logoPath.startsWith('http')) return logoPath;
+        const baseUrl = API_BASE_URL;
+
+        return `${baseUrl}${logoPath}`;
+    };
+
 
     const generateReceiptHTML = (transaction) => {
         const customerName = transaction.customer
@@ -129,6 +139,13 @@ export function Actions() {
 </head>
 <body>
 <div class="receipt">
+
+  ${settings?.logo ? `
+    <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+      <img src="${getFullLogoUrl(settings.logo)}" alt="${settings?.companyName || 'Store'}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb;" />
+    </div>
+  ` : ''}
+
   <h2 class="center">${settings?.companyName || "STORE"}</h2>
   <p class="center">${settings?.address || ''}</p>
   <p class="center">Tel: ${settings?.phone || "(212) 555-0123"}</p>
@@ -246,29 +263,15 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
             // Focus back on the main window before printing
             window.focus();
 
-            // Print from the iframe - this won't steal focus from the main window
-            printIframe.contentWindow.print();
-
-            // Remove the iframe after printing
-            printIframe.contentWindow.onafterprint = () => {
-                document.body.removeChild(printIframe);
-            };
-
-            // Alternative approach if the above doesn't work well:
-            // Use a hidden div with print styles instead
-            /*
-            const printContainer = document.createElement('div');
-            printContainer.style.display = 'none';
-            document.body.appendChild(printContainer);
-            printContainer.innerHTML = printHTML;
-            
-            window.focus();
-            
             setTimeout(() => {
-                window.print();
-                document.body.removeChild(printContainer);
-            }, 100);
-            */
+                // Print from the iframe - this won't steal focus from the main window
+                printIframe.contentWindow.print();
+
+                // Remove the iframe after printing
+                printIframe.contentWindow.onafterprint = () => {
+                    document.body.removeChild(printIframe);
+                };
+            }, 500);
 
         } catch (err) {
             console.error("Transaction save failed:", err);

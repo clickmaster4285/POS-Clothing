@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, Check, X } from "lucide-react";
 import { useCategories } from "@/hooks/inv_hooks/useCategory";
 import ViewPromotionSheet from "./ViewPromotionSheet";
-
+import { useSettings } from "@/hooks/useSettings";
 
 const PromotionsTable = ({
     promotions,
@@ -16,7 +16,7 @@ const PromotionsTable = ({
     const [filteredPromotions, setFilteredPromotions] = useState([]);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
-   
+    const { data: settings } = useSettings();
 
     // Filter promotions based on search
     useEffect(() => {
@@ -117,7 +117,7 @@ const PromotionsTable = ({
                                 {getCategoryNames(promo.qualifyingCategories)}
                             </td>
                             <td className="px-4 py-4 font-medium">
-                                {promo.amountValue}{promo.amountType === "Percentage" ? "%" : "$"}
+                                {promo.amountValue}{promo.amountType === "Percentage" ? "%" : (settings?.currencySymbol || '$')}
                                 {promo.discountDescription &&
                                     <span className="text-xs text-muted-foreground ml-1">({promo.discountDescription})</span>
                                 }

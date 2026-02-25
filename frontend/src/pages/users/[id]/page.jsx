@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react';
 import {
   ArrowLeft,
   Badge,
@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { useGetPermissions, useGetUserById } from '@/api/users.api';
 import { useNavigate, useParams } from "react-router-dom"
 import { useEffect, useMemo, useState } from 'react';
@@ -290,57 +291,152 @@ const StaffDetailPage = () => {
             </TabsContent>
 
             <TabsContent value="permissions" className="outline-none">
-              <Card className="border-none shadow-sm">
-                <CardHeader className="border-b">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ShieldX className="h-4 w-4" /> System Access Permissions
-                  </CardTitle>
+              <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="pb-3 border-b bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <ShieldX className="h-4 w-4 text-primary" /> System Access Permissions
+                    </CardTitle>
+                    {user.hasSystemAccess && (
+                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                        {user.permissions?.length || 0} Permissions
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {user.hasSystemAccess
+                      ? "Manage and view user access rights across all modules"
+                      : "This user doesn't have system access. Enable system access to assign permissions."}
+                  </p>
                 </CardHeader>
-                <CardContent className="pt-6">
-                  {transformedAllPermissions?.length > 0 ? (
-                    <div className="rounded-md border overflow-hidden">
+
+                <CardContent className="p-0">
+                  {!user.hasSystemAccess ? (
+                    <div className="flex flex-col items-center justify-center py-16 px-4">
+                      <div className="p-4 bg-muted/10 rounded-full mb-4">
+                        <ShieldX className="h-12 w-12 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-base font-medium text-muted-foreground">No System Access</p>
+                      <p className="text-sm text-muted-foreground/60 mt-1 max-w-md text-center">
+                        This user hasn't been granted system access. Enable system access in user settings to assign permissions.
+                      </p>
+                    </div>
+                  ) : transformedAllPermissions?.length > 0 ? (
+                    <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-muted/50">
-                            <TableHead className="min-w-50">Menu / Section</TableHead>
+                          <TableRow className="bg-muted/20 hover:bg-muted/20 border-b-2">
+                            <TableHead className="w-[300px] font-bold text-xs uppercase tracking-wider text-muted-foreground py-3">
+                              Menu / Section
+                            </TableHead>
                             {uniquePermissionTypes.map((type) => (
-                              <TableHead key={type} className="text-center">{type}</TableHead>
+                              <TableHead
+                                key={type}
+                                className="text-center font-bold text-xs uppercase tracking-wider text-muted-foreground py-3 min-w-[90px]"
+                              >
+                                {type}
+                              </TableHead>
                             ))}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {transformedAllPermissions.map((moduleDef) => (
-                            <useMemo key={moduleDef.moduleName}>
-                              <TableRow className="bg-muted/20 font-bold">
-                                <TableCell colSpan={uniquePermissionTypes.length + 1} className="text-xs uppercase tracking-widest">{moduleDef.moduleName}</TableCell>
+                          {transformedAllPermissions.map((moduleDef, moduleIdx) => (
+                            <React.Fragment key={moduleDef.moduleName}>
+                              {/* Module Header */}
+                              <TableRow className="bg-primary/5 hover:bg-primary/5 border-y">
+                                <TableCell
+                                  colSpan={uniquePermissionTypes.length + 1}
+                                  className="py-2.5 px-4"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 bg-primary/10 rounded">
+                                      <Briefcase className="h-3.5 w-3.5 text-primary" />
+                                    </div>
+                                    <span className="font-bold text-xs uppercase tracking-wider text-primary">
+                                      {moduleDef.moduleName}
+                                    </span>
+                                    <p variant="outline" className="ml-2 text-[10px] h-5 bg-background">
+                                      {[...new Set(moduleDef.permissions.map(p => p.menuSlug))].length} menus
+                                    </p>
+                                  </div>
+                                </TableCell>
                               </TableRow>
-                              {[...new Set(moduleDef.permissions.map(p => p.menuSlug))].map(menuSlug => (
-                                <TableRow key={`${moduleDef.moduleName}-${menuSlug}`} className="hover:bg-muted/5">
-                                  <TableCell className="pl-8 text-sm capitalize">{menuSlug.replace(/_/g, ' ')}</TableCell>
+
+                              {/* Menu Items */}
+                              {[...new Set(moduleDef.permissions.map(p => p.menuSlug))].map((menuSlug, menuIdx) => (
+                                <TableRow
+                                  key={`${moduleDef.moduleName}-${menuSlug}`}
+                                  className={cn(
+                                    "hover:bg-muted/5 transition-colors",
+                                    menuIdx % 2 === 0 ? "bg-white" : "bg-muted/5"
+                                  )}
+                                >
+                                  <TableCell className="pl-10 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-medium capitalize">
+                                        {menuSlug.replace(/_/g, ' ')}
+                                      </span>
+                                    </div>
+                                  </TableCell>
                                   {uniquePermissionTypes.map(type => {
                                     const pId = `${moduleDef.moduleName.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_').replace(/-/g, '_')}:${menuSlug}:${type.toLowerCase()}`;
-                                    const hasAccess = user.permissions.includes(pId);
+                                    const hasAccess = user.permissions?.includes(pId);
                                     return (
-                                      <TableCell key={type} className="text-center">
+                                      <TableCell key={type} className="text-center py-3">
                                         {hasAccess ? (
-                                          <CheckCircle className="h-4 w-4 text-emerald-500 mx-auto" />
+                                          <div className="inline-flex items-center justify-center">
+                                            <Check className="h-4 w-4 text-emerald-600" />
+                                          </div>
                                         ) : (
-                                          <X className="h-4 w-4 text-muted-foreground/20 mx-auto" />
+                                          <div className="inline-flex items-center justify-center">
+                                            <X className="h-4 w-4 text-muted-foreground/20" />
+                                          </div>
                                         )}
                                       </TableCell>
                                     );
                                   })}
                                 </TableRow>
                               ))}
-                            </useMemo>
+                            </React.Fragment>
                           ))}
                         </TableBody>
                       </Table>
+
+                      {/* Table Footer */}
+                      <div className="border-t px-4 py-2.5 bg-muted/10 flex items-center justify-between text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-emerald-600" />
+                            <span>Has Access</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-muted-foreground/20" />
+                            <span>No Access</span>
+                          </div>
+                        </div>
+                        <div className="font-mono">
+                          {uniquePermissionTypes.length} permission types
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <ShieldX className="mx-auto h-12 w-12 text-muted-foreground/30" />
-                      <p className="mt-4 text-muted-foreground font-medium">No permissions assigned.</p>
+                    <div className="flex flex-col items-center justify-center py-16 px-4">
+                      <div className="p-4 bg-muted/10 rounded-full mb-4">
+                        <ShieldX className="h-12 w-12 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-base font-medium text-muted-foreground">No permissions assigned</p>
+                      <p className="text-sm text-muted-foreground/60 mt-1 max-w-md text-center">
+                        This user hasn't been assigned any permissions yet. Permissions determine what sections and features they can access.
+                      </p>
+                      {canUpdateEmployee && (
+                        <Button
+                          onClick={() => navigate(`/${currentUserRole}/users/${user._id}/edit?tab=permissions`)}
+                          className="mt-6"
+                          size="sm"
+                        >
+                          Assign Permissions
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>

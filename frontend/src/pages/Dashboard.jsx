@@ -61,6 +61,9 @@ export default function Dashboard() {
     // Fetch data based on user role and selected branch
     const { data: transactionsData, isLoading: transactionsLoading } = useTransactions();
     const { data: promotionsData, isLoading: promotionsLoading } = usePromotions();
+
+
+
     const { data: stockData, isLoading: stockLoading } = useStockByBranch(effectiveBranchId, {
         enabled: !!effectiveBranchId
     });
@@ -85,6 +88,8 @@ export default function Dashboard() {
         if (promotionsData.promotions && Array.isArray(promotionsData.promotions)) return promotionsData.promotions;
         return [];
     }, [promotionsData]);
+
+    console.log("promotions", promotions)
 
     const lowStockAlerts = useMemo(() => {
         if (!lowStockData) return [];
@@ -205,29 +210,41 @@ export default function Dashboard() {
         return hours;
     }, [transactions]);
 
+
     // Process payment breakdown
     const paymentBreakdown = useMemo(() => {
         if (!transactions || transactions.length === 0) return [];
 
-        const payments = {};
+        const payments = {
+            cash: 0,
+            card: 0
+        };
 
         transactions.forEach(t => {
-            const method = t.payment?.paymentMethod || t.paymentMethod || 'other';
+            const method = t.payment?.paymentMethod || t.paymentMethod || '';
             const amount = t.totals?.grandTotal || t.grandTotal || t.total || 0;
 
-            if (!payments[method]) {
-                payments[method] = 0;
+            if (method.toLowerCase() === 'cash') {
+                payments.cash += amount;
+            } else if (method.toLowerCase() === 'card') {
+                payments.card += amount;
             }
-            payments[method] += amount;
         });
 
-        const total = Object.values(payments).reduce((a, b) => a + b, 0);
+        const total = payments.cash + payments.card;
 
-        return Object.entries(payments).map(([method, amount]) => ({
-            method: method.charAt(0).toUpperCase() + method.slice(1),
-            value: total > 0 ? (amount / total) * 100 : 0,
-            color: PAYMENT_COLORS[method.toLowerCase()] || PAYMENT_COLORS.other
-        }));
+        return [
+            {
+                method: 'Cash',
+                value: total > 0 ? (payments.cash / total) * 100 : 0,
+                color: PAYMENT_COLORS.cash
+            },
+            {
+                method: 'Card',
+                value: total > 0 ? (payments.card / total) * 100 : 0,
+                color: PAYMENT_COLORS.card
+            }
+        ];
     }, [transactions]);
 
     // Process top selling products
@@ -268,33 +285,22 @@ export default function Dashboard() {
         }));
     }, [lowStockAlerts]);
 
-    // Process active promotions with revenue
+   
     const activePromotionsWithRevenue = useMemo(() => {
         if (!promotions || promotions.length === 0) return [];
 
-        const activePromos = promotions.filter(p => p.status === 'active').slice(0, 5);
-
-        // Calculate revenue from transactions that used each promotion
-        const promoRevenue = {};
-        transactions.forEach(t => {
-            if (t.coupon?.code) {
-                const promo = activePromos.find(p => p.couponCode === t.coupon.code);
-                if (promo) {
-                    if (!promoRevenue[promo.name]) {
-                        promoRevenue[promo.name] = 0;
-                    }
-                    const total = t.totals?.grandTotal || t.grandTotal || t.total || 0;
-                    promoRevenue[promo.name] += total;
-                }
-            }
-        });
-
-        return activePromos.map(promo => ({
-            name: promo.name,
-            revenue: promoRevenue[promo.name] || 0
-        }));
-    }, [promotions, transactions]);
-
+        // Filter active promotions and map directly without revenue calculation
+        return promotions
+            .filter(p => p.status === 'active')
+            .slice(0, 5)
+            .map(promo => ({
+                name: promo.name,
+                autoApply: promo.autoApply,
+                couponCode: promo.couponCode,
+                amountType: promo.amountType,
+                amountValue: promo.amountValue
+            }));
+    }, [promotions]);
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
@@ -570,7 +576,13 @@ export default function Dashboard() {
                         {activePromotionsWithRevenue.length > 0 ? activePromotionsWithRevenue.map((promo) => (
                             <div key={promo.name} className="flex items-center justify-between">
                                 <span className="text-sm text-card-foreground">{promo.name}</span>
-                                <span className="text-sm font-semibold text-card-foreground">{settings?.currencySymbol || '$'}{promo.revenue.toLocaleString()}</span>
+                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${promo.autoApply
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                    Auto Apply: {promo.autoApply  ==="true" ? 'Yes' : 'No'}
+                                </span>
+                              
                             </div>
                         )) : (
                             <p className="text-sm text-muted-foreground">No active promotions</p>

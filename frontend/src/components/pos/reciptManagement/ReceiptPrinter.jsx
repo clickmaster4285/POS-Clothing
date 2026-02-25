@@ -29,7 +29,19 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
+  };
+  
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+  const getFullLogoUrl = (logoPath) => {
+    if (!logoPath) return '';
+    if (logoPath.startsWith('http')) return logoPath;
+    const baseUrl = API_BASE_URL;
+
+    return `${baseUrl}${logoPath}`;
+  };
+
+  
 
     const customerName = transaction.customer
         ? `${transaction.customer.customerFirstName || ''} ${transaction.customer.customerLastName || ''}`.trim()
@@ -148,6 +160,7 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
       font-weight: 600;
       color: #111827;
     }
+      
 
     table {
       width: 100%;
@@ -299,13 +312,19 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
 </head>
 <body>
   <div class="receipt">
-    <div class="header">
-      <div class="store-name">${settings?.companyName || "STORE"}</div>
-      <div class="store-details">
-        ${settings?.address}<br>
-        Tel: ${settings?.phone || "(212) 555-0123"}
-      </div>
+
+<div class="header">
+  ${settings?.logo ? `
+    <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+      <img src="${getFullLogoUrl(settings.logo)}" alt="${settings?.companyName || 'Store'}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb;" />
     </div>
+  ` : ''}
+  <div class="store-name">${settings?.companyName || "STORE"}</div>
+  <div class="store-details">
+    ${settings?.address}<br>
+    Tel: ${settings?.phone || "(212) 555-0123"}
+  </div>
+</div>
 
     <div class="meta">
       <div class="meta-row">
@@ -400,25 +419,33 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
   `;
     };
     
-    const handlePrint = () => {
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(generateReceiptHTML());
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-        }
-    };
 
-    const handleDownloadPDF = () => {
-        // For PDF download, we'll open in new window and let user print to PDF
-        const pdfWindow = window.open('', '_blank');
-        if (pdfWindow) {
-            pdfWindow.document.write(generateReceiptHTML());
-            pdfWindow.document.close();
-            pdfWindow.focus();
-        }
-    };
+  
+  // const handlePrint = () => {
+  //   const printContent = generateReceiptHTML();
+  //   const printWindow = window.open('', '_blank');
+  //   printWindow.document.write(printContent);
+  //   printWindow.document.close();
+  //   printWindow.focus();
+  //   printWindow.print();
+  //   printWindow.onafterprint = () => printWindow.close();
+  // };
+
+
+  const handlePrint = () => {
+    const printContent = generateReceiptHTML();
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Wait for image to load before printing
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.onafterprint = () => printWindow.close();
+    }, 500);
+  };
+
 
     const handleDownloadTXT = () => {
         // Simple text receipt
@@ -469,8 +496,17 @@ Thank You For Shopping With Us!
                     <div className="p-5 sm:p-6">
                         {/* Header – centered, branded */}
                         <div className="text-center mb-6">
-                            {/* Replace with real logo if available */}
-                            {/* <img src="/logo.png" alt="Fashion Store" className="h-10 mx-auto mb-2" /> */}
+                           
+                {settings?.logo && (
+                  <div className="flex justify-center mb-2">
+                    <img
+                      src={getFullLogoUrl(settings.logo)}
+                      alt={settings?.companyName || 'Store'}
+                      className="w-12 h-12 rounded-full object-cover border border-gray-200 mx-auto"
+                    />
+                  </div>
+                )}
+
                             <h2 className="text-xl font-bold text-gray-900">{settings?.companyName || "STORE"}</h2>
                             <p className="text-xs text-gray-600 mt-1">{settings?.address || "123 Fashion Avenue"}</p>
                             <p className="text-xs text-gray-600">Tel: {settings?.phone || "(212) 555-0123"}</p>
@@ -497,9 +533,10 @@ Thank You For Shopping With Us!
 
                         {/* Items – classic POS table look */}
                         <div className="mb-6">
-                            <div className="grid grid-cols-[3fr_1fr_2fr] gap-3 text-xs font-semibold text-gray-600 uppercase border-b pb-2 mb-3">
+                            <div className="grid grid-cols-[3fr_1fr_2fr_1fr] gap-3 text-xs font-semibold text-gray-600 uppercase border-b pb-2 mb-3">
                                 <div>Item</div>
                   <div className="text-center">Qty</div>
+                  <div className="text-center">Discount</div>
                   
                                 <div className="text-right">Amount</div>
                             </div>
@@ -507,7 +544,7 @@ Thank You For Shopping With Us!
                             {transaction.cartItems?.map((item, idx) => (
                                 <div
                                     key={idx}
-                                    className="grid grid-cols-[3fr_1fr_2fr] gap-3 py-2.5 border-b border-gray-100 last:border-0 text-gray-900"
+                                    className="grid grid-cols-[3fr_1fr_2fr_1fr] gap-3 py-2.5 border-b border-gray-100 last:border-0 text-gray-900"
                                 >
                                     <div>
                                         <div className="font-medium">{item.name}</div>
@@ -519,7 +556,8 @@ Thank You For Shopping With Us!
                                             </div>
                                         )}
                                     </div>
-                                    <div className="text-center">{item.quantity}</div>
+                                <div className="text-center">{item.quantity}</div>
+                                <div className="text-center">{item.discountPercent}%</div>
                                     <div className="text-right font-semibold">
                                         {settings?.currencySymbol}{(item.unitPrice * item.quantity).toFixed(2)}
                                     </div>

@@ -3,7 +3,7 @@ import { X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCategories} from "@/hooks/inv_hooks/useCategory";
 import { Checkbox } from "@/components/ui/checkbox";
-
+import { useSettings } from "@/hooks/useSettings";
 const PromotionModal = ({
     isEditing,
     selectedPromo,
@@ -16,7 +16,7 @@ const PromotionModal = ({
     const { data: categoriesData, isLoading: isCategoriesLoading } = useCategories();
 
     const category = categoriesData?.data || []
-  
+    const { data: settings } = useSettings();
 
     const [categories, setCategories] = useState([]);
     const [promoForm, setPromoForm] = useState({
@@ -187,7 +187,7 @@ const PromotionModal = ({
                                 required
                                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                             >
-                                <option value="Fixed">Fixed ($)</option>
+                                <option value="Fixed">Fixed (     {settings?.currencySymbol || '$'})</option>
                                 <option value="Percentage">Percentage (%)</option>
                             </select>
                         </div>

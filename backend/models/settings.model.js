@@ -36,6 +36,11 @@ const settingsSchema = new mongoose.Schema({
     default: "UTC"
   },
 
+  address: {
+    type: String
+  },
+  phone: {type: String},
+
   notifications: {
     emailNotifications: {
       type: Boolean,
@@ -72,6 +77,7 @@ const settingsSchema = new mongoose.Schema({
       default: false
     }
   }
+
 
 }, { timestamps: true });
 

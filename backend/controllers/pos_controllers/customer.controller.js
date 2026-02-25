@@ -57,7 +57,7 @@ const createCustomer = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized role" });
     }
 
-    console.log("Final branch ID being used:", finalBranchId);
+ 
 
     // ✅ CHECK IF EMAIL ALREADY EXISTS
     const existingCustomer = await Customer.findOne({ email });

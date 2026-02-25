@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export const UsersTab = ({ terminal, onAddUser, onRemoveUser }) => {
 
-    console.log("terminal", terminal)
     
     // Helper function to get user display name
     const getUserDisplayName = (userEntry) => {

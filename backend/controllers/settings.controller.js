@@ -44,6 +44,8 @@ exports.updateSettings = async (req, res) => {
         currency: null,
         language: null,
         timezone: null,
+        phone: null,
+        address: null,
         notifications: {
           emailNotifications: null,
           smsNotifications: null,

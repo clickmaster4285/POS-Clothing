@@ -13,6 +13,8 @@ import currencyCodes from "currency-codes";
 import getSymbolFromCurrency from "currency-symbol-map";
 import ISO6391 from "iso-639-1";
 import moment from "moment-timezone";
+import { Textarea } from "../ui/textarea";
+import { address } from "framer-motion/client";
 
 export default function ProfileSettings() {
     const { data: settings, isLoading } = useSettings();
@@ -27,6 +29,8 @@ export default function ProfileSettings() {
         companyName: "",
         logo: null,
         tax: 0,
+        phone: "",
+        address : "",
         currency: "USD",
         currencySymbol: "$", // New field for currency symbol
         language: "en",
@@ -40,6 +44,8 @@ export default function ProfileSettings() {
                 logo: null,
                 tax: settings.tax || 0,
                 currency: settings.currency || "USD",
+                address: settings.address || "",
+                phone: settings.phone || "",
                 currencySymbol: settings.currencySymbol || getSymbolFromCurrency(settings.currency) || "$",
                 language: settings.language || "en",
                 timezone: settings.timezone || "UTC",
@@ -84,6 +90,8 @@ export default function ProfileSettings() {
         formData.append("currencySymbol", form.currencySymbol); // Send symbol to backend
         formData.append("language", form.language);
         formData.append("timezone", form.timezone);
+        formData.append("phone", form.phone);
+        formData.append("address", form.address);
 
         if (form.logo) {
             formData.append("logo", form.logo);
@@ -222,6 +230,26 @@ export default function ProfileSettings() {
                             ))}
                         </select>
                     </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Phone No</Label>
+                        <Input
+                            type="text"
+                            value={form.phone}
+                            onChange={(e) => handleChange("phone", e.target.value)}
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Address</Label>
+                        <Textarea
+                            type="text"
+                            value={form.address}
+                            onChange={(e) => handleChange("address", e.target.value)}
+                        />
+                    </div>
+
+
                 </div>
             </div>
 

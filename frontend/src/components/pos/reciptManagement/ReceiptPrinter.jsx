@@ -299,9 +299,8 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
     <div class="header">
       <div class="store-name">${settings?.companyName || "STORE"}</div>
       <div class="store-details">
-        123 Fashion Avenue<br>
-        New York, NY 10001<br>
-        Tel: (212) 555-0123
+        ${settings?.address}<br>
+        Tel: ${settings?.phone || "(212) 555-0123"}
       </div>
     </div>
 
@@ -420,8 +419,8 @@ const ReceiptPrinter = ({ transaction, open, onClose }) => {
         // Simple text receipt
         const textReceipt = `
 ${settings?.companyName }
-123 Fashion Avenue, New York, NY 10001
-Tel: (212) 555-0123
+${settings?.address }
+${settings?.phone }
 ================================
 Receipt #: ${transaction.transactionNumber}
 Date: ${formatDate(transaction.timestamp)}
@@ -468,8 +467,8 @@ www.fashionstore.com
                             {/* Replace with real logo if available */}
                             {/* <img src="/logo.png" alt="Fashion Store" className="h-10 mx-auto mb-2" /> */}
                             <h2 className="text-xl font-bold text-gray-900">{settings?.companyName || "STORE"}</h2>
-                            <p className="text-xs text-gray-600 mt-1">123 Fashion Avenue, New York, NY 10001</p>
-                            <p className="text-xs text-gray-600">Tel: (212) 555-0123</p>
+                            <p className="text-xs text-gray-600 mt-1">{settings?.address || "123 Fashion Avenue"}</p>
+                            <p className="text-xs text-gray-600">Tel: {settings?.phone || "(212) 555-0123"}</p>
                          {/* Optional but common */}
                         </div>
 

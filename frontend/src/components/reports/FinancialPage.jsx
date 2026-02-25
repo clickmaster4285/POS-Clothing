@@ -53,9 +53,9 @@ const IncomeStatement = ({ data }) => {
                         ))}
                      
                         <div className="flex justify-between font-bold border-t pt-2 mt-1 px-2">
-                            <span>Total Cost of Goods Sold</span>
+                            <span>Total Cost of Items Sold</span>
                             <span className="text-orange-600">
-                                ${data.find(item => item.label === 'Total Cost of Goods Sold')?.amount.toLocaleString()}
+                                ${data.find(item => item.label === 'Total Cost of Items Sold')?.amount.toLocaleString()}
                             </span>
                         </div>
                     </div>
@@ -118,7 +118,7 @@ const FinancialPage = () => {
 
     const stockData = stockRawData?.data || [];
 
-    console.log("Stock Data:", stockData);
+
 
     // Process financial data
     const { kpis, revenueVsExpensesData, incomeStatementData } = useMemo(() => {
@@ -285,7 +285,7 @@ const FinancialPage = () => {
             </div>
 
             {/* Revenue vs COGS Chart */}
-            <ChartCard title="Revenue vs Cost of Goods Sold (Monthly)">
+            <ChartCard title="Revenue vs Cost of Items Sold (Monthly)">
                 <SalesLineChart
                     data={revenueVsExpensesData.length > 0 ? revenueVsExpensesData : [{ month: 'Jan', revenue: 0, cogs: 0, profit: 0 }]}
                     xKey="month"
@@ -298,7 +298,7 @@ const FinancialPage = () => {
             </ChartCard>
 
             {/* Custom Income Statement */}
-            <IncomeStatement data={incomeStatementData} />
+            {/* <IncomeStatement data={incomeStatementData} /> */}
 
             {incomeStatementData.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">

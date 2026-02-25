@@ -20,7 +20,7 @@ const CustomerProfile = () => {
     const transactions = transactionsData?.transactions || [];
 
 
-    console.log("transactionsData:", transactionsData);
+    
 
 
     if (isLoading) return <div>Loading customer...</div>;

@@ -26,50 +26,62 @@ export function PaymentDialog({
     const [amountTendered, setAmountTendered] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const [paymentMethod, setPaymentMethod] = useState("cash");
+
     const finalTotal = totals.grandTotal;
 
     const handlePayment = () => {
         const tendered = parseFloat(amountTendered);
 
-        if (isNaN(tendered) || tendered <= 0) {
-            toast({
-                title: "Invalid amount",
-                description: "Please enter a valid amount",
-                variant: "destructive",
-            });
-            return;
-        }
+        // If cash → validate amount
+        if (paymentMethod === "cash") {
+            if (isNaN(tendered) || tendered <= 0) {
+                toast({
+                    title: "Invalid amount",
+                    description: "Please enter a valid amount",
+                    variant: "destructive",
+                });
+                return;
+            }
 
-        if (tendered < finalTotal) {
-            toast({
-                title: "Insufficient payment",
-                description: `Amount tendered is less than $${finalTotal.toFixed(2)}`,
-                variant: "destructive",
-            });
-            return;
+            if (tendered < finalTotal) {
+                toast({
+                    title: "Insufficient payment",
+                    description: `Amount tendered is less than $${finalTotal.toFixed(2)}`,
+                    variant: "destructive",
+                });
+                return;
+            }
         }
 
         setIsProcessing(true);
 
         setTimeout(() => {
-            const changeDue = tendered - finalTotal;
+            const changeDue =
+                paymentMethod === "cash"
+                    ? tendered - finalTotal
+                    : 0;
 
             const paymentData = {
-                amountTendered: tendered,
-                changeDue,
-                paymentMethod: "cash",
+                paymentMethod,
                 amountPaid: finalTotal,
+                amountTendered:
+                    paymentMethod === "cash" ? tendered : finalTotal,
+                changeDue,
                 timestamp: new Date().toISOString(),
             };
 
             toast({
                 title: "Payment successful",
-                description: `Change due: $${changeDue.toFixed(2)}`,
+                description:
+                    paymentMethod === "cash"
+                        ? `Change due: $${changeDue.toFixed(2)}`
+                        : "Card payment processed successfully",
             });
 
             setIsProcessing(false);
             onOpenChange(false);
-            onSuccess(paymentData); // 🔥 Important
+            onSuccess(paymentData);
             setAmountTendered("");
         }, 800);
     };
@@ -93,13 +105,39 @@ export function PaymentDialog({
                     </div>
 
                     <div className="space-y-2">
+                        <label className="text-sm font-medium">Payment Method</label>
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant={paymentMethod === "cash" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("cash")}
+                                className="flex-1"
+                            >
+                                Cash
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant={paymentMethod === "card" ? "default" : "outline"}
+                                onClick={() => setPaymentMethod("card")}
+                                className="flex-1"
+                            >
+                                Card
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
                         <label className="text-sm font-medium">Amount Tendered</label>
+
+                        
 
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                                 $
                             </span>
 
+                            
                             <Input
                                 type="number"
                                 step="0.01"

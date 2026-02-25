@@ -19,7 +19,8 @@ const ReciptManagementPage = () => {
     const [showReceiptPrinter, setShowReceiptPrinter] = useState(false); // Add this
 
     const { data: settings } = useSettings();
-    console.log("settings in receipt management", settings)
+  
+    console.log("Settings data in ReceiptManagementPage:", settings);
     const { data: transactionData, isLoading } = useTransactions();
 
     // Get transactions array from the data and filter only completed transactions
@@ -272,8 +273,8 @@ const ReciptManagementPage = () => {
                         <div className="bg-muted/50 rounded-lg p-4 sm:p-6">
                             <div className="text-center mb-4">
                                 <p className="font-bold text-sm sm:text-base mb-1">{settings?.companyName || "STORE"}</p>
-                                <p className="text-xs text-muted-foreground">123 Fashion Avenue, New York, NY 10001</p>
-                                <p className="text-xs text-muted-foreground">Tel: (212) 555-0123</p>
+                                <p className="text-xs text-muted-foreground">{settings?.address}</p>
+                                <p className="text-xs text-muted-foreground">Tel: {settings?.phone }</p>
                             </div>
 
                             <div className="border-t border-b py-2 mb-3 text-xs">

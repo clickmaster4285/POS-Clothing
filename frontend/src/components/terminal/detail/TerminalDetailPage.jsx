@@ -77,7 +77,9 @@ export default function TerminalDetail() {
     };
 
     const handleRemoveUser = (userId) => {
-        const user = userId._id;
+      
+        const user = userId;
+     
         removeUserMutation.mutate({ id, userId: user });
     };
 

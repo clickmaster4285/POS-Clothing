@@ -19,7 +19,7 @@ const CustomerPage = ({ customers }) => {
 
  
     const transactions = transactionsData?.transactions || [];
-    console.log("transactionsData", transactions)
+  
     const kpiData = useMemo(() => {
         const totalCustomers = customers?.length;
         const loyaltyMembers = customers?.filter(c => c.loyaltyPoints > 0).length;

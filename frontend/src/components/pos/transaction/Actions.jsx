@@ -29,6 +29,8 @@ export function Actions() {
     } = useTransaction();
 
     const { data: settings, isLoading, refetch } = useSettings();
+
+    console.log("Settings data in Actions component:", settings);
     const [showHold, setShowHold] = useState(false);
     const [showRetrieve, setShowRetrieve] = useState(false);
     const [showVoidTxn, setShowVoidTxn] = useState(false);
@@ -96,8 +98,8 @@ export function Actions() {
 <body>
 <div class="receipt">
   <h2 class="center">${settings?.companyName || "STORE"}</h2>
-  <p class="center">123 Fashion Avenue, NY CITY</p>
-  <p class="center">Tel: (212) 555-0123</p>
+  <p class="center">${settings?.address}</p>
+  <p class="center">Tel: ${settings?.phone || "(212) 555-0123"}</p>
   <hr />
   <p>Receipt #: ${transaction.transactionNumber}</p>
   <p>Customer: ${customerName}</p>

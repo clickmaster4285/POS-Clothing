@@ -27,7 +27,7 @@ export const updateTerminal = async ({ id, data }) => {
 
 // ADD user to terminal
 export const addUserToTerminal = async ({ id, data }) => {
-  console.log("API call to add user to terminal with data:", data, "and terminal ID:", id);
+ 
   const res = await api.put(`/terminals/${id}/users`, data);
   return res.data;
 };

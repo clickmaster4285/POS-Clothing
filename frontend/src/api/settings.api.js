@@ -10,7 +10,10 @@ export const getSettings = async () => {
 // UPDATE settings
 export const updateSettings = async (formData) => {
   // formData should be instance of FormData
+ 
+
   const res = await api.put("/settings", formData, {
+    
     headers: {
       "Content-Type": "multipart/form-data", // important for file upload
     },

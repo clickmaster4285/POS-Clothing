@@ -319,9 +319,8 @@ exports.getAllStock = async (req, res) => {
     if (lowStock === "true") query.isLowStock = true;
 
     // -------------------------
-    // Your existing product filtering stays SAME
+    // Product filtering
     // -------------------------
-
     if (search || category) {
       const productQuery = {};
 
@@ -352,11 +351,47 @@ exports.getAllStock = async (req, res) => {
       .limit(Number(limit))
       .lean();
 
+    // ============================================
+    // ENRICH STOCKS WITH VARIANT NAMES
+    // ============================================
+    const enrichedStocks = stocks.map(stock => {
+      // Find the variant from product.variants array using variantId
+      let variantDetails = null;
+      let variantName = null;
+
+      if (stock.product && stock.product.variants && stock.variantId) {
+        variantDetails = stock.product.variants.find(
+          v => v._id.toString() === stock.variantId.toString()
+        );
+
+        if (variantDetails) {
+          // Build variant name from available attributes
+          const variantParts = [];
+          if (variantDetails.size) variantParts.push(`Size: ${variantDetails.size}`);
+          if (variantDetails.color) variantParts.push(`Color: ${variantDetails.color}`);
+          if (variantDetails.style) variantParts.push(`Style: ${variantDetails.style}`);
+          if (variantDetails.fitType) variantParts.push(`Fit: ${variantDetails.fitType}`);
+          
+          variantName = variantParts.length > 0 
+            ? variantParts.join(' | ') 
+            : 'Default Variant';
+        }
+      }
+
+      return {
+        ...stock,
+        variantName,
+        variantDetails, // Include full variant details if needed
+        retailPrice: variantDetails?.price?.retailPrice || null,
+        costPrice: variantDetails?.price?.costPrice || null
+      };
+    });
+
     const total = await Stock.countDocuments(query);
 
     res.json({
       success: true,
-      data: stocks,
+      data: enrichedStocks,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -410,6 +445,70 @@ exports.adjustStock = async (req, res) => {
 
     const branchLocation = `${branchDoc.branch_name}, ${branchDoc.address.city}`;
 
+    // ============================================
+    // STEP 1: VALIDATE ALL ITEMS FIRST
+    // ============================================
+    const validationErrors = [];
+    
+    for (const item of items) {
+      try {
+        let stock = await Stock.findOne({
+          product: item.product,
+          variantId: item.variantId,
+          branch: finalBranchId,
+          color: item.color,
+        });
+
+        const product = await Product.findById(item.product);
+        if (!product) {
+          validationErrors.push(`Product ${item.product} not found`);
+          continue;
+        }
+
+        const variant = product.variants.id(item.variantId);
+        if (!variant) {
+          validationErrors.push(`Variant ${item.variantId} not found`);
+          continue;
+        }
+
+        let attrIndex = variant.stockByAttribute.findIndex(
+          attr => attr.color === item.color
+        );
+
+        // Validate based on adjustment type
+        if (adjustmentType === "add") {
+          if (attrIndex === -1 || variant.stockByAttribute[attrIndex].quantity < item.quantity) {
+            validationErrors.push(
+              `Insufficient warehouse stock for ${product.productName} - ${item.color || 'default'}`
+            );
+          }
+        }
+        else if (adjustmentType === "remove" || adjustmentType === "damage") {
+          if (!stock || stock.currentStock < item.quantity) {
+            validationErrors.push(
+              `Insufficient branch stock for ${product.productName} - ${item.color || 'default'}`
+            );
+          }
+        }
+      } catch (error) {
+        validationErrors.push(`Validation error: ${error.message}`);
+      }
+    }
+
+    // ============================================
+    // STEP 2: IF ANY VALIDATION ERRORS, RETURN ERROR
+    // ============================================
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Stock adjustment failed due to insufficient stock",
+        errors: validationErrors
+      });
+    }
+
+    // ============================================
+    // STEP 3: PROCESS ALL ITEMS (ONLY IF ALL VALID)
+    // ============================================
     const adjustment = new StockAdjustment({
       branch: finalBranchId,
       adjustmentType,
@@ -421,41 +520,30 @@ exports.adjustStock = async (req, res) => {
     });
 
     for (const item of items) {
-
       let stock = await Stock.findOne({
         product: item.product,
         variantId: item.variantId,
-        branch: finalBranchId,  // ✅ FIXED
+        branch: finalBranchId,
         color: item.color,
       });
 
       const product = await Product.findById(item.product);
-      if (!product) throw new Error(`Product ${item.product} not found`);
-
       const variant = product.variants.id(item.variantId);
-      if (!variant) throw new Error(`Variant ${item.variantId} not found`);
-
       let attrIndex = variant.stockByAttribute.findIndex(
         attr => attr.color === item.color
       );
 
-      // ===============================
-      // ADD STOCK
-      // ===============================
       if (adjustmentType === "add") {
-
-        if (attrIndex === -1 || variant.stockByAttribute[attrIndex].quantity < item.quantity) {
-          throw new Error(`Insufficient warehouse stock`);
-        }
-
+        // Update warehouse (decrease)
         variant.stockByAttribute[attrIndex].quantity -= item.quantity;
         variant.quantity -= Number(item.quantity);
 
+        // Update branch stock (increase)
         if (!stock) {
           stock = await Stock.create({
             product: item.product,
             variantId: item.variantId,
-            branch: finalBranchId,  // ✅ FIXED
+            branch: finalBranchId,
             location: branchLocation,
             currentStock: item.quantity,
             availableStock: item.quantity,
@@ -476,16 +564,7 @@ exports.adjustStock = async (req, res) => {
           changedBy: req.user.id,
         });
       }
-
-      // ===============================
-      // REMOVE STOCK
-      // ===============================
       else if (adjustmentType === "remove") {
-
-        if (!stock || stock.currentStock < item.quantity) {
-          throw new Error(`Insufficient branch stock`);
-        }
-
         stock.currentStock -= item.quantity;
         stock.availableStock -= item.quantity;
 
@@ -508,16 +587,7 @@ exports.adjustStock = async (req, res) => {
           changedBy: req.user.id,
         });
       }
-
-      // ===============================
-      // DAMAGE STOCK
-      // ===============================
       else if (adjustmentType === "damage") {
-
-        if (!stock || stock.currentStock < item.quantity) {
-          throw new Error(`Insufficient stock for damage`);
-        }
-
         stock.currentStock -= item.quantity;
         stock.availableStock -= item.quantity;
         stock.damagedStock += item.quantity;

@@ -54,7 +54,7 @@ const stockAdjustmentSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    required: true
+   // required: true
   },
   items: [{
     product: {

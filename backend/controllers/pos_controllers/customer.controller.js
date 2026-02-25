@@ -31,33 +31,15 @@ const createCustomer = async (req, res) => {
 
     const { firstName, email, phonePrimary, branch, ...rest } = req.body;
 
+   
+
+
     if (!firstName || !email || !phonePrimary) {
       return res.status(400).json({ error: "Required fields are missing" });
     }
 
-    const user = req.user;
-    let finalBranchId;
 
-   
-
-    // ✅ ROLE BASED BRANCH ASSIGNMENT
-    if (user.role === "admin") {
-      // Admin must provide branch from frontend
-      if (!branch) {
-        return res.status(400).json({ error: "Branch is required for admin" });
-      }
-      finalBranchId = branch;
-    } else if (user.role === "manager") {
-      // Manager uses their assigned branch from token
-      if (!user.branch_id) {
-        return res.status(400).json({ error: "Manager has no assigned branch" });
-      }
-      finalBranchId = user.branch_id;
-    } else {
-      return res.status(403).json({ error: "Unauthorized role" });
-    }
-
- 
+   const branchId = req.user.branch_id || branch; 
 
     // ✅ CHECK IF EMAIL ALREADY EXISTS
     const existingCustomer = await Customer.findOne({ email });
@@ -78,7 +60,7 @@ const createCustomer = async (req, res) => {
       loyaltyCardNumber,
       loyaltyPoints: 0,
       redeemedPoints: 0,
-      branch: finalBranchId,
+      branch: branchId,
       ...rest,
     });
 

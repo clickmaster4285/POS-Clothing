@@ -1,65 +1,56 @@
+// pages/pos/transaction.tsx
 import { TransactionProvider, useTransaction } from '@/context/TransactionContext';
 import { Stepper } from '@/components/pos/transaction/Stepper';
 import { ProductEntry } from '@/components/pos/transaction/ProductEntry';
 import { ShoppingCart } from '@/components/pos/transaction/ShoppingCart';
 import { TransactionTotals } from '@/components/pos/transaction/TransactionTotals';
 import { QuickActions } from '@/components/pos/transaction/QuickActions';
-
-import { CartQuickActions } from '@/components/pos/transaction/CartQuickActions';
-
 import { Actions } from '@/components/pos/transaction/Actions';
+import { Receipt } from '@/components/pos/transaction/Receipt';
 import { useAuth } from "@/hooks/useAuth"
-import {
-    useBranches,
-} from "@/hooks/useBranches";
-import { useState } from 'react';
+import { useBranches } from "@/hooks/useBranches";
+import { useState, useEffect } from 'react';
 
 function POSContent() {
-    const { currentStep, setCurrentStep, transactionNumber, selectedBranch, setSelectedBranch, addToCart } = useTransaction();
-   
+    const {
+        currentStep,
+        setCurrentStep,
+        transactionNumber,
+        selectedBranch,
+        setSelectedBranch,
+        cartItems,
+        totals
+    } = useTransaction();
 
     const { data: branches, isLoading } = useBranches();
-   
+    const { user: currentUser } = useAuth();
 
-    const { user: currentUser, role } = useAuth();
-   
+    // Check if cart has items
+    const hasCartItems = cartItems?.length > 0;
 
-    const renderStep = () => {
-        switch (currentStep) {
-            case 0: return <ProductEntry />;
-            case 1: return <ShoppingCart />;
-            case 2: return <TransactionTotals />;
-            case 3: return <Actions />;
-            default: return <ProductEntry />;
-        }
-    };
+    // Debug log to verify cart items are being received
+    useEffect(() => {
+        console.log('Cart items in POSContent:', cartItems);
+    }, [cartItems]);
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
+        <div className=" bg-gray-50 px-4 sm:px-6 lg:px-8">
             {/* Header - Mobile Responsive */}
-            <div className="flex items-center text-xs sm:text-sm text-muted-foreground gap-1 pb-4 pt-4 sm:pb-5 overflow-x-auto whitespace-nowrap">
-                <span>Home</span><span>›</span>
-                <span>Point of Sale</span><span>›</span>
-                <span className="font-medium">POS Transaction</span><span>›</span>
-                <span className="text-primary font-medium truncate">{transactionNumber}</span>
-            </div>
+          
 
-            <header className=" bg-white shadow-sm rounded-md border-b mb-4 sm:mb-6">
-                <div className="max-w-full mx-auto px-4 sm:px-6 py-3 sm:py-4">
-                    <Stepper currentStep={currentStep} onStepClick={setCurrentStep} />
-                </div>
-            </header>
+            {/* Main Content - New Layout */}
+            <main className="max-w-full mx-auto pb-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-4">
+                {/* Left Column - 8/12 (66.67%) - All Main Content */}
+                <div className="lg:col-span-8 space-y-2 sm:space-y-3">
+                    {/* Branch Selection (Admin only) */}
 
-            {/* Main Content - Mobile First Grid */}
-            <main className="max-w-full mx-auto pb-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                {/* Step Content - Takes full width on mobile, 2/3 on desktop */}
-                <div className="lg:col-span-2 order-1">
-                    {currentUser.role === "admin" && branches?.data?.length > 0 && (
-                        <div className="mb-6">
+                    
+                    {currentUser?.role === "admin" && branches?.data?.length > 0 && (
+                        <div className="bg-card p-4 rounded-md shadow-sm">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Select Branch
                             </label>
-                            <div className="relative">
+                            <div className="relative max-w-md">
                                 <select
                                     className="appearance-none w-full border border-gray-300 bg-white rounded-lg shadow-sm px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                                     value={selectedBranch?._id || ""}
@@ -91,52 +82,36 @@ function POSContent() {
                         </div>
                     )}
 
-
+                    {/* Product Entry */}
                     <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-                        {renderStep()}
+                        <ProductEntry />
+                   
+                        <ShoppingCart />
+                      
                     </div>
+
+                    {/* Transaction Totals */}
+                    {/* <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                        <TransactionTotals />
+                    </div> */}
                 </div>
 
-                {/* Quick Info / Actions Sidebar - New row on mobile, side column on desktop */}
-                <aside className="lg:col-span-1 order-2 flex flex-col gap-4 sm:gap-6">
-                    <div className="bg-white rounded-lg shadow p-4 sm:p-4">
-                        <h3 className="text-sm font-semibold mb-3 text-gray-700 sm:hidden">Quick Actions</h3>
+                {/* Right Column - 4/12 (33.33%) - Quick Actions and Receipt */}
+                <aside className="lg:col-span-4 space-y-4 sm:space-y-3">
+                    {/* Quick Actions - At the top of right column */}
+                    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                         <QuickActions />
-
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                            <button
-                                onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
-                                disabled={currentStep === 0}
-                                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 
-                    ${currentStep === 0
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                                    }`}
-                            >
-                                <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                                <span>Back to {currentStep === 1 ? 'Product Entry' : currentStep === 2 ? 'Shopping Cart' : currentStep === 3 ? 'Transaction Totals' : 'Previous Step'}</span>
-                            </button>
-                        </div>
-
-                       
                     </div>
 
-
-
-
-                        {/* <CartQuickActions
-                            onAddToCart={() => setCurrentStep(0)}
-                            className="justify-between"
-                        /> */}
-                  
-                  
+                    {/* Receipt - Below Quick Actions */}
+                    <div className=" sticky top-4">
+                        <Receipt />
+                        {hasCartItems && (
+                            <div className='mt-3'>
+                                <Actions />
+                            </div>
+                        )}
+                    </div>
                 </aside>
             </main>
         </div>

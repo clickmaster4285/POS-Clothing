@@ -380,14 +380,26 @@ export function ShoppingCart() {
     if (cartItems.length === 0) {
         return (
             <div className="space-y-6">
-                <h2 className="text-xl font-bold">Shopping Cart</h2>
-                <Card>
-                    <CardContent className="py-16 text-center">
-                        <p className="text-muted-foreground">Your cart is empty</p>
-                        <Button className="mt-4" onClick={() => setCurrentStep(0)}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Add Products
-                        </Button>
+                <Card className="h-[55vh] flex flex-col">
+                    <CardContent className="flex-1 flex items-center justify-center">
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <svg
+                                className="w-16 h-16 mb-4 text-muted-foreground/30"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                                />
+                            </svg>
+                            <p className="text-muted-foreground text-lg">Your cart is empty</p>
+                            <p className="text-sm text-muted-foreground/70 mt-1">Add items to get started</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -396,98 +408,11 @@ export function ShoppingCart() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-bold">Shopping Cart</h2>
+           
 
-            {/* Customer Selection Card */}
-            {/* <Card className="overflow-hidden">
-                <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-sm font-medium">Select Customer (Optional)</label>
-                    </div>
-
-                    <select
-                        value={selectedCustomer?._id || ''}
-                        onChange={handleCustomerChange}
-                        className="w-full md:w-72 border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                        <option value="">Guest Checkout</option>
-                        {customers.map(customer => (
-                            <option key={customer._id} value={customer._id}>
-                                {`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Unnamed Customer'}
-                            </option>
-                        ))}
-                    </select>
-
-                    {selectedCustomer && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-md border">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Award className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium">Loyalty Points</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-lg font-bold text-primary">{formatPoints(selectedCustomer.loyaltyPoints)}</span>
-                                    <span className="text-xs text-muted-foreground ml-1">points</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                <div>
-                                    <span className="font-medium">Card #:</span> <span className="font-mono">{selectedCustomer.loyaltyCardNumber || 'N/A'}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium">Program:</span> <span>{selectedCustomer.loyaltyProgram || 'Standard'}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium">Redeemed:</span> <span>{formatPoints(selectedCustomer.redeemedPoints)} pts</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium">Member since:</span> <span>{selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}</span>
-                                </div>
-                            </div>
-
-                            {Number(selectedCustomer.loyaltyPoints) >= 100 && (
-                                <div className="mt-3 pt-2 border-t">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Checkbox id="redeem-points" checked={redeemPoints} onCheckedChange={handleRedeemPoints} />
-                                            <label htmlFor="redeem-points" className="text-sm cursor-pointer font-medium">Redeem points for discount</label>
-                                        </div>
-                                        {redeemPoints && effectiveLoyaltyDiscount > 0 && (
-                                            <span className="text-sm font-bold text-primary">-{formatCurrency(effectiveLoyaltyDiscount)}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {Number(selectedCustomer.loyaltyPoints) < 100 && (
-                                <div className="mt-3 pt-2 border-t">
-                                    <p className="text-xs text-muted-foreground">
-                                        ⚠️ Need at least 100 points to redeem. You have {formatPoints(selectedCustomer.loyaltyPoints)} points.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card> */}
-
-
-            <CustomerSelectionCard
-                customers={customers}
-                selectedCustomer={selectedCustomer}
-                setSelectedCustomer={setSelectedCustomer}
-                redeemPoints={redeemPoints}
-                setRedeemPoints={setRedeemPoints}
-                effectiveLoyaltyDiscount={effectiveLoyaltyDiscount}
-                handleRedeemPoints={handleRedeemPoints}
-            />
-
-
-            {/* Promotions Card - Coupon Code Input */}
-            <Card>
-                <CardContent className="p-4">
+        
+            <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 border-t pt-4'>
+                <div className=" border-r pr-5">
                     <div className="flex items-center gap-2 mb-3">
                         <Tag className="w-4 h-4 text-muted-foreground" />
                         <label className="text-sm font-medium">Have a coupon code?</label>
@@ -521,103 +446,132 @@ export function ShoppingCart() {
                     {couponError && (
                         <p className="text-xs text-red-500 mt-2">{couponError}</p>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+
+                <CustomerSelectionCard
+                    customers={customers}
+                    selectedCustomer={selectedCustomer}
+                    setSelectedCustomer={setSelectedCustomer}
+                    redeemPoints={redeemPoints}
+                    setRedeemPoints={setRedeemPoints}
+                    effectiveLoyaltyDiscount={effectiveLoyaltyDiscount}
+                    handleRedeemPoints={handleRedeemPoints}
+                />
+
+
+
+            
+              
+                
+
+            </div>
+
+
+        
 
             {/* Cart Table */}
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead>Size</TableHead>
-                                <TableHead>Color</TableHead>
-                                <TableHead className="text-center">Qty</TableHead>
-                                <TableHead className="text-right">Unit Price</TableHead>
-                                <TableHead className="text-right">Disc %</TableHead>
-                                <TableHead className="text-right">Line Total</TableHead>
-                                <TableHead />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {cartItems.map(item => {
-                                const unitPrice = Number(item.unitPrice) || 0;
-                                const quantity = Number(item.quantity) || 1;
-                                const discountPercent = Number(item.discountPercent) || 0;
+           <Card>
+    <CardContent className="p-0">
+        {/* Scrollable table container */}
+        <div className="max-h-[320px] overflow-y-auto">
+            <Table>
+                <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Color</TableHead>
+                        <TableHead className="text-center">Qty</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Disc %</TableHead>
+                        <TableHead className="text-right">Line Total</TableHead>
+                        <TableHead />
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {cartItems.map(item => {
+                        const unitPrice = Number(item.unitPrice) || 0;
+                        const quantity = Number(item.quantity) || 1;
+                        const discountPercent = Number(item.discountPercent) || 0;
 
-                                const gross = unitPrice * quantity;
-                                const disc = gross * (discountPercent / 100);
-                                const lineTotal = gross - disc;
-                                
-                                return (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.name || 'Product'}</TableCell>
-                                        <TableCell>{item.size || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className="w-4 h-4 rounded-full border"
-                                                    style={{ backgroundColor: item.colore || item.color.toLowerCase() || '#ccc' }}
-                                                />
-                                                {item.color || 'N/A'}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="inline-flex items-center border rounded-md overflow-hidden">
-                                                <button
-                                                    className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
-                                                    onClick={() =>
-                                                        updateCartItem(item.id, { quantity: Math.max(1, quantity - 1) })
-                                                    }
-                                                >
-                                                    <Minus className="w-3 h-3" />
-                                                </button>
-                                                <span className="px-2 min-w-[20px] text-center">{quantity}</span>
-                                                <button
-                                                    className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
-                                                    onClick={() =>
-                                                        updateCartItem(item.id, { quantity: quantity + 1 })
-                                                    }
-                                                >
-                                                    <Plus className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">{formatCurrency(unitPrice)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Input
-                                                type="number"
-                                                value={discountPercent}
-                                                min={0}
-                                                max={100}
-                                                step="0.01"
-                                                onChange={(e) =>
-                                                    updateCartItem(item.id, { discountPercent: Number(e.target.value) || 0 })
-                                                }
-                                                className="w-20 text-right ml-auto"
-                                            />
-                                        </TableCell>
-                                        <TableCell>{formatCurrency(lineTotal)}</TableCell>
-                                        <TableCell>
-                                            <Button size="icon" variant="ghost" onClick={() => removeCartItem(item.id)} className="text-destructive hover:text-destructive/90">
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                        const gross = unitPrice * quantity;
+                        const disc = gross * (discountPercent / 100);
+                        const lineTotal = gross - disc;
+                        
+                        return (
+                            <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.name || 'Product'}</TableCell>
+                                <TableCell>{item.size || 'N/A'}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <span
+                                            className="w-4 h-4 rounded-full border"
+                                            style={{ backgroundColor: item.colore || item.color.toLowerCase() || '#ccc' }}
+                                        />
+                                        {item.color || 'N/A'}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <div className="inline-flex items-center border rounded-md overflow-hidden">
+                                        <button
+                                            className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                                            onClick={() =>
+                                                updateCartItem(item.id, { quantity: Math.max(1, quantity - 1) })
+                                            }
+                                        >
+                                            <Minus className="w-3 h-3" />
+                                        </button>
+                                        <span className="px-2 min-w-[20px] text-center">{quantity}</span>
+                                        <button
+                                            className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors"
+                                            onClick={() =>
+                                                updateCartItem(item.id, { quantity: quantity + 1 })
+                                            }
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(unitPrice)}</TableCell>
+                                <TableCell className="text-right">
+                                    <Input
+                                        type="number"
+                                        value={discountPercent}
+                                        min={0}
+                                        max={100}
+                                        step="0.01"
+                                        onChange={(e) =>
+                                            updateCartItem(item.id, { discountPercent: Number(e.target.value) || 0 })
+                                        }
+                                        className="w-20 text-right ml-auto"
+                                    />
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(lineTotal)}</TableCell>
+                                <TableCell>
+                                    <Button size="icon" variant="ghost" onClick={() => removeCartItem(item.id)} className="text-destructive hover:text-destructive/90">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+        </div>
+        
+        {/* Optional: Show item count when scrolling */}
+        {/* {cartItems.length > 6 && (
+            <div className="text-xs text-muted-foreground text-center py-2 border-t">
+                Showing {cartItems.length} items (scroll to see more)
+            </div>
+        )} */}
+    </CardContent>
+</Card>
+
+        
 
             {/* Order Summary */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+           
+                <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span>{formatCurrency(totals?.subtotal)}</span>
@@ -630,7 +584,7 @@ export function ShoppingCart() {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between text-sm space-x-2">
+                    <div className="flex items-center justify-between text-sm text-blue-600">
                         <label className="flex-1">Overall Discount % (optional)</label>
                         <Input
                             type="number"
@@ -644,7 +598,7 @@ export function ShoppingCart() {
                     </div>
 
                     {overallDiscountAmount > 0 && (
-                        <div className="flex justify-between text-blue-600 font-semibold bg-blue-50 py-1 px-2 rounded -mx-2">
+                        <div className="flex justify-between  px-2 rounded -mx-2">
                             <span>Overall Discount ({overallDiscountPercent}%)</span>
                             <span>-{formatCurrency(overallDiscountAmount)}</span>
                         </div>
@@ -663,18 +617,9 @@ export function ShoppingCart() {
                         <span>FINAL TOTAL</span>
                         <span className="text-primary">{formatCurrency(effectiveFinalTotal)}</span>
                     </div>
-                </CardContent>
-            </Card>
-
-            {/* Navigation */}
-            <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentStep(0)}>
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Product Entry
-                </Button>
-                <Button size="lg" onClick={() => setCurrentStep(2)} className="bg-primary hover:bg-primary/90">
-                    Continue to Payment <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-            </div>
+                </div>
+          
+         
         </div>
     );
 }

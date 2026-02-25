@@ -35,7 +35,7 @@ export function StockOverviewTab({
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
 
-
+    console.log("stocks", stocks)
 
 
     const handleSearch = (term) => {
@@ -168,12 +168,12 @@ export function StockOverviewTab({
                             <TableRow>
                                 <TableHead>Product</TableHead>
                                 <TableHead>Variant</TableHead>
-                                <TableHead>Branch</TableHead>
+                              
                                 <TableHead>Location</TableHead>
                                 <TableHead className="text-right">Current</TableHead>
-                                <TableHead className="text-right">Reserved</TableHead>
+                               
                                 <TableHead className="text-right">Available</TableHead>
-                                <TableHead className="text-right">In Transit</TableHead>
+                               
                                 <TableHead>Status</TableHead>
                                 <TableHead className="w-[80px]">Actions</TableHead>
                             </TableRow>
@@ -190,14 +190,14 @@ export function StockOverviewTab({
                                         <TableCell className="text-muted-foreground">
                                             {stock.variantName}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{stock.branchName}</TableCell>
+                                    
                                         <TableCell className="text-muted-foreground">
                                             {stock.location}
                                         </TableCell>
                                         <TableCell className="text-right">{stock.currentStock}</TableCell>
-                                        <TableCell className="text-right">{stock.reservedStock}</TableCell>
+                                      
                                         <TableCell className="text-right font-medium">{stock.availableStock}</TableCell>
-                                        <TableCell className="text-right">{stock.inTransitStock}</TableCell>
+                                     
                                         <TableCell>
                                             <Badge
                                                 variant="outline"

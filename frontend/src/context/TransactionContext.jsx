@@ -86,11 +86,12 @@ export function TransactionProvider({ children }) {
 
     const addToCart = useCallback((item) => {
         setCartItems((prev) => {
+            // Fix: Compare properly - color is a string, not an object
             const existing = prev.find(
                 (i) =>
                     i.productId === item.productId &&
                     i.size === item.size &&
-                    i.color?.name === item.color?.name
+                    i.color === item.color // Compare strings directly
             );
 
             if (existing) {

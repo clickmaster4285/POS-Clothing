@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Award, Plus } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { User, Award, Plus, Coins, Tag } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import CustomerModal from './dialogs/CustomerModal';
 
@@ -22,7 +21,6 @@ export function CustomerSelectionCard({
             setSelectedCustomer({ _id: '', firstName: 'Walk-in', lastName: 'Customer', loyaltyPoints: 0 });
         }
     }, [selectedCustomer, setSelectedCustomer]);
-
 
     const formatPoints = (value) => {
         const num = Number(value);
@@ -47,20 +45,25 @@ export function CustomerSelectionCard({
         setShowAddCustomerModal(false);
     };
 
+    const hasMinimumPoints = selectedCustomer?._id && Number(selectedCustomer.loyaltyPoints) >= 100;
+
     return (
         <>
-            <Card className="overflow-hidden">
-                <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-sm font-medium">Select Customer (Optional)</label>
-                    </div>
+            <div className="space-y-3">
+                {/* Header - Matching coupon section style */}
+                <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <label className="text-sm font-medium">Select Customer (Optional)</label>
+                </div>
 
-                    <div className="flex gap-2 items-center">
+                {/* Main Content - All in one row */}
+                <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                    {/* Customer Selector */}
+                    <div className="flex items-center gap-1 min-w-[200px] flex-1">
                         <select
                             value={selectedCustomer?._id || ''}
                             onChange={handleCustomerChange}
-                            className="w-full md:w-72 border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="flex-1 border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary truncate"
                         >
                             <option value="">Walk-in Customer</option>
                             {customers.map(customer => (
@@ -69,67 +72,63 @@ export function CustomerSelectionCard({
                                 </option>
                             ))}
                         </select>
-
-                     
-                      <button
-                            onClick={() => setShowAddCustomerModal(true)}
-                            className="px-2 py-2 bg-primary text-white rounded-md flex items-center gap-1 text-sm"
-                        >
-                            <Plus size={14} /> Add Customer
-                        </button>
-
-                        {showAddCustomerModal && (
-                            <CustomerModal
-                                isModal={true}
-                                onCustomerAdded={handleNewCustomerAdded}
-                                onClose={() => setShowAddCustomerModal(false)}
-                            />
-                        )}
-
                     </div>
 
-                 {selectedCustomer && selectedCustomer._id && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-md border">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Award className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium">Loyalty Points</span>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-lg font-bold text-primary">{formatPoints(selectedCustomer.loyaltyPoints)}</span>
-                                    <span className="text-xs text-muted-foreground ml-1">points</span>
-                                </div>
+                    {/* Add Customer Button */}
+                    <button
+                        onClick={() => setShowAddCustomerModal(true)}
+                        className="shrink-0 p-1.5 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                        title="Add new customer"
+                    >
+                        <Plus size={16} />
+                    </button>
+
+                    {/* Loyalty Info - Only for registered customers */}
+                    {selectedCustomer?._id && (
+                        <div className="flex items-center gap-2 shrink-0 bg-muted/30 px-2 py-1 rounded-md">
+                            {/* Points */}
+                            <div className="flex items-center gap-1">
+                                <Award className="w-3.5 h-3.5 text-primary" />
+                                <span className="text-xs font-medium whitespace-nowrap">
+                                    {formatPoints(selectedCustomer.loyaltyPoints)} pts
+                                </span>
                             </div>
 
-                            {Number(selectedCustomer.loyaltyPoints) >= 100 ? (
-                                <div className="mt-3 pt-2 border-t">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Checkbox
-                                                id="redeem-points"
-                                                checked={redeemPoints}
-                                                onCheckedChange={handleRedeemPoints}
-                                            />
-                                            <label htmlFor="redeem-points" className="text-sm cursor-pointer font-medium">
-                                                Redeem points for discount
-                                            </label>
-                                        </div>
-                                        {redeemPoints && effectiveLoyaltyDiscount > 0 && (
-                                            <span className="text-sm font-bold text-primary">-{effectiveLoyaltyDiscount.toFixed(2)}</span>
-                                        )}
+                            {/* Redeem Option or Points Needed */}
+                            {hasMinimumPoints ? (
+                                <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1">
+                                        <Checkbox
+                                            id="redeem-points"
+                                            checked={redeemPoints}
+                                            onCheckedChange={handleRedeemPoints}
+                                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                        />
+                                        <label
+                                            htmlFor="redeem-points"
+                                            className="text-xs cursor-pointer font-medium whitespace-nowrap"
+                                        >
+                                            Redeem
+                                        </label>
                                     </div>
+                                    {redeemPoints && effectiveLoyaltyDiscount > 0 && (
+                                        <span className="text-xs font-bold text-primary whitespace-nowrap">
+                                            -{effectiveLoyaltyDiscount.toFixed(2)}
+                                        </span>
+                                    )}
                                 </div>
                             ) : (
-                                <div className="mt-3 pt-2 border-t">
-                                    <p className="text-xs text-muted-foreground">
-                                        ⚠️ Need at least 100 points to redeem. You have {formatPoints(selectedCustomer.loyaltyPoints)} points.
-                                    </p>
-                                </div>
+                                selectedCustomer.loyaltyPoints > 0 && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Coins className="w-3.5 h-3.5" />
+                                        <span className="whitespace-nowrap">Need 100</span>
+                                    </div>
+                                )
                             )}
                         </div>
-                    )} 
-                </CardContent>
-            </Card>
+                    )}
+                </div>
+            </div>
 
             {showAddCustomerModal && (
                 <CustomerModal

@@ -15,6 +15,7 @@ import ReceiptPrinter from "@/components/pos/reciptManagement/ReceiptPrinter";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettings";
+import { Button } from "@/components/ui/button";
 
 export function Actions() {
     const {
@@ -172,7 +173,7 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
   <hr />
   <div class="footer">
     <p>Thank You For Shopping With Us!</p>
-    <p>www.example.com</p>
+ 
   </div>
 </div>
 </body>
@@ -289,6 +290,19 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
     };
 
     const actions = [
+     
+        {
+            label: "Hold Transaction",
+            icon: PauseCircle,
+            color: "bg-amber-500 text-white",
+            onClick: () => {
+                if (cartItems.length === 0) {
+                    toast({ title: "Cart is empty", variant: "destructive" });
+                    return;
+                }
+                setShowHold(true);
+            },
+        },
         {
             label: "Proceed to Payment",
             icon: CreditCard,
@@ -305,37 +319,22 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
                 setShowPayment(true);
             },
         },
-        {
-            label: "Hold Transaction",
-            icon: PauseCircle,
-            color: "bg-amber-500 text-white",
-            onClick: () => {
-                if (cartItems.length === 0) {
-                    toast({ title: "Cart is empty", variant: "destructive" });
-                    return;
-                }
-                setShowHold(true);
-            },
-        },
     ];
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-xl font-bold text-foreground">Actions</h2>
+        <div className="space-y-6 my-4">
+           
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex gap-2 align-right justify-end">
                 {actions.map((action) => (
-                    <button
+                    <Button
                         key={action.label}
                         onClick={action.onClick}
-                        className={cn(
-                            "flex flex-col items-center justify-center gap-3 p-6 rounded-2xl shadow hover:shadow-lg transition-all hover:scale-105 w-full text-center",
-                            action.color
-                        )}
+                        
                     >
-                        <action.icon className="w-8 h-8" />
-                        <span className="text-sm font-semibold">{action.label}</span>
-                    </button>
+                       
+                        <span className="text-sm font-semibold ">{action.label}</span>
+                    </Button>
                 ))}
             </div>
 

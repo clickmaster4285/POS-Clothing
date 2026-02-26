@@ -69,9 +69,8 @@ async function startServer() {
     await connectDatabase();
     await initializeAdminAccount(); 
 
-    app.listen(PORT,HOST, () => {
+    app.listen(PORT,() => {
       console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📊 Health check available at http://${HOST}:${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

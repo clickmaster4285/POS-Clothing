@@ -40,6 +40,12 @@ const PAYMENT_COLORS = {
 };
 
 export default function Dashboard() {
+
+    useEffect(() => {
+        console.log('6. Dashboard mounted at:', new Date().toISOString());
+        return () => console.log('7. Dashboard unmounting');
+    }, []);
+    
     const { user } = useAuth(); // Get current user from auth
     const isAdmin = user?.role === 'admin';
     const userBranchId = user?.branchId; // Assuming branchId is attached to user object

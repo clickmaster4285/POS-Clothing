@@ -49,14 +49,18 @@ import FinancialAnalysis from "@/pages/ReportAndAnalysis/FinancialAnalysis";
 import ProductPerformance from "@/pages/ReportAndAnalysis/ProductPerformance";
 import SaleSummary from "@/pages/ReportAndAnalysis/SaleSummary";
 import ProductDetailPage from '@/pages/Inventory/products/[id]/page'
+import Loading from "@/pages/Loading";
 
 
 const AppRoutes = () => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated , isLoading} = useAuth();
     // if (!isAuthenticated) return null;
 
     const role = user?.role?.toLowerCase() || 'customer'; // default role
 
+    if (isLoading) {
+        return <Loading />;
+    }
     return (
         <Routes>
             {/* Public route */}

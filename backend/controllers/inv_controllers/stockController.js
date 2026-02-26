@@ -296,11 +296,14 @@ exports.getAllStock = async (req, res) => {
     let query = {};
 
     // 🔐 ROLE BASED FILTER
-    if (req.user.role === "manager") {
+    if (req.user.role !== "admin") {
       // Find branch where this user is branch_manager
-      const branch = await Branch.findOne({
-        branch_manager: req.user._id
-      }).select("_id");
+      // const branch = await Branch.findOne({
+      //   branch_manager: req.user._id
+      // }).select("_id");
+      console.log("req.user" , req.user)
+
+      const branch = req.user.branch_id
 
       if (!branch) {
         return res.status(403).json({

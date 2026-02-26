@@ -284,7 +284,7 @@ export function AdjustmentForm({
                         {/* Reason - Required for remove operations */}
                         <div className="space-y-2">
                             <Label htmlFor="reason">
-                                Reason {adjustForm.type === "remove" && <span className="text-red-500">*</span>}
+                                Reason * {adjustForm.type === "remove" && <span className="text-red-500">*</span>}
                             </Label>
                             <Textarea
                                 id="reason"

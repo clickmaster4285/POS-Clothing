@@ -84,12 +84,12 @@ const PayrollIntegration = () => {
           <p className="text-muted-foreground text-sm">Manage compensation and payment distributions</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
+          {/* <Button variant="outline" className="gap-2">
             <FileSpreadsheet className="h-4 w-4" /> Export Report
-          </Button>
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+          </Button> */}
+          {/* <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             <Wallet className="h-4 w-4" /> Process Payroll
-          </Button>
+          </Button> */}
         </div>
       </div>
 

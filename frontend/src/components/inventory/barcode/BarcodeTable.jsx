@@ -21,7 +21,11 @@ export function BarcodeTable({
     onUpdateQuantity,
     onQuickPrint,
     onCopyBarcode
+
+    
 }) {
+
+    
     return (
         <Table>
             <TableHeader>
@@ -63,7 +67,7 @@ export function BarcodeTable({
                             </TableCell>
                             <TableCell className="font-medium">{item.product.productName}</TableCell>
                             <TableCell>
-                                {item.variant.size} / {item.variant.color}
+                                {item.variant.size} 
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                                 {item.variant.variantSku}

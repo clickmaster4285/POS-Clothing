@@ -28,10 +28,7 @@ function POSContent() {
     // Check if cart has items
     const hasCartItems = cartItems?.length > 0;
 
-    // Debug log to verify cart items are being received
-    useEffect(() => {
-        console.log('Cart items in POSContent:', cartItems);
-    }, [cartItems]);
+ 
 
     return (
         <div className=" bg-gray-50 px-4 sm:px-6 lg:px-8">

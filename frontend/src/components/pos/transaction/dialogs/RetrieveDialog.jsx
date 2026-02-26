@@ -240,13 +240,13 @@ ${transaction.payment?.paymentMethod === 'cash' && transaction.payment?.changeDu
         }
 
         try {
-            console.log("Completing transaction:", txn._id, payment)
+          
             const completedTransaction = await completeTxn({ id: txn._id, payment })
-            console.log("Completed transaction response:", completedTransaction)
+         
 
             // Get the transaction data (handle different response structures)
             const transactionData = completedTransaction?.transaction || completedTransaction
-            console.log("Transaction data to send:", transactionData)
+         
 
             // Print receipt directly from here
             printReceipt(transactionData)

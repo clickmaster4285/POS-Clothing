@@ -40,6 +40,8 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useUpdateProduct, useDeleteProduct } from "@/hooks/inv_hooks/useProducts"
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth"
 
 import { useSettings } from "@/hooks/useSettings";
 export default function ProductListTab({
@@ -60,6 +62,12 @@ export default function ProductListTab({
     const deleteProductMutation = useDeleteProduct()
 
     const { data: settings } = useSettings();
+    const navigate = useNavigate();
+
+    const { user } = useAuth();
+    const role = user?.role;
+    
+
 
     const stats = {
         totalProducts: products.length,
@@ -67,6 +75,11 @@ export default function ProductListTab({
         activeProducts: products.filter((p) => p.isActive).length,
         lowStock: products.filter((p) => p.variants?.some((v) => v.quantity < 10)).length,
     }
+
+
+    const handleViewProduct = (product) => {
+        navigate(`/${role}/inventory/products/${product._id}`, { relative: 'path' });
+    };
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch =
@@ -261,11 +274,11 @@ export default function ProductListTab({
                             {filteredProducts.map((product) => (
                                 <TableRow key={product._id}>
                                    
-                                    <TableCell onClick={() => onViewProduct(product)}  className="font-medium">{product.productName}</TableCell>
-                                    <TableCell onClick={() => onViewProduct(product)}  className="text-muted-foreground">{product.sku}</TableCell>
-                                    <TableCell onClick={() => onViewProduct(product)}>{product.category?.categoryName || "N/A"}</TableCell>
-                                    <TableCell onClick={() => onViewProduct(product)}>{product.brand?.brandName || "N/A"}</TableCell>
-                                    <TableCell onClick={() => onViewProduct(product)}>{product.variants?.length || 0}</TableCell>
+                                    <TableCell onClick={() => handleViewProduct(product)}  className="font-medium">{product.productName}</TableCell>
+                                    <TableCell onClick={() => handleViewProduct(product)}  className="text-muted-foreground">{product.sku}</TableCell>
+                                    <TableCell onClick={() => handleViewProduct(product)}>{product.category?.categoryName || "N/A"}</TableCell>
+                                    <TableCell onClick={() => handleViewProduct(product)}>{product.brand?.brandName || "N/A"}</TableCell>
+                                    <TableCell onClick={() => handleViewProduct(product)}>{product.variants?.length || 0}</TableCell>
                                     <TableCell>
                                         {settings?.currencySymbol || '$'}{product.variants?.[0]?.price?.retailPrice?.toFixed(2) || "0.00"}
                                     </TableCell>
@@ -289,7 +302,7 @@ export default function ProductListTab({
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => onViewProduct(product)}>
+                                                <DropdownMenuItem onClick={() => handleViewProduct(product)}>
                                                     <Eye className="mr-2 h-4 w-4" />
                                                     View Details
                                                 </DropdownMenuItem>

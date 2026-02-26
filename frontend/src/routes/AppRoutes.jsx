@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Auth from "../pages/Auth";
 import Dashboard from "../pages/Dashboard";
 import Branches from "../pages/Branches";
-import Products from "../pages/Inventory/Products";
+import Products from "../pages/Inventory/products/Products";
 import CategoriesBrandsPage from "../pages/Inventory/Category";
 import BarcodeManagementPage from "../pages/Inventory/Barcodes";
 import PurchaseOrdersPage from "../pages/Inventory/PurchaseOrder";
@@ -48,6 +48,8 @@ import InventoryAnalysis from "@/pages/ReportAndAnalysis/InventoryAnalysis";
 import FinancialAnalysis from "@/pages/ReportAndAnalysis/FinancialAnalysis";
 import ProductPerformance from "@/pages/ReportAndAnalysis/ProductPerformance";
 import SaleSummary from "@/pages/ReportAndAnalysis/SaleSummary";
+import ProductDetailPage from '@/pages/Inventory/products/[id]/page'
+
 
 const AppRoutes = () => {
     const { user, isAuthenticated } = useAuth();
@@ -316,6 +318,18 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
+            <Route
+                path={`/${role}/inventory/products/:id`}
+                element={
+                    <ProtectedRoute>
+                        <MainLayout>
+                            <ProductDetailPage />
+                        </MainLayout>
+                    </ProtectedRoute>
+                }
+            />
+
 
             <Route
                 path={`/${role}/inventory/categories`}

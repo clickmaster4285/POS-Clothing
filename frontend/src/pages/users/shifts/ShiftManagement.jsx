@@ -66,20 +66,7 @@ const ShiftManagement = () => {
           <h1 className="text-2xl font-bold tracking-tight">Shift Management</h1>
           <p className="text-muted-foreground text-sm">Monitor and organize employee working hours</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search staff or dept..." 
-              className="pl-9 bg-white"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
+     
         </div>
         <div className="">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -127,6 +114,21 @@ const ShiftManagement = () => {
             </Card>
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search staff or dept..."
+            className="pl-9 bg-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        {/* <Button variant="outline" size="icon">
+            <Filter className="h-4 w-4" />
+          </Button> */}
       </div>
 
       <div className="grid grid-cols-1 gap-6">

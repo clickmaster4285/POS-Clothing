@@ -96,8 +96,7 @@ const SalesSummaryPage = ({ dateRange = 'this-month' }) => {
     const stockLoading = branchId ? branchLoading : allStockLoading;
     const stockData = stockRawData?.data || [];
 
-    console.log("Fetched transactions", transactions);
-    console.log("Fetched stock data", stockData);
+
 
     const loading = transactionsLoading || stockLoading;
 

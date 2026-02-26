@@ -75,7 +75,7 @@ export function ProductEntry() {
 
     const displayItems = query ? filteredStock : branchStock.slice(0, 6);
 
-    console.log("displayItems", displayItems)
+ 
 
     // Reset selected index when items change
     useEffect(() => {

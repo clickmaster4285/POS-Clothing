@@ -89,7 +89,7 @@ export default function Dashboard() {
         return [];
     }, [promotionsData]);
 
-    console.log("promotions", promotions)
+   
 
     const lowStockAlerts = useMemo(() => {
         if (!lowStockData) return [];

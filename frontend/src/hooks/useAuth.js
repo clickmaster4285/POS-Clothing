@@ -5,22 +5,25 @@ import { setAuthErrorRedirector } from '../api/axios';
 import { useCallback, useMemo, useEffect } from 'react';
 
 export const useAuth = () => {
-  const navigate = useNavigate();               // ← renamed from router → more conventional
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: userData, isLoading, isError, error } = useQuery({
+  const { data: userData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['me'],
     queryFn: authAPI.getMe,
     staleTime: 5 * 60 * 1000,
-    retry: false,
-    enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
+    retry: 3,
+    retryDelay: 1000,
+    enabled: !!localStorage.getItem('token'),
   });
 
   const loginMutation = useMutation({
     mutationFn: authAPI.login,
     onSuccess: (data) => {
       localStorage.setItem('token', data.data.token);
+      // Force immediate refetch
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      refetch();
     },
     onError: (error) => {
       console.error('Login error:', error);
@@ -30,10 +33,10 @@ export const useAuth = () => {
   const user = useMemo(() => userData?.data, [userData]);
   const isAuthenticated = useMemo(() => !!user, [user]);
 
-  const logout = useCallback((redirectPath = '/login') => {     // default to /login
+  const logout = useCallback((redirectPath = '/login') => {
     localStorage.removeItem('token');
     queryClient.clear();
-    navigate(redirectPath, { replace: true });                  // ← fixed line
+    navigate(redirectPath, { replace: true });
   }, [navigate, queryClient]);
 
   // Set the global error handler for the API interceptor
@@ -52,7 +55,9 @@ export const useAuth = () => {
     isAuthenticated,
     isLoading,
     isError,
+    error,
     logout,
     loginMutation,
+    refetch,
   };
 };

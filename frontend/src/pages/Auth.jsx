@@ -18,12 +18,33 @@ const Auth = () => {
     const [loginError, setLoginError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
+    // useEffect(() => {
+    //     if (!authLoading && isAuthenticated && user) {
+    //         const userPrimaryRole = user.role ? user.role.toLowerCase() : 'customer';
+    //         navigate(`/${userPrimaryRole}/dashboard`, { replace: true });
+    //     }
+    // }, [isAuthenticated, user?.userId, authLoading, navigate]);
+
+
+    useEffect(() => {
+        console.log('1. Auth mounted');
+        return () => console.log('2. Auth unmounting');
+    }, []);
+
+    useEffect(() => {
+        console.log('3. Auth state changed:', { authLoading, isAuthenticated, user: user?.role });
+    }, [authLoading, isAuthenticated, user]);
+
     useEffect(() => {
         if (!authLoading && isAuthenticated && user) {
-            const userPrimaryRole = user.role ? user.role.toLowerCase() : 'customer';
-            navigate(`/${userPrimaryRole}/dashboard`);
+            console.log('4. Attempting navigation to:', user.role);
+            const start = Date.now();
+            navigate(`/${user.role.toLowerCase()}/dashboard`, { replace: true });
+            console.log('5. Navigation called, time:', Date.now() - start, 'ms');
         }
     }, [isAuthenticated, user, authLoading, navigate]);
+
+    // Change user to user?.userId (or user?._id)
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -53,6 +74,13 @@ const Auth = () => {
                 id: toastId,
                 description: `Welcome back, ${result.data.user.firstName || 'User'}!`,
             });
+
+            // Force navigation after a delay to bypass browser popup
+            setTimeout(() => {
+                const userPrimaryRole = result.data.user.role.toLowerCase();
+                window.location.href = `/${userPrimaryRole}/dashboard`; // Use window.location instead of navigate
+            }, 500);
+
         } catch (error) {
             const errorMessage =
                 error?.data?.message ||
@@ -68,9 +96,13 @@ const Auth = () => {
         }
     };
 
-    if (authLoading || isAuthenticated) {
+    if (authLoading) {
         return <Loading />;
     }
+    if (isAuthenticated) {
+        return <Loading />; 
+    }
+
 
     return (
         <div className="min-h-screen flex">
@@ -81,7 +113,7 @@ const Auth = () => {
                     {/* Logo / Brand */}
                     <div className="flex flex-col items-center">
                         <div className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                            GroceryStore
+                           Clothing POS
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
                             Manage smarter. Sell faster.
@@ -239,7 +271,7 @@ const Auth = () => {
                                 <div className="w-3 h-3 rounded-full bg-red-400/80" />
                                 <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
                                 <div className="w-3 h-3 rounded-full bg-green-400/80" />
-                                <div className="ml-4 text-xs opacity-70">GroceryStore • Today’s Overview</div>
+                                <div className="ml-4 text-xs opacity-70">Clothing POS • Today’s Overview</div>
                             </div>
 
                             <div className="p-6 pb-8">

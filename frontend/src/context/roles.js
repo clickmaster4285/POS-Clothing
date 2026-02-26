@@ -3,8 +3,9 @@
 export const ROLES = [
  
   { value: 'manager', label: 'Manager' },
+  
   { value: 'staff', label: 'Staff' },
-  { value: 'customer', label: 'Customer' },
+  // { value: 'customer', label: 'Customer' },
   { value: 'general_staff', label: 'General Staff' },
 ];
 

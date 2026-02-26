@@ -192,7 +192,7 @@ export default function VariantInformation({
                                     </div>
 
                                     {/* Stock By Attribute */}
-                                    <div className="space-y-2 mt-2">
+                                    <div>    <div className="space-y-2 mt-2">
                                         <Label>Color / Quantity</Label>
                                         {variant.stockByAttribute.map((stock, sIndex) => (
                                             <div key={sIndex} className="flex gap-2 items-center mb-2">
@@ -230,14 +230,16 @@ export default function VariantInformation({
                                                 </Button>
                                             </div>
                                         ))}
+
+                                    </div>
                                         <Button
                                             type="button"
                                             size="sm"
                                             onClick={() => addStockAttribute(vIndex)}
+                                            className="mt-2"
                                         >
                                             <Plus className="h-4 w-4 mr-1" /> Add Color
-                                        </Button>
-                                    </div>
+                                        </Button></div>
 
                                     {/* Pricing */}
                                     <div className="grid grid-cols-2 gap-4 mt-2">

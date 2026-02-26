@@ -51,7 +51,7 @@ export default function AdditionalInformation({
                             id="countryOfOrigin"
                             value={formData.countryOfOrigin}
                             onChange={(e) => setFormData({ ...formData, countryOfOrigin: e.target.value })}
-                            placeholder="e.g., Bangladesh"
+                            placeholder="e.g., Pakistan"
                         />
                     </div>
                 </div>

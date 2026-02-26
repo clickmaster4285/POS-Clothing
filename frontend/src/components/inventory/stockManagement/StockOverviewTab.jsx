@@ -10,7 +10,9 @@ import { MoreVertical, PackagePlus, PackageMinus, Truck as TruckIcon } from "luc
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { Pagination } from "@/components/ui/Pagination";
+
 
 export function StockOverviewTab({
     stocks = [],
@@ -30,6 +32,11 @@ export function StockOverviewTab({
 }) {
 
 
+    const itemsPerPage = 10;
+    const [currentPage, setCurrentPage] = useState(1);
+
+  
+
 
     const handleSearch = (term) => {
         setSearchTerm(term)
@@ -48,8 +55,16 @@ export function StockOverviewTab({
 
         return matchesSearch && matchesBranch
     })
+    const totalPages = Math.ceil(filteredStocks.length / itemsPerPage);
 
+    const paginatedStocks = filteredStocks.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, branchFilter]);
 
     return (
         <div className="space-y-4">
@@ -153,35 +168,36 @@ export function StockOverviewTab({
                             <TableRow>
                                 <TableHead>Product</TableHead>
                                 <TableHead>Variant</TableHead>
-                                <TableHead>Branch</TableHead>
+                              
                                 <TableHead>Location</TableHead>
                                 <TableHead className="text-right">Current</TableHead>
-                                <TableHead className="text-right">Reserved</TableHead>
+                               
                                 <TableHead className="text-right">Available</TableHead>
-                                <TableHead className="text-right">In Transit</TableHead>
+                               
                                 <TableHead>Status</TableHead>
                                 <TableHead className="w-[80px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredStocks.map((stock) => {
+                            {paginatedStocks.map((stock) => {
                                 const variant = stock.product?.variants?.find((v) =>
                                     v._id === stock.variantId || v.id === stock.variantId
                                 )
+                                
                                 return (
                                     <TableRow key={stock.id}>
                                         <TableCell className="font-medium">{stock?.product?.productName}</TableCell>
                                         <TableCell className="text-muted-foreground">
                                             {stock.variantName}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{stock.branchName}</TableCell>
+                                    
                                         <TableCell className="text-muted-foreground">
                                             {stock.location}
                                         </TableCell>
                                         <TableCell className="text-right">{stock.currentStock}</TableCell>
-                                        <TableCell className="text-right">{stock.reservedStock}</TableCell>
+                                      
                                         <TableCell className="text-right font-medium">{stock.availableStock}</TableCell>
-                                        <TableCell className="text-right">{stock.inTransitStock}</TableCell>
+                                     
                                         <TableCell>
                                             <Badge
                                                 variant="outline"
@@ -204,28 +220,41 @@ export function StockOverviewTab({
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem onClick={() => {
                                                         setAdjustForm({
-                                                            product: stock.product._id,       // ← change to _id
-                                                            variant: stock.variantId,         // usually already _id
-                                                            branch: stock.branch._id,         // ← change to _id
                                                             type: "add",
-                                                            quantity: "",
                                                             reason: "",
+                                                            branch: stock.branch._id,
+                                                            items: [
+                                                                {
+                                                                    product: stock.product._id,
+                                                                    variant: stock.variantId,
+                                                                    color: stock.color, // optional, can prefill if needed
+                                                                    quantity: ""
+                                                                }
+                                                            ]
                                                         })
                                                         setActiveTab("adjustment-form")
+
+                                                        
                                                     }}>
                                                         <PackagePlus className="mr-2 h-4 w-4" />
                                                         Add Stock
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => {
                                                         setAdjustForm({
-                                                            product: stock.product._id,       // ← change to _id
-                                                            variant: stock.variantId,
-                                                            branch: stock.branch._id,         // ← change to _id
                                                             type: "remove",
-                                                            quantity: "",
                                                             reason: "",
+                                                            branch: stock.branch._id,
+                                                            items: [
+                                                                {
+                                                                    product: stock.product._id,
+                                                                    variant: stock.variantId,
+                                                                    color: stock?.color || "",  // optional
+                                                                    quantity: ""
+                                                                }
+                                                            ]
                                                         })
                                                         setActiveTab("adjustment-form")
+
                                                     }}>
                                                         <PackageMinus className="mr-2 h-4 w-4" />
                                                         Remove Stock
@@ -254,6 +283,12 @@ export function StockOverviewTab({
                     </Table>
                 </CardContent>
             </Card>
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+            />
+
 
             {/* Recent Adjustments & Transfers */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

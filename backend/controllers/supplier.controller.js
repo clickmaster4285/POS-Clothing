@@ -15,7 +15,7 @@ const createSupplier = async (req, res) => {
 };
 
 // 2️⃣ Get all suppliers
-const getSuppliers = async (req, res) => {
+const getAllSuppliers = async (req, res) => {
     try {
         const suppliers = await Supplier.find({is_active: true});
         res.status(200).json(suppliers);
@@ -74,7 +74,7 @@ const deleteSupplier = async (req, res) => {
 
 module.exports = {
     createSupplier,
-    getSuppliers,
+    getAllSuppliers,
     getSupplierById,
     updateSupplier,
     deleteSupplier

@@ -8,8 +8,8 @@ const Product = require('../../models/inv_model/product.model');
 // Category Controllers
 exports.createCategory = async (req, res) => {
   try {
- 
-  
+ console.log('Received category creation request with data:', req.body);
+
 
     const categoryData = {
       categoryName: req.body.categoryName,
@@ -173,7 +173,7 @@ exports.deleteCategory = async (req, res) => {
 // Brand Controllers
 exports.createBrand = async (req, res) => {
   try {
-
+console.log('Received brand creation request with data:', req.body);
 
     const brand = new Brand({
       brandName: req.body.brandName,
@@ -242,6 +242,7 @@ exports.getBrands = async (req, res) => {
 
 exports.updateBrand = async (req, res) => {
   try {
+    console.log('Received brand update request for ID:', req.params.id, 'with data:', req.body);
     const { id } = req.params;
 
     const updateData = {

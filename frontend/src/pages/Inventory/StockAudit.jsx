@@ -736,10 +736,10 @@ export default function StockAuditPage() {
                                                             <Eye className="mr-2 h-4 w-4" />
                                                             View Report
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem>
+                                                        {/* <DropdownMenuItem>
                                                             <FileText className="mr-2 h-4 w-4" />
                                                             Export PDF
-                                                        </DropdownMenuItem>
+                                                        </DropdownMenuItem> */}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

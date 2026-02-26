@@ -64,7 +64,7 @@ export function SupplierTable({
                         <TableHead>Contact Person</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Payment Terms</TableHead>
-                        <TableHead>Rating</TableHead>
+                        {/* <TableHead>Rating</TableHead> */}
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -83,9 +83,9 @@ export function SupplierTable({
                             <TableCell className="text-muted-foreground">
                                 {supplier.banking.payment_terms}
                             </TableCell>
-                            <TableCell>
+                            {/* <TableCell>
                                 <RatingStars rating={supplier.performance.quality_rating} />
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell>
                                 <Badge
                                     variant="outline"

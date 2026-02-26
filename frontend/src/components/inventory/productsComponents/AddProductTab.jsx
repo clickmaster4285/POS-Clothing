@@ -87,7 +87,7 @@ export default function AddProductTab({
       
         isActive: true
     })
-
+    
     
     useEffect(() => {
         if (!productToEdit) {
@@ -365,6 +365,7 @@ export default function AddProductTab({
 
 
     const formSummary = {
+        // Basic info
         productName: formData.productName || "Not provided",
         sku: formData.sku || "Not provided",
         barcode: formData.barcode || "Not provided",
@@ -386,7 +387,7 @@ export default function AddProductTab({
         // Tags
         tags: formData.tags?.length > 0 ? formData.tags : ["None"],
 
-        // Supplier info
+        // Supplier
         supplier: formData.supplier?.supplier
             ? suppliers.find(s => s._id === formData.supplier.supplier)?.company_name || "Unknown"
             : "Not selected",
@@ -404,18 +405,20 @@ export default function AddProductTab({
             variantSku: v.variantSku || "N/A",
             costPrice: v.costPrice || "0",
             retailPrice: v.retailPrice || "0",
-            margin: v.costPrice && v.retailPrice
-                ? (((parseFloat(v.retailPrice) - parseFloat(v.costPrice)) / parseFloat(v.retailPrice)) * 100).toFixed(1) + "%"
-                : "0%",
+            margin:
+                v.costPrice && v.retailPrice
+                    ? (((parseFloat(v.retailPrice) - parseFloat(v.costPrice)) / parseFloat(v.retailPrice)) * 100).toFixed(1) + "%"
+                    : "0%",
             supplier: v.supplier
                 ? suppliers.find(s => s._id === v.supplier)?.company_name || "Unknown"
                 : "Not selected",
             stockByAttribute: (v.stockByAttribute || []).map(s => ({
                 color: s.color || "N/A",
-                quantity: s.quantity || "0"
-            }))
-        }))
-    }
+                quantity: s.quantity || "0",
+            })),
+        })),
+    };
+
 
 
 
@@ -566,7 +569,7 @@ export default function AddProductTab({
                 ) : (
                     <Button
                         onClick={handleSubmit}
-                        disabled={!formSummary.isValid || createProductMutation.isLoading}
+                        // disabled={!formSummary.isValid || createProductMutation.isLoading}
                     >
                         {createProductMutation.isLoading ? "Saving..." : "Save Product"}
                     </Button>

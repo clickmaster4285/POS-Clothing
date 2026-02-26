@@ -10,21 +10,25 @@ const {
 } = require('../controllers/userController');
 const auth = require('../middlewares/auth');
 const checkPermission = require('../middlewares/checkPermission');
-const PERMISSIONS = require('../config/permissions');
-
+const { PERMISSIONS_OBJECT } = require('../config/permissions');
+const UserPermissions = PERMISSIONS_OBJECT.EMPLOYEE.EMPLOYEE_DATABASE
 // All routes in this file are protected and require authentication
 router.use(auth);
 
-router.post('/', checkPermission(PERMISSIONS.USERS.CREATE), createUser);
+router.post('/', checkPermission([UserPermissions.CREATE]), createUser);
 
-router.get('/', checkPermission(PERMISSIONS.USERS.READ), getAllUsers);
+router.get('/', checkPermission([UserPermissions.READ]), getAllUsers);
 
-router.get('/:id', checkPermission(PERMISSIONS.USERS.READ), getUserById);
+router.get(
+  '/permissions', // Updated route path for getPermissions
+  checkPermission([UserPermissions.CREATE, UserPermissions.READ]),
+  getPermissions,
+);
 
-router.patch('/:id', checkPermission(PERMISSIONS.USERS.UPDATE), updateUser);
+router.get('/:id', checkPermission([UserPermissions.READ]), getUserById);
 
-router.delete('/:id', checkPermission(PERMISSIONS.USERS.DELETE), deleteUser);
+router.patch('/:id', checkPermission([UserPermissions.UPDATE]), updateUser);
 
-router.get('/permissions', getPermissions);
+router.delete('/:id', checkPermission([UserPermissions.DELETE]), deleteUser);
 
 module.exports = router;

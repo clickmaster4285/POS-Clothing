@@ -20,7 +20,11 @@ import { StockOverviewTab } from "./StockOverviewTab"
 import { AdjustmentForm } from "./AdjustmentForm"
 import { TransferForm } from "./TransferForm"
 
+
+
 export default function StockPage() {
+
+   
     // Data fetching
     const { data: productsData, isLoading: productsLoading } = useProducts()
     const { data: brandsData, isLoading: branchesLoading } = useBrands()
@@ -44,13 +48,14 @@ export default function StockPage() {
 
     // Forms
     const [adjustForm, setAdjustForm] = useState({
-        product: "",
-        variant: "",
         type: "add",
-        quantity: "",
         reason: "",
         branch: "",
+        items: [
+            { product: "", variant: "", color: "", quantity: "" } // add color here
+        ]
     })
+
 
     const [transferForm, setTransferForm] = useState({
         fromBranch: "",
@@ -85,7 +90,15 @@ export default function StockPage() {
     }, [transferData])
 
     // Handlers
-    const resetAdjustForm = () => setAdjustForm({ product: "", variant: "", type: "add", quantity: "", reason: "", branch: "" })
+    const resetAdjustForm = () => setAdjustForm({
+        type: "add",
+        reason: "",
+        branch: "",
+        items: [
+            { product: "", variant: "", color: "", quantity: "" }
+        ]
+    })
+
     const resetTransferForm = () => setTransferForm({ fromBranch: "", toBranch: "", product: "", variant: "", quantity: "", notes: "" })
 
     const lowStockItems = stocks.filter((s) => s.isLowStock)
@@ -102,18 +115,38 @@ export default function StockPage() {
     }
 
     const handleAddAdjustment = () => {
-        if (!adjustSummary.isValid) { toast.error("Please fill all fields"); return; }
-        adjustStockMutate({
-            branchId: adjustForm.branch,
-            data: {
-                adjustmentType: adjustForm.type,
-                reason: adjustForm.reason,
-                remarks: adjustForm.reason,
-                items: [{ product: adjustForm.product, variantId: adjustForm.variant, quantity: Number(adjustForm.quantity) }]
+        if (!adjustSummary.isValid) {
+            toast.error("Please fill all fields");
+            return;
+        }
+
+        // Prepare items for backend
+        const itemsToAdjust = adjustForm.items.map(row => ({
+            product: row.product,
+            color: row.color,
+            variantId: row.variant,
+            quantity: Number(row.quantity)
+        }));
+
+        adjustStockMutate(
+            {
+                branchId: adjustForm.branch || undefined, // Optional - if not provided, uses main branch
+                data: {
+                    adjustmentType: adjustForm.type,
+                    reason: adjustForm.reason,
+                    remarks: adjustForm.reason,
+                    items: itemsToAdjust
+                }
+            },
+            {
+                onSuccess: (data) => {
+                    toast.success("Adjustment submitted!");
+                    resetAdjustForm();
+                    setActiveTab("overview");
+                    // ... rest of success handling
+                }
             }
-        }, {
-            onSuccess: () => { toast.success("Adjustment submitted!"); resetAdjustForm(); setActiveTab("overview"); }
-        });
+        );
     };
 
     const handleAddTransfer = () => {
@@ -131,9 +164,20 @@ export default function StockPage() {
     // Summaries
     const selectedAdjustProduct = products.find(p => p._id === adjustForm.product)
     const adjustSummary = {
-        product: selectedAdjustProduct?.productName || "Not selected",
-        isValid: adjustForm.product && adjustForm.variant && adjustForm.quantity && adjustForm.branch && adjustForm.reason,
-    }
+        isValid:
+            
+            adjustForm.items.length > 0 &&
+            adjustForm.items.every(
+                row => row.product && row.variant && row.quantity && Number(row.quantity) > 0
+            ),
+        typeLabel: adjustForm.type === "add" ? "Add Stock" : adjustForm.type === "remove" ? "Remove Stock" : "Damage",
+        product: (adjustForm.items || []).map(row => {
+            const prod = products?.find(p => p._id === row.product);
+            return prod ? prod.productName : "Not selected";
+        }).join(", ")
+    };
+
+
 
     const selectedTransferProduct = products.find(p => p._id === transferForm.product)
     const transferSummary = {

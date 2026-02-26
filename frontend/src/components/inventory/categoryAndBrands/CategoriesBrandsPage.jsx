@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { StatCard } from "@/components/inventory/stat-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -38,7 +38,8 @@ export default function CategoriesBrands() {
     const [deleteCategoryId, setDeleteCategoryId] = useState(null);
 
     
-   
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // You can adjust this
 
     const brands = isBrandsLoading ? [] : brandsData?.data || []
     const categories = isCategoriesLoading ? [] : categoriesData?.data || []
@@ -109,6 +110,24 @@ export default function CategoriesBrands() {
         totalBrands: brands.length,
         activeBrands: brands.filter((b) => b.isActive).length,
     }
+
+    // Paginated categories
+    const totalCategoryPages = Math.ceil(filteredCategories.length / itemsPerPage);
+    const paginatedCategories = filteredCategories.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Paginated brands
+    const totalBrandPages = Math.ceil(filteredBrands.length / itemsPerPage);
+    const paginatedBrands = filteredBrands.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeTab]);
 
     const simulateImageUpload = async (file) => {
         setIsUploading(true)
@@ -491,7 +510,7 @@ export default function CategoriesBrands() {
                         </CardHeader>
                         <CardContent>
                             <CategoriesTable
-                                filteredCategories={filteredCategories}
+                                filteredCategories={paginatedCategories}
                                 categories={categories}
                                 handleEditCategory={handleEditCategory}
                                 handleDeleteCategory={handleDeleteCategory}
@@ -521,7 +540,7 @@ export default function CategoriesBrands() {
                         </CardHeader>
                         <CardContent>
                             <BrandsTable
-                                filteredBrands={filteredBrands}
+                                filteredBrands={paginatedBrands}
                                 handleEditBrand={handleEditBrand}
                                 handleDeleteBrand={handleDeleteBrand}
                                 handleToggleBrandStatus={handleToggleBrandStatus}
@@ -563,6 +582,53 @@ export default function CategoriesBrands() {
                 handleAddBrand={handleAddBrand}
                 handleBrandLogoUpload={handleBrandLogoUpload}
             />
+
+
+            <div className="flex justify-end items-center gap-2 mt-4 text-sm">
+                {/* Prev Button */}
+                <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3 py-1 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                    &larr; Prev
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                    {Array.from(
+                        { length: activeTab === "categories" ? totalCategoryPages : totalBrandPages },
+                        (_, i) => i + 1
+                    ).map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-1 rounded-lg border transition ${page === currentPage
+                                    ? "bg-primary text-white border-primary"
+                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                                }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Next Button */}
+                <button
+                    disabled={currentPage === (activeTab === "categories" ? totalCategoryPages : totalBrandPages)}
+                    onClick={() =>
+                        setCurrentPage(prev =>
+                            Math.min(
+                                prev + 1,
+                                activeTab === "categories" ? totalCategoryPages : totalBrandPages
+                            )
+                        )
+                    }
+                    className="px-3 py-1 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                    Next &rarr;
+                </button>
+            </div>
         </>
     )
 }

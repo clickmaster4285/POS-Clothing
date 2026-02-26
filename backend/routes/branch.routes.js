@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 
 const auth = require('../middlewares/auth');
+
 const checkPermission = require('../middlewares/checkPermission');
-const PERMISSIONS = require('../config/permissions');
+const { PERMISSIONS_OBJECT } = require('../config/permissions');
 
 
 const {
@@ -14,17 +15,14 @@ const {
   toggleBranchStatus
 } = require("../controllers/branch.controller");
 
-const csc = require("country-state-city").default;
+const BranchPermissions = PERMISSIONS_OBJECT.BRANCH.BRANCH_MANAGEMENT;
 
-router.post("/", auth,checkPermission(PERMISSIONS.BRANCHES.CREATE), createBranch);
+router.use(auth);
+router.post("/", checkPermission([BranchPermissions.CREATE]), createBranch);
+router.get("/", checkPermission([BranchPermissions.READ]), getAllBranches);
 
-router.get("/", auth, checkPermission(PERMISSIONS.BRANCHES.READ),getAllBranches);
-
-router.get("/:id", checkPermission(PERMISSIONS.BRANCHES.READ),auth, getBranchById);
-
-router.put("/:id", auth, checkPermission(PERMISSIONS.BRANCHES.UPDATE), updateBranch);
-
-router.delete("/:id", auth, checkPermission(PERMISSIONS.BRANCHES.DELETE), toggleBranchStatus);
-
+router.get("/:id", checkPermission([BranchPermissions.READ]), getBranchById);
+router.put("/:id", checkPermission([BranchPermissions.UPDATE]), updateBranch);
+router.delete("/:id", auth, checkPermission([BranchPermissions.DELETE]), toggleBranchStatus);
 
 module.exports = router;

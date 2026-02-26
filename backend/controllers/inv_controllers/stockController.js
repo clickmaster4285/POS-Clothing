@@ -2,17 +2,194 @@ const {StockAdjustment , StockTransfer , Stock}= require('../../models/inv_model
 const Branch = require("../../models/branch.model")
 const Product = require('../../models/inv_model/product.model');
 
+// exports.getStockByBranch = async (req, res) => {
+//   try {
+//     const { branchId } = req.params;
+//     const { location, lowStock, search, category, page = 1, limit = 50 } = req.query;
+    
+//     let query = { branch: branchId };
+    
+//     if (location) query.location = location;
+//     if (lowStock === 'true') query.isLowStock = true;
+    
+//     // Add product filtering if search or category provided
+//     if (search || category) {
+//       const productQuery = {};
+//       if (search) {
+//         productQuery.$or = [
+//           { productName: { $regex: search, $options: 'i' } },
+//           { sku: { $regex: search, $options: 'i' } }
+//         ];
+//       }
+//       if (category) productQuery.category = category;
+      
+//       const products = await Product.find(productQuery).select('_id');
+//       const productIds = products.map(p => p._id);
+//       query.product = { $in: productIds };
+//     }
+    
+//     const stocks = await Stock.find(query)
+//       .populate('product', 'productName sku primaryImage')
+//       .populate('branch', 'name code')
+//       .skip((page - 1) * limit)
+//       .limit(parseInt(limit))
+//       .sort({ isLowStock: -1, updatedAt: -1 });
+    
+//     // Get variant details for each stock
+//     for (let stock of stocks) {
+//       const product = await Product.findById(stock.product);
+//       if (product) {
+//         const variant = product.variants.id(stock.variantId);
+//         stock.variantDetails = variant;
+//       }
+//     }
+    
+//     const total = await Stock.countDocuments(query);
+    
+//     // Calculate summary
+//     const totalValue = stocks.reduce((sum, stock) => {
+//       const variant = stock.variantDetails;
+//       if (variant && variant.price) {
+//         return sum + (stock.currentStock * variant.price.costPrice);
+//       }
+//       return sum;
+//     }, 0);
+    
+//     const lowStockCount = await Stock.countDocuments({ ...query, isLowStock: true });
+    
+//     res.json({
+//       success: true,
+//       data: stocks,
+//       summary: {
+//         totalItems: total,
+//         totalValue,
+//         lowStockCount,
+//         outOfStockCount: await Stock.countDocuments({ ...query, currentStock: 0 })
+//       },
+//       pagination: {
+//         page: parseInt(page),
+//         limit: parseInt(limit),
+//         total,
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+// exports.getAllStock = async (req, res) => {
+//   try {
+//     const {
+//       location,
+//       lowStock,
+//       search,
+//       category,
+//       page = 1,
+//       limit = 50
+//     } = req.query;
+
+//     let query = {};
+
+//     if (location) query.location = location;
+//     if (lowStock === 'true') query.isLowStock = true;
+
+//     // 🔍 Product filtering
+//     if (search || category) {
+//       const productQuery = {};
+
+//       if (search) {
+//         productQuery.$or = [
+//           { productName: { $regex: search, $options: 'i' } },
+//           { sku: { $regex: search, $options: 'i' } }
+//         ];
+//       }
+
+//       if (category) productQuery.category = category;
+
+//       const products = await Product.find(productQuery).select('_id');
+//       query.product = { $in: products.map(p => p._id) };
+//     }
+
+//     const stocks = await Stock.find(query)
+//       .populate({
+//         path: 'product',
+//         select: 'productName sku variants primaryImage'
+//       })
+//       .populate({
+//         path: 'branch',
+//         select: 'branch_name'
+//       })
+//       .sort({ isLowStock: -1, updatedAt: -1 })
+//       .skip((page - 1) * limit)
+//       .limit(Number(limit))
+//       .lean();
+
+//     const formattedStocks = stocks.map(stock => {
+//       let variant = null;
+
+//       // 1️⃣ Try matching by variantId
+//       if (stock.variantId && stock.product?.variants?.length) {
+//         variant = stock.product.variants.find(
+//           v => String(v._id) === String(stock.variantId)
+//         );
+//       }
+
+//       // 2️⃣ Fallback → first variant (SAFE default)
+//       if (!variant && stock.product?.variants?.length) {
+//         variant = stock.product.variants[0];
+//       }
+
+//       const variantName = variant
+//         ? [variant.size, variant.color, variant.style, variant.fitType]
+//             .filter(Boolean)
+//             .join(' / ')
+//         : null;
+
+//       return {
+//         ...stock,
+//         branchName: stock.branch?.branch_name ?? null,
+//         variantName
+//       };
+//     });
+
+//     const total = await Stock.countDocuments(query);
+
+//     res.json({
+//       success: true,
+//       data: formattedStocks,
+//       pagination: {
+//         page: Number(page),
+//         limit: Number(limit),
+//         total,
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+
+
 exports.getStockByBranch = async (req, res) => {
   try {
     const { branchId } = req.params;
     const { location, lowStock, search, category, page = 1, limit = 50 } = req.query;
-    
+
     let query = { branch: branchId };
-    
+
     if (location) query.location = location;
     if (lowStock === 'true') query.isLowStock = true;
-    
-    // Add product filtering if search or category provided
+
+    // Handle product search or category filter
+    let productIds = [];
     if (search || category) {
       const productQuery = {};
       if (search) {
@@ -22,64 +199,89 @@ exports.getStockByBranch = async (req, res) => {
         ];
       }
       if (category) productQuery.category = category;
-      
+
       const products = await Product.find(productQuery).select('_id');
-      const productIds = products.map(p => p._id);
+      productIds = products.map(p => p._id);
       query.product = { $in: productIds };
     }
-    
-    const stocks = await Stock.find(query)
-      .populate('product', 'productName sku primaryImage')
-      .populate('branch', 'name code')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .sort({ isLowStock: -1, updatedAt: -1 });
-    
-    // Get variant details for each stock
-    for (let stock of stocks) {
-      const product = await Product.findById(stock.product);
-      if (product) {
-        const variant = product.variants.id(stock.variantId);
-        stock.variantDetails = variant;
-      }
+
+    // Fetch stocks with product details
+   // Fetch stocks with product details including category
+const stocks = await Stock.find(query)
+  .populate({
+    path: 'product',
+    select: 'productName sku primaryImage variants category',
+    populate: {
+      path: 'category',
+      select: 'categoryName' // pick only the fields you need from category
     }
+  })
+  .populate('branch', 'name code')
+  .skip((page - 1) * limit)
+  .limit(parseInt(limit))
+  .sort({ isLowStock: -1, updatedAt: -1 });
+
     
-    const total = await Stock.countDocuments(query);
-    
+
+    // Enrich stocks with variant details and retailPrice
+    const enrichedStocks = stocks.map(stock => {
+      let variantDetails = null;
+      let retailPrice = null;
+
+      if (stock.product && stock.product.variants) {
+        variantDetails = stock.product.variants.id(stock.variantId);
+        if (variantDetails && variantDetails.price) {
+          retailPrice = variantDetails.price.retailPrice;
+        }
+      }
+
+      return {
+        ...stock.toObject(),
+        variantDetails,
+        retailPrice,
+      };
+    });
+
     // Calculate summary
-    const totalValue = stocks.reduce((sum, stock) => {
-      const variant = stock.variantDetails;
-      if (variant && variant.price) {
-        return sum + (stock.currentStock * variant.price.costPrice);
+    const totalValue = enrichedStocks.reduce((sum, stock) => {
+      if (stock.variantDetails && stock.variantDetails.price) {
+        return sum + (stock.currentStock * stock.variantDetails.price.costPrice);
       }
       return sum;
     }, 0);
-    
+
+    const total = await Stock.countDocuments(query);
     const lowStockCount = await Stock.countDocuments({ ...query, isLowStock: true });
-    
+    const outOfStockCount = await Stock.countDocuments({ ...query, currentStock: 0 });
+
     res.json({
       success: true,
-      data: stocks,
+      data: enrichedStocks,
       summary: {
         totalItems: total,
         totalValue,
         lowStockCount,
-        outOfStockCount: await Stock.countDocuments({ ...query, currentStock: 0 })
+        outOfStockCount,
       },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
       }
     });
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       success: false,
       message: error.message
     });
   }
 };
+
+
+
 exports.getAllStock = async (req, res) => {
   try {
     const {
@@ -93,65 +295,95 @@ exports.getAllStock = async (req, res) => {
 
     let query = {};
 
-    if (location) query.location = location;
-    if (lowStock === 'true') query.isLowStock = true;
+    // 🔐 ROLE BASED FILTER
+    if (req.user.role === "manager") {
+      // Find branch where this user is branch_manager
+      const branch = await Branch.findOne({
+        branch_manager: req.user._id
+      }).select("_id");
 
-    // 🔍 Product filtering
+      if (!branch) {
+        return res.status(403).json({
+          success: false,
+          message: "No branch assigned to this manager"
+        });
+      }
+
+      // Manager sees only their branch stock
+      query.branch = branch._id;
+    }
+
+    // Admin → no branch filter (sees all)
+
+    if (location) query.location = location;
+    if (lowStock === "true") query.isLowStock = true;
+
+    // -------------------------
+    // Product filtering
+    // -------------------------
     if (search || category) {
       const productQuery = {};
 
       if (search) {
         productQuery.$or = [
-          { productName: { $regex: search, $options: 'i' } },
-          { sku: { $regex: search, $options: 'i' } }
+          { productName: { $regex: search, $options: "i" } },
+          { sku: { $regex: search, $options: "i" } }
         ];
       }
 
       if (category) productQuery.category = category;
 
-      const products = await Product.find(productQuery).select('_id');
+      const products = await Product.find(productQuery).select("_id");
       query.product = { $in: products.map(p => p._id) };
     }
 
     const stocks = await Stock.find(query)
       .populate({
-        path: 'product',
-        select: 'productName sku variants primaryImage'
+        path: "product",
+        select: "productName sku variants primaryImage"
       })
       .populate({
-        path: 'branch',
-        select: 'branch_name'
+        path: "branch",
+        select: "branch_name"
       })
       .sort({ isLowStock: -1, updatedAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
 
-    const formattedStocks = stocks.map(stock => {
-      let variant = null;
+    // ============================================
+    // ENRICH STOCKS WITH VARIANT NAMES
+    // ============================================
+    const enrichedStocks = stocks.map(stock => {
+      // Find the variant from product.variants array using variantId
+      let variantDetails = null;
+      let variantName = null;
 
-      // 1️⃣ Try matching by variantId
-      if (stock.variantId && stock.product?.variants?.length) {
-        variant = stock.product.variants.find(
-          v => String(v._id) === String(stock.variantId)
+      if (stock.product && stock.product.variants && stock.variantId) {
+        variantDetails = stock.product.variants.find(
+          v => v._id.toString() === stock.variantId.toString()
         );
-      }
 
-      // 2️⃣ Fallback → first variant (SAFE default)
-      if (!variant && stock.product?.variants?.length) {
-        variant = stock.product.variants[0];
+        if (variantDetails) {
+          // Build variant name from available attributes
+          const variantParts = [];
+          if (variantDetails.size) variantParts.push(`Size: ${variantDetails.size}`);
+          if (variantDetails.color) variantParts.push(`Color: ${variantDetails.color}`);
+          if (variantDetails.style) variantParts.push(`Style: ${variantDetails.style}`);
+          if (variantDetails.fitType) variantParts.push(`Fit: ${variantDetails.fitType}`);
+          
+          variantName = variantParts.length > 0 
+            ? variantParts.join(' | ') 
+            : 'Default Variant';
+        }
       }
-
-      const variantName = variant
-        ? [variant.size, variant.color, variant.style, variant.fitType]
-            .filter(Boolean)
-            .join(' / ')
-        : null;
 
       return {
         ...stock,
-        branchName: stock.branch?.branch_name ?? null,
-        variantName
+        variantName,
+        variantDetails, // Include full variant details if needed
+        retailPrice: variantDetails?.price?.retailPrice || null,
+        costPrice: variantDetails?.price?.costPrice || null
       };
     });
 
@@ -159,7 +391,7 @@ exports.getAllStock = async (req, res) => {
 
     res.json({
       success: true,
-      data: formattedStocks,
+      data: enrichedStocks,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -182,105 +414,197 @@ exports.adjustStock = async (req, res) => {
     const { branchId } = req.params;
     const { adjustmentType, reason, items, remarks } = req.body;
 
+    const user = req.user;
+    let finalBranchId;
+
+    // ✅ ROLE BASED BRANCH ASSIGNMENT
+    if (user.role === "admin") {
+      if (!branchId) {
+        return res.status(400).json({ error: "Branch is required for admin" });
+      }
+      finalBranchId = branchId;
+    } else if (user.role === "manager") {
+      if (!user.branch_id) {
+        return res.status(400).json({ error: "Manager has no assigned branch" });
+      }
+      finalBranchId = user.branch_id;
+    } else {
+      return res.status(403).json({ error: "Unauthorized role" });
+    }
+
     const validTypes = ["add", "remove", "damage"];
     if (!validTypes.includes(adjustmentType)) {
       return res.status(400).json({ success: false, message: "Invalid adjustment type" });
     }
 
-    const branchDoc = await Branch.findById(branchId);
-    if (!branchDoc) return res.status(404).json({ success: false, message: "Branch not found" });
+    // ✅ Use finalBranchId here
+    const branchDoc = await Branch.findById(finalBranchId);
+    if (!branchDoc) {
+      return res.status(404).json({ success: false, message: "Branch not found" });
+    }
 
     const branchLocation = `${branchDoc.branch_name}, ${branchDoc.address.city}`;
 
-    // Create a new StockAdjustment document
+    // ============================================
+    // STEP 1: VALIDATE ALL ITEMS FIRST
+    // ============================================
+    const validationErrors = [];
+    
+    for (const item of items) {
+      try {
+        let stock = await Stock.findOne({
+          product: item.product,
+          variantId: item.variantId,
+          branch: finalBranchId,
+          color: item.color,
+        });
+
+        const product = await Product.findById(item.product);
+        if (!product) {
+          validationErrors.push(`Product ${item.product} not found`);
+          continue;
+        }
+
+        const variant = product.variants.id(item.variantId);
+        if (!variant) {
+          validationErrors.push(`Variant ${item.variantId} not found`);
+          continue;
+        }
+
+        let attrIndex = variant.stockByAttribute.findIndex(
+          attr => attr.color === item.color
+        );
+
+        // Validate based on adjustment type
+        if (adjustmentType === "add") {
+          if (attrIndex === -1 || variant.stockByAttribute[attrIndex].quantity < item.quantity) {
+            validationErrors.push(
+              `Insufficient warehouse stock for ${product.productName} - ${item.color || 'default'}`
+            );
+          }
+        }
+        else if (adjustmentType === "remove" || adjustmentType === "damage") {
+          if (!stock || stock.currentStock < item.quantity) {
+            validationErrors.push(
+              `Insufficient branch stock for ${product.productName} - ${item.color || 'default'}`
+            );
+          }
+        }
+      } catch (error) {
+        validationErrors.push(`Validation error: ${error.message}`);
+      }
+    }
+
+    // ============================================
+    // STEP 2: IF ANY VALIDATION ERRORS, RETURN ERROR
+    // ============================================
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Stock adjustment failed due to insufficient stock",
+        errors: validationErrors
+      });
+    }
+
+    // ============================================
+    // STEP 3: PROCESS ALL ITEMS (ONLY IF ALL VALID)
+    // ============================================
     const adjustment = new StockAdjustment({
-      branch: branchId,
+      branch: finalBranchId,
       adjustmentType,
       reason,
       items,
-      adjustedBy: req.user.id,
+      adjustedBy: req.user._id,
       remarks,
       status: "pending",
     });
 
-    // Process each item in the adjustment
     for (const item of items) {
-      // 1️⃣ Find stock for this branch and variant
       let stock = await Stock.findOne({
         product: item.product,
         variantId: item.variantId,
-        branch: branchId,
+        branch: finalBranchId,
+        color: item.color,
       });
 
-      // Handle first-time stock creation (only for 'add')
-      if (!stock) {
-        if (adjustmentType === "add") {
+      const product = await Product.findById(item.product);
+      const variant = product.variants.id(item.variantId);
+      let attrIndex = variant.stockByAttribute.findIndex(
+        attr => attr.color === item.color
+      );
+
+      if (adjustmentType === "add") {
+        // Update warehouse (decrease)
+        variant.stockByAttribute[attrIndex].quantity -= item.quantity;
+        variant.quantity -= Number(item.quantity);
+
+        // Update branch stock (increase)
+        if (!stock) {
           stock = await Stock.create({
             product: item.product,
             variantId: item.variantId,
-            branch: branchId,
+            branch: finalBranchId,
             location: branchLocation,
             currentStock: item.quantity,
             availableStock: item.quantity,
             damagedStock: 0,
             inTransitStock: 0,
+            color: item.color || "Default",
           });
         } else {
-          // Cannot remove or damage stock that does not exist
-          throw new Error(`Stock not found for product ${item.product} and variant ${item.variantId}`);
-        }
-      } else {
-        // Stock exists → update based on adjustment type
-        if (adjustmentType === "add") {
           stock.currentStock += item.quantity;
           stock.availableStock += item.quantity;
-        } else if (adjustmentType === "remove") {
-          if (stock.currentStock < item.quantity) throw new Error("Insufficient stock to remove");
-          stock.currentStock -= item.quantity;
-          stock.availableStock -= item.quantity;
-        } else if (adjustmentType === "damage") {
-          if (stock.currentStock < item.quantity) throw new Error("Insufficient stock for damage");
-          stock.currentStock -= item.quantity;
-          stock.availableStock -= item.quantity;
-          stock.damagedStock += item.quantity;
         }
+
+        variant.stockHistory.push({
+          date: new Date(),
+          color: item.color || "Default",
+          quantityChange: -Number(item.quantity),
+          reason: `Transferred to branch: ${reason}`,
+          changedBy: req.user.id,
+        });
+      }
+      else if (adjustmentType === "remove") {
+        stock.currentStock -= item.quantity;
+        stock.availableStock -= item.quantity;
+
+        if (attrIndex === -1) {
+          variant.stockByAttribute.push({
+            color: item.color || "Default",
+            quantity: item.quantity,
+          });
+        } else {
+          variant.stockByAttribute[attrIndex].quantity += item.quantity;
+        }
+
+        variant.quantity += Number(item.quantity);
+
+        variant.stockHistory.push({
+          date: new Date(),
+          color: item.color || "Default",
+          quantityChange: Number(item.quantity),
+          reason: `Returned from branch: ${reason}`,
+          changedBy: req.user.id,
+        });
+      }
+      else if (adjustmentType === "damage") {
+        stock.currentStock -= item.quantity;
+        stock.availableStock -= item.quantity;
+        stock.damagedStock += item.quantity;
+
+        variant.stockHistory.push({
+          date: new Date(),
+          color: item.color || "Default",
+          quantityChange: 0,
+          reason: `Damaged at branch: ${reason}`,
+          changedBy: req.user.id,
+        });
       }
 
-      await stock.save();
-
-      // 2️⃣ Update product variant quantity
-      const product = await Product.findById(item.product);
-      if (!product) throw new Error(`Product ${item.product} not found`);
-
-      const variant = product.variants.id(item.variantId);
-      if (!variant) throw new Error(`Variant ${item.variantId} not found`);
-
-      if (adjustmentType === "add") {
-        // When stock is added → decrease variant total quantity
-        variant.quantity = (Number(variant.quantity) || 0) - Number(item.quantity);
-      } else if (adjustmentType === "remove") {
-        // When stock is removed → increase variant total quantity
-        variant.quantity = (Number(variant.quantity) || 0) + Number(item.quantity);
-      }
-      // Damage does not change total variant quantity
-
-      // 3️⃣ Add stock history to variant
-      variant.stockHistory.push({
-        date: new Date(),
-        quantityChange:
-          adjustmentType === "add"
-            ? -Number(item.quantity)
-            : adjustmentType === "remove"
-            ? Number(item.quantity)
-            : -Number(item.quantity), // damage counts as negative change
-        reason,
-        changedBy: req.user.id,
-      });
-
+      if (stock) await stock.save();
       await product.save();
     }
 
-    // Mark adjustment as completed
     adjustment.status = "completed";
     adjustment.approvalDate = new Date();
     adjustment.approvedBy = req.user.id;
@@ -288,11 +612,13 @@ exports.adjustStock = async (req, res) => {
     await adjustment.save();
 
     res.status(201).json({ success: true, data: adjustment });
+
   } catch (error) {
     console.error("Adjust stock error:", error.message);
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 exports.transferStock = async (req, res) => {
   try {

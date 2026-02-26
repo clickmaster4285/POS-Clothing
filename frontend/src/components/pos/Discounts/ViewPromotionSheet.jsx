@@ -114,7 +114,7 @@ const ViewPromotionSheet = ({ promotion, open, onClose }) => {
 
                     {/* Coupon Code */}
                     {promotion.couponCode && (
-                        <div className="bg-primary/5 p-5 rounded-lg border border-primary/20">
+                        <div className="bg-primary/5 p-5 rounded-lg border border-primary/20  ">
                             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
                                 Coupon Code
                             </h4>

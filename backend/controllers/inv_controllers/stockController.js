@@ -301,7 +301,7 @@ exports.getAllStock = async (req, res) => {
       // const branch = await Branch.findOne({
       //   branch_manager: req.user._id
       // }).select("_id");
-      console.log("req.user" , req.user)
+     
 
       const branch = req.user.branch_id
 

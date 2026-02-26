@@ -9,8 +9,25 @@ const Customer = require("../../models/pos_model/customer.model");
 // GET all transactions
 const getAllTransactions = async (req, res) => {
   try {
-    // Fetch all transactions, sorted by newest first
-    const transactions = await Transaction.find().sort({ createdAt: -1 });
+    let query = {};
+
+    // 🔐 ROLE BASED FILTER
+    if (req.user.role !== "admin") {
+      const branchId = req.user.branch_id; // Assuming this is the ObjectId of the branch
+      if (!branchId) {
+        return res.status(403).json({
+          success: false,
+          message: "No branch assigned to this user"
+        });
+      }
+
+      query.branch = branchId; // Filter transactions by this branch
+    }
+
+    // Fetch all transactions (with branch filter if applicable)
+    const transactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .lean(); // optional, lean() for plain JS objects
 
     return res.status(200).json({
       success: true,
@@ -19,14 +36,15 @@ const getAllTransactions = async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching transactions:", err);
-    return res.status(500).json({ success: false, message: "Server Error", error: err.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server Error", 
+      error: err.message 
+    });
   }
 };
 
-
-
 // controllers/transactionController.js
-
 exports.getTransactionsByBranch = async (req, res) => {
   try {
     const user = req.user; // logged-in user

@@ -165,17 +165,7 @@ const PromotionModal = ({
                             </select>
                         </div> */}
 
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Coupon Code</label>
-                            <input
-                                type="text"
-                                name="couponCode"
-                                value={promoForm.couponCode}
-                                onChange={handleInputChange}
-                                placeholder="SUMMER2024"
-                                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                            />
-                        </div>
+                       
 
                         {/* Discount Info */}
                         <div>
@@ -206,6 +196,20 @@ const PromotionModal = ({
                                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
+
+                        
+                        <div>
+                            <label className="text-sm font-medium mb-1 block ">Coupon Code</label>
+                            <input
+                                type="text"
+                                name="couponCode"
+                                value={promoForm.couponCode}
+                                onChange={handleInputChange}
+                                placeholder="SUMMER2024"
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                            />
+                        </div>
+
 
                         <div className="col-span-2">
                             <label className="text-sm font-medium mb-1 block">Discount Description</label>
